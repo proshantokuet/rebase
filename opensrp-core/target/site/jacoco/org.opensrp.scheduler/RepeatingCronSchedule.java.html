@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RepeatingCronSchedule.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">RepeatingCronSchedule.java</span></div><h1>RepeatingCronSchedule.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+public class RepeatingCronSchedule {
+	public final String SUBJECT;
+	public final int START_DELAY;
+    public final TimeUnit START_DELAY_UNIT;
+    public final String CRON;
+	protected Date endTime;
+	protected Map&lt;String, Object&gt; data;
+    
+	public RepeatingCronSchedule(String subject, int startDelay, TimeUnit startDelayUnit
+<span class="nc" id="L16">			, String cronExpression) {</span>
+<span class="nc" id="L17">		this.SUBJECT = subject;</span>
+<span class="nc" id="L18">		this.START_DELAY = startDelay;</span>
+<span class="nc" id="L19">		this.START_DELAY_UNIT = startDelayUnit;   </span>
+<span class="nc" id="L20">		this.CRON = cronExpression;</span>
+<span class="nc" id="L21">	}</span>
+	
+	public RepeatingCronSchedule(String subject, int startDelay, TimeUnit startDelayUnit
+<span class="nc" id="L24">			, String cronExpression, Date endTime, Map&lt;String, Object&gt; data) {</span>
+<span class="nc" id="L25">		this.SUBJECT = subject;</span>
+<span class="nc" id="L26">		this.START_DELAY = startDelay;</span>
+<span class="nc" id="L27">		this.START_DELAY_UNIT = startDelayUnit;   </span>
+<span class="nc" id="L28">		this.CRON = cronExpression;</span>
+<span class="nc" id="L29">		this.endTime = endTime;</span>
+<span class="nc" id="L30">		this.data = data;</span>
+<span class="nc" id="L31">	}</span>
+
+	public Date getEndTime() {
+<span class="nc" id="L34">		return endTime;</span>
+	}
+	
+	public RepeatingCronSchedule withEndTime(Date endTime) {
+<span class="nc" id="L38">		this.endTime = endTime;</span>
+<span class="nc" id="L39">		return this;</span>
+	}
+
+	public Map&lt;String, Object&gt; getData() {
+<span class="nc" id="L43">		return data;</span>
+	}
+
+	public RepeatingCronSchedule addData(String key, Object value) {
+<span class="nc" id="L47">		data.put(key, value);</span>
+<span class="nc" id="L48">		return this;</span>
+	}
+	
+	public RepeatingCronSchedule withData(Map&lt;String, Object&gt; data) {
+<span class="nc" id="L52">		this.data = data;</span>
+<span class="nc" id="L53">		return this;</span>
+	}
+
+	public long getStartDelayMilis() {
+<span class="nc" id="L57">		return START_DELAY*millisConverter(START_DELAY_UNIT);</span>
+	}
+	
+	protected long millisConverter(TimeUnit unit){
+<span class="nc" id="L61">		long millis = 1L;</span>
+<span class="nc bnc" id="L62" title="All 8 branches missed.">		switch (unit) {</span>
+		case DAYS:
+<span class="nc" id="L64">			millis = 1000*60*60*24L;</span>
+<span class="nc" id="L65">			break;</span>
+		case HOURS:
+<span class="nc" id="L67">			millis = 1000*60*60L;</span>
+<span class="nc" id="L68">			break;</span>
+		case MICROSECONDS:
+<span class="nc" id="L70">			break;</span>
+		case MILLISECONDS:
+<span class="nc" id="L72">			millis = 1;</span>
+<span class="nc" id="L73">			break;</span>
+		case MINUTES:
+<span class="nc" id="L75">			millis = 1000*60L;</span>
+<span class="nc" id="L76">			break;</span>
+		case NANOSECONDS:
+<span class="nc" id="L78">			break;</span>
+		case SECONDS:
+<span class="nc" id="L80">			millis = 1000;</span>
+<span class="nc" id="L81">			break;</span>
+		default:
+<span class="nc" id="L83">			millis = 1;</span>
+			break;
+		}
+		
+<span class="nc" id="L87">		return millis;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

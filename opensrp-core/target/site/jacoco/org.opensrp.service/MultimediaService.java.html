@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MultimediaService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">MultimediaService.java</span></div><h1>MultimediaService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.io.File;
+import java.util.List;
+
+import org.opensrp.domain.Multimedia;
+import org.opensrp.dto.form.MultimediaDTO;
+import org.opensrp.repository.MultimediaRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
+@Service
+public class MultimediaService {
+<span class="fc" id="L18">    private static Logger logger = LoggerFactory.getLogger(MultimediaService.class.toString());</span>
+    public static final String IMAGES_DIR=&quot;images&quot;;
+    private static final String VIDEOS_DIR=&quot;videos&quot;;
+	private final MultimediaRepository multimediaRepository;
+	private String multimediaDirPath;
+	@Value(&quot;#{opensrp['multimedia.directory.name']}&quot;)
+	String baseMultimediaDirPath;
+	
+
+	@Autowired
+<span class="fc" id="L28">	public MultimediaService(MultimediaRepository multimediaRepository) {</span>
+<span class="fc" id="L29">		this.multimediaRepository = multimediaRepository;</span>
+<span class="fc" id="L30">	}</span>
+
+	public String saveMultimediaFile(MultimediaDTO multimediaDTO, MultipartFile file) {
+		
+<span class="nc" id="L34">		boolean uploadStatus = uploadFile(multimediaDTO, file);</span>
+         
+<span class="nc" id="L36">		String[] multimediaDirPathSplit =  multimediaDirPath.split(&quot;/&quot;, 3);</span>
+<span class="nc" id="L37">		String multimediaDirPathDB = File.separator + multimediaDirPathSplit[2];</span>
+		
+<span class="nc bnc" id="L39" title="All 2 branches missed.">		if (uploadStatus) {</span>
+			try {
+<span class="nc" id="L41">				logger.info(&quot;Image path : &quot; + multimediaDirPath);</span>
+				
+<span class="nc" id="L43">				Multimedia multimediaFile = new Multimedia()</span>
+<span class="nc" id="L44">						.withCaseId(multimediaDTO.caseId())</span>
+<span class="nc" id="L45">						.withProviderId(multimediaDTO.providerId())</span>
+<span class="nc" id="L46">						.withContentType(multimediaDTO.contentType())</span>
+<span class="nc" id="L47">						.withFilePath(multimediaDTO.filePath())</span>
+<span class="nc" id="L48">						.withFileCategory(multimediaDTO.fileCategory());</span>
+
+<span class="nc" id="L50">				multimediaRepository.add(multimediaFile);</span>
+
+<span class="nc" id="L52">				return &quot;success&quot;;</span>
+
+<span class="nc" id="L54">			} catch (Exception e) {</span>
+<span class="nc" id="L55">				e.getMessage();</span>
+			}
+		}
+
+<span class="nc" id="L59">		return &quot;fail&quot;;</span>
+
+	}
+
+	public boolean uploadFile(MultimediaDTO multimediaDTO,
+			MultipartFile multimediaFile) {
+		
+		// String baseMultimediaDirPath = System.getProperty(&quot;user.home&quot;);
+
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (!multimediaFile.isEmpty()) {</span>
+			try {
+
+<span class="nc" id="L71">				 multimediaDirPath = baseMultimediaDirPath + File.separator;</span>
+<span class="nc" id="L72">				String fileExt=&quot;.jpg&quot;;</span>
+<span class="nc bnc" id="L73" title="All 18 branches missed.">				switch (multimediaDTO.contentType()) {</span>
+				
+				case &quot;application/octet-stream&quot;:
+<span class="nc" id="L76">					multimediaDirPath += VIDEOS_DIR;</span>
+<span class="nc" id="L77">					fileExt=&quot;.mp4&quot;;</span>
+<span class="nc" id="L78">					break;</span>
+
+				case &quot;image/jpeg&quot;:
+<span class="nc" id="L81">					multimediaDirPath += IMAGES_DIR;</span>
+<span class="nc" id="L82">					fileExt=&quot;.jpg&quot;;</span>
+<span class="nc" id="L83">					break;</span>
+
+				case &quot;image/gif&quot;:
+<span class="nc" id="L86">					multimediaDirPath += IMAGES_DIR;</span>
+<span class="nc" id="L87">					fileExt=&quot;.gif&quot;;</span>
+<span class="nc" id="L88">					break;</span>
+
+				case &quot;image/png&quot;:
+<span class="nc" id="L91">					multimediaDirPath += IMAGES_DIR; </span>
+<span class="nc" id="L92">					fileExt=&quot;.png&quot;;</span>
+					break;
+
+				}
+<span class="nc" id="L96">				new File(multimediaDirPath).mkdir();</span>
+<span class="nc" id="L97">				String fileName=multimediaDirPath+File.separator+multimediaDTO.caseId() + fileExt;</span>
+<span class="nc" id="L98">				multimediaDTO.withFilePath(fileName);</span>
+<span class="nc" id="L99">				File multimediaDir = new File(fileName);</span>
+
+<span class="nc" id="L101">				multimediaFile.transferTo(multimediaDir);</span>
+
+			/*
+			 byte[] bytes = multimediaFile.getBytes();
+			 	
+			 BufferedOutputStream stream = new BufferedOutputStream(
+						new FileOutputStream(multimediaDirPath));
+				stream.write(bytes);
+				stream.close();*/
+				 
+<span class="nc" id="L111">				return true;</span>
+				
+<span class="nc" id="L113">			} catch (Exception e) {</span>
+<span class="nc" id="L114">				logger.error(&quot;&quot;,e);</span>
+<span class="nc" id="L115">				return false;</span>
+			}
+		} else {
+<span class="nc" id="L118">			return false;</span>
+		}
+	}
+    private void makeMultimediaDir(String dirPath)
+    {
+<span class="nc" id="L123">    	File file = new File(dirPath);</span>
+<span class="nc bnc" id="L124" title="All 2 branches missed.">		 if(!file.exists())</span>
+<span class="nc" id="L125">			 file.mkdirs();</span>
+			 
+<span class="nc" id="L127">    }</span>
+	public List&lt;Multimedia&gt; getMultimediaFiles(String providerId) {
+<span class="nc" id="L129">		return multimediaRepository.all(providerId);</span>
+	}
+	public Multimedia findByCaseId(String entityId){
+<span class="nc" id="L132">		return multimediaRepository.findByCaseId(entityId);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

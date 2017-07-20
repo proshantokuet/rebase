@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Route.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">Route.java</span></div><h1>Route.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class Route {
+    private final Matcher scheduleMatcher;
+    private final Matcher milestoneMatcher;
+    private final Matcher windowMatcher;
+    private final HookedEvent action;
+    private Map&lt;String, String&gt; extraData;
+
+    public Route(Matcher scheduleMatcher, Matcher milestoneMatcher, Matcher windowMatcher, HookedEvent action) {
+<span class="fc" id="L14">        this(scheduleMatcher, milestoneMatcher, windowMatcher, action, new HashMap&lt;String, String&gt;());</span>
+<span class="fc" id="L15">    }</span>
+
+<span class="fc" id="L17">    public Route(Matcher scheduleMatcher, Matcher milestoneMatcher, Matcher windowMatcher, HookedEvent action, Map&lt;String, String&gt; extraData) {</span>
+<span class="fc" id="L18">        this.scheduleMatcher = scheduleMatcher;</span>
+<span class="fc" id="L19">        this.milestoneMatcher = milestoneMatcher;</span>
+<span class="fc" id="L20">        this.windowMatcher = windowMatcher;</span>
+<span class="fc" id="L21">        this.action = action;</span>
+<span class="fc" id="L22">        this.extraData = extraData;</span>
+<span class="fc bfc" id="L23" title="All 2 branches covered.">        if(extraData == null){</span>
+<span class="fc" id="L24">        	this.extraData = new HashMap&lt;String, String&gt;();</span>
+        }
+<span class="fc" id="L26">    }</span>
+    
+    public boolean isSatisfiedBy(String scheduleName, String milestoneName, String windowName) {
+<span class="fc bfc" id="L29" title="All 6 branches covered.">        return scheduleMatcher.matches(scheduleName) &amp;&amp; milestoneMatcher.matches(milestoneName) &amp;&amp; windowMatcher.matches(windowName);</span>
+    }
+
+    public void invokeAction(MilestoneEvent event) {
+<span class="fc" id="L33">        action.invoke(event, extraData);</span>
+<span class="fc" id="L34">    }</span>
+
+    public Route addExtraData(String key, String value) {
+<span class="fc" id="L37">        this.extraData.put(key, value);</span>
+<span class="fc" id="L38">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

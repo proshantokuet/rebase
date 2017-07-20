@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SearchService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">SearchService.java</span></div><h1>SearchService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+import org.opensrp.domain.Client;
+import org.opensrp.repository.SearchRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class SearchService {
+	
+	private final SearchRepository search;
+	
+	@Autowired
+<span class="fc" id="L18">	public SearchService(SearchRepository search) {</span>
+<span class="fc" id="L19">		this.search = search;</span>
+<span class="fc" id="L20">	}</span>
+	
+	public List&lt;Client&gt; searchClient(String nameLike, String firstName, String middleName, String lastName, String gender,
+	                                 Map&lt;String, String&gt; identifiers, Map&lt;String, String&gt; attributes,
+	                                 DateTime birthdateFrom, DateTime birthdateTo, DateTime lastEditFrom, DateTime lastEditTo, Integer limit) {
+<span class="nc" id="L25">		return search.findByCriteria(nameLike, firstName, middleName, lastName, gender, identifiers, attributes,</span>
+		    birthdateFrom, birthdateTo, lastEditFrom, lastEditTo, limit);
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

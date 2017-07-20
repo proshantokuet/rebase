@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Obs.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Obs.java</span></div><h1>Obs.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.joda.time.DateTime;
+
+public class Obs {
+	
+	@JsonProperty
+	private String fieldType;
+	
+	@JsonProperty
+	private String fieldDataType;
+	
+	@JsonProperty
+	private String fieldCode;
+	
+	@JsonProperty
+	private String parentCode;
+	
+	@JsonProperty
+	private List&lt;Object&gt; values;
+	//hold unique values here
+<span class="fc" id="L30">	Set&lt;String&gt; set = new HashSet&lt;String&gt;();</span>
+	
+	@JsonProperty
+	private String comments;
+	
+	@JsonProperty
+	private String formSubmissionField;
+	
+	@JsonProperty
+	private DateTime effectiveDatetime;
+	
+	@JsonProperty
+	private List&lt;Object&gt; humanReadableValues;
+	
+<span class="fc" id="L44">	public Obs() {</span>
+<span class="fc" id="L45">	}</span>
+	
+	public Obs(String fieldType, String fieldDataType, String fieldCode, String parentCode, List&lt;Object&gt; values,
+<span class="fc" id="L48">	    List&lt;Object&gt; humanReadableValues, String comments, String formSubmissionField) {</span>
+<span class="fc" id="L49">		this.setFieldType(fieldType);</span>
+<span class="fc" id="L50">		this.fieldDataType = fieldDataType;</span>
+<span class="fc" id="L51">		this.fieldCode = fieldCode;</span>
+<span class="fc" id="L52">		this.parentCode = parentCode;</span>
+<span class="fc" id="L53">		this.values = values;</span>
+<span class="fc" id="L54">		this.humanReadableValues = humanReadableValues;</span>
+<span class="fc" id="L55">		this.comments = comments;</span>
+<span class="fc" id="L56">		this.formSubmissionField = formSubmissionField;</span>
+<span class="fc" id="L57">	}</span>
+	
+	public Obs(String fieldType, String fieldDataType, String fieldCode, String parentCode, Object value, String comments,
+<span class="fc" id="L60">	    String formSubmissionField) {</span>
+<span class="fc" id="L61">		this.setFieldType(fieldType);</span>
+<span class="fc" id="L62">		this.fieldDataType = fieldDataType;</span>
+<span class="fc" id="L63">		this.fieldCode = fieldCode;</span>
+<span class="fc" id="L64">		this.parentCode = parentCode;</span>
+<span class="fc" id="L65">		addToValueList(value);</span>
+<span class="fc" id="L66">		this.comments = comments;</span>
+<span class="fc" id="L67">		this.formSubmissionField = formSubmissionField;</span>
+<span class="fc" id="L68">	}</span>
+	
+	public String getFieldType() {
+<span class="fc" id="L71">		return fieldType;</span>
+	}
+	
+	public void setFieldType(String fieldType) {
+<span class="fc" id="L75">		this.fieldType = fieldType;</span>
+<span class="fc" id="L76">	}</span>
+	
+	public String getFieldDataType() {
+<span class="fc" id="L79">		return fieldDataType;</span>
+	}
+	
+	public void setFieldDataType(String fieldDataType) {
+<span class="fc" id="L83">		this.fieldDataType = fieldDataType;</span>
+<span class="fc" id="L84">	}</span>
+	
+	public String getFieldCode() {
+<span class="fc" id="L87">		return fieldCode;</span>
+	}
+	
+	public void setFieldCode(String fieldCode) {
+<span class="fc" id="L91">		this.fieldCode = fieldCode;</span>
+<span class="fc" id="L92">	}</span>
+	
+	public String getParentCode() {
+<span class="fc" id="L95">		return parentCode;</span>
+	}
+	
+	public void setParentCode(String parentCode) {
+<span class="nc" id="L99">		this.parentCode = parentCode;</span>
+<span class="nc" id="L100">	}</span>
+	
+	@JsonIgnore
+	public Object getValue() {
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		if (values.size() &gt; 1) {</span>
+<span class="nc" id="L105">			throw new RuntimeException(</span>
+			        &quot;Multiset values can not be handled like single valued fields. Use function getValues&quot;);
+		}
+<span class="nc bnc" id="L108" title="All 4 branches missed.">		if (values == null || values.size() == 0) {</span>
+<span class="nc" id="L109">			return null;</span>
+		}
+		
+<span class="nc" id="L112">		return values.get(0);</span>
+	}
+	
+	@JsonIgnore
+	public void setValue(Object value) {
+<span class="nc" id="L117">		addToValueList(value);</span>
+<span class="nc" id="L118">	}</span>
+	
+	public List&lt;Object&gt; getHumanReadableValues() {
+<span class="fc" id="L121">		return humanReadableValues;</span>
+	}
+	
+	public void setHumanReadableValues(List&lt;Object&gt; humanReadableValues) {
+<span class="nc" id="L125">		this.humanReadableValues = humanReadableValues;</span>
+<span class="nc" id="L126">	}</span>
+	
+	public List&lt;Object&gt; getValues() {
+<span class="fc" id="L129">		return values;</span>
+	}
+	
+	public void setValues(List&lt;Object&gt; values) {
+<span class="fc" id="L133">		this.values = values;</span>
+<span class="fc" id="L134">	}</span>
+	
+	public String getComments() {
+<span class="fc" id="L137">		return comments;</span>
+	}
+	
+	public void setComments(String comments) {
+<span class="fc" id="L141">		this.comments = comments;</span>
+<span class="fc" id="L142">	}</span>
+	
+	public String getFormSubmissionField() {
+<span class="fc" id="L145">		return formSubmissionField;</span>
+	}
+	
+	public void setFormSubmissionField(String formSubmissionField) {
+<span class="fc" id="L149">		this.formSubmissionField = formSubmissionField;</span>
+<span class="fc" id="L150">	}</span>
+	
+	public DateTime getEffectiveDatetime() {
+<span class="fc" id="L153">		return effectiveDatetime;</span>
+	}
+	
+	public void setEffectiveDatetime(DateTime effectiveDatetime) {
+<span class="fc" id="L157">		this.effectiveDatetime = effectiveDatetime;</span>
+<span class="fc" id="L158">	}</span>
+	
+	public Obs withFieldType(String fieldType) {
+<span class="nc" id="L161">		this.fieldType = fieldType;</span>
+<span class="nc" id="L162">		return this;</span>
+	}
+	
+	public Obs withFieldDataType(String fieldDataType) {
+<span class="nc" id="L166">		this.fieldDataType = fieldDataType;</span>
+<span class="nc" id="L167">		return this;</span>
+	}
+	
+	public Obs withFieldCode(String fieldCode) {
+<span class="nc" id="L171">		this.fieldCode = fieldCode;</span>
+<span class="nc" id="L172">		return this;</span>
+	}
+	
+	public Obs withParentCode(String parentCode) {
+<span class="nc" id="L176">		this.parentCode = parentCode;</span>
+<span class="nc" id="L177">		return this;</span>
+	}
+	
+	public Obs withValue(Object value) {
+<span class="nc" id="L181">		return addToValueList(value);</span>
+	}
+	
+	public Obs withValues(List&lt;Object&gt; values) {
+<span class="nc" id="L185">		this.values = values;</span>
+<span class="nc" id="L186">		return this;</span>
+	}
+	
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public Obs addToValueList(Object value) {
+<span class="pc bpc" id="L191" title="1 of 2 branches missed.">		if(value==null){</span>
+<span class="nc" id="L192">			return this;</span>
+		}
+<span class="pc bpc" id="L194" title="1 of 2 branches missed.">		if (values == null) {</span>
+<span class="fc" id="L195">			values = new ArrayList&lt;&gt;();</span>
+		}
+		//make the object a bit more linear. If value is a list, the values json object will be an array with arrays inside
+		
+<span class="pc bpc" id="L199" title="1 of 2 branches missed.">		if(value instanceof List){</span>
+<span class="nc" id="L200">			set.addAll((Collection&lt;String&gt;) value);</span>
+			
+		}else{
+<span class="fc" id="L203">			set.add(value.toString());</span>
+		}
+<span class="fc" id="L205">		values.clear();</span>
+<span class="fc" id="L206">		values.addAll(set);</span>
+<span class="fc" id="L207">		return this;</span>
+	}
+	
+	public Obs withComments(String comments) {
+<span class="nc" id="L211">		this.comments = comments;</span>
+<span class="nc" id="L212">		return this;</span>
+	}
+	
+	public Obs withFormSubmissionField(String formSubmissionField) {
+<span class="nc" id="L216">		this.formSubmissionField = formSubmissionField;</span>
+<span class="nc" id="L217">		return this;</span>
+	}
+	
+	public Obs withEffectiveDatetime(DateTime effectiveDatetime) {
+<span class="nc" id="L221">		this.effectiveDatetime = effectiveDatetime;</span>
+<span class="nc" id="L222">		return this;</span>
+		
+	}
+	
+	public Obs withHumanReadableValues(List&lt;Object&gt; humanReadableValues) {
+<span class="nc" id="L227">		this.humanReadableValues = humanReadableValues;</span>
+<span class="nc" id="L228">		return this;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

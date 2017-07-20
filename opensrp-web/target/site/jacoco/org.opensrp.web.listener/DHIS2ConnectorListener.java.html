@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DHIS2ConnectorListener.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.listener</a> &gt; <span class="el_source">DHIS2ConnectorListener.java</span></div><h1>DHIS2ConnectorListener.java</h1><pre class="source lang-java linenums">package org.opensrp.web.listener;
+
+import java.util.Calendar;
+
+import org.json.JSONObject;
+import org.opensrp.connector.dhis2.DHIS2AggregateConnector;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.stereotype.Service;
+
+@Service
+@EnableScheduling
+<span class="fc" id="L15">public class DHIS2ConnectorListener {</span>
+	
+<span class="fc" id="L17">	private static Logger logger = LoggerFactory.getLogger(DHIS2ConnectorListener.class.toString());</span>
+	
+	@Autowired
+	private DHIS2AggregateConnector dHIS2AggregateConnector;
+	
+	public void vaccinationAggregatorDataCountForSendingToDHIS2() {
+<span class="nc" id="L23">		logger.info(&quot;Listener called for SendingToDHIS2&quot;);</span>
+<span class="nc" id="L24">		Calendar c = Calendar.getInstance();</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">		if (c.get(Calendar.DATE) == c.getActualMaximum(Calendar.DATE)) {</span>
+<span class="nc" id="L26">			JSONObject aggregatedDataSet = null;</span>
+<span class="nc" id="L27">			String message = &quot;&quot;;</span>
+			try {
+<span class="nc" id="L29">				aggregatedDataSet = dHIS2AggregateConnector.getAggregatedDataCount();</span>
+<span class="nc" id="L30">				dHIS2AggregateConnector.aggredateDataSendToDHIS2(aggregatedDataSet);</span>
+<span class="nc" id="L31">				message = aggregatedDataSet.toString();</span>
+<span class="nc" id="L32">				System.out.println(&quot;Aggregated data send to DHIS2...&quot; + aggregatedDataSet.toString());</span>
+				
+			}
+<span class="nc" id="L35">			catch (Exception e) {</span>
+<span class="nc" id="L36">				System.out.println(&quot;Aggregate Data Count Error Message&quot; + e.getMessage());</span>
+				
+<span class="nc" id="L38">			}</span>
+<span class="nc" id="L39">		} else {</span>
+<span class="nc" id="L40">			System.out.println(&quot;This in not last day of the month&quot;);</span>
+		}
+		
+<span class="nc" id="L43">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

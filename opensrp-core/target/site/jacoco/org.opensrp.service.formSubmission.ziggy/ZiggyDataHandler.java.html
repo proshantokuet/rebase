@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ZiggyDataHandler.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.ziggy</a> &gt; <span class="el_source">ZiggyDataHandler.java</span></div><h1>ZiggyDataHandler.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.ziggy;
+
+import static java.util.UUID.randomUUID;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.JsonNode;
+import org.codehaus.jackson.node.JsonNodeFactory;
+import org.codehaus.jackson.node.ObjectNode;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.ViewQuery;
+import org.ektorp.ViewResult;
+import org.opensrp.common.AllConstants;
+import org.opensrp.util.Utils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class ZiggyDataHandler {
+    private CouchDbConnector db;
+    private EntityDataMap edMap;
+
+    @Autowired
+<span class="fc" id="L27">    public ZiggyDataHandler(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, </span>
+    		EntityDataMap edMap) {
+<span class="fc" id="L29">        this.db = db;</span>
+<span class="fc" id="L30">        this.edMap = edMap;</span>
+<span class="fc" id="L31">    }</span>
+
+    public boolean isZiggyCompliant(String entityType) {
+<span class="fc" id="L34">		return edMap.hasEntityMap(entityType);</span>
+	}
+    
+    public String saveEntity(String entityType, String fields) {
+<span class="fc" id="L38">        Map&lt;String, String&gt; updatedFieldsMap = Utils.getStringMapFromJSON(fields);</span>
+<span class="fc" id="L39">        String entityId = updatedFieldsMap.get(edMap.getIdField(entityType));</span>
+
+<span class="nc" id="L41">        List&lt;ViewResult.Row&gt; viewQueryResult = getDBViewQueryResult(entityId, entityType);</span>
+
+        ObjectNode entity;
+        ObjectNode details;
+<span class="nc bnc" id="L45" title="All 2 branches missed.">        if (viewQueryResult.size() != 0) {</span>
+<span class="nc" id="L46">            JsonNode document = viewQueryResult.get(0).getDocAsNode();</span>
+<span class="nc" id="L47">            entity = (ObjectNode) document;</span>
+<span class="nc" id="L48">            details = (ObjectNode) document.get(EntityDataMap.DETAILS);</span>
+<span class="nc" id="L49">        } else {</span>
+<span class="nc" id="L50">            String docEntityType = edMap.getDocEntityType(entityType);</span>
+
+<span class="nc" id="L52">            entity = new ObjectNode(JsonNodeFactory.instance);</span>
+<span class="nc" id="L53">            details = new ObjectNode(JsonNodeFactory.instance);</span>
+<span class="nc" id="L54">            entity.put(&quot;_id&quot;, randomUUID().toString());</span>
+<span class="nc" id="L55">            entity.put(EntityDataMap.DOCUMENT_TYPE, docEntityType);</span>
+        }
+
+<span class="nc" id="L58">        List&lt;String&gt; fieldList = getFieldsList(entityType);</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (String fieldName : updatedFieldsMap.keySet()) {</span>
+<span class="nc bnc" id="L60" title="All 2 branches missed.">            if (fieldList.contains(fieldName)) {</span>
+<span class="nc" id="L61">                entity.put(fieldName, updatedFieldsMap.get(fieldName));</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">            } else if (fieldName.equals(EntityDataMap.ID)) {</span>
+<span class="nc" id="L63">                entity.put(edMap.getIdField(entityType), updatedFieldsMap.get(fieldName));</span>
+<span class="nc" id="L64">            } else {</span>
+<span class="nc" id="L65">                details.put(fieldName, updatedFieldsMap.get(fieldName));</span>
+            }
+        }
+<span class="nc" id="L68">        entity.put(EntityDataMap.DETAILS, details);</span>
+
+<span class="nc" id="L70">        db.update(entity);</span>
+<span class="nc" id="L71">        return entityId;</span>
+    }
+
+    List&lt;ViewResult.Row&gt; getDBViewQueryResult(String id, String entityType) {
+<span class="fc" id="L75">        String docEntityType = edMap.getDocEntityType(entityType);</span>
+<span class="pc" id="L76">        return db.queryView(new ViewQuery().viewName(edMap.getIdViewName(entityType)).designDocId(&quot;_design/&quot; + docEntityType).key(id)</span>
+<span class="nc" id="L77">                .queryParam(edMap.getIdField(entityType), id).includeDocs(true)).getRows();</span>
+    }
+
+    private List&lt;String&gt; getFieldsList(String entityType) {
+<span class="nc" id="L81">       return Collections.unmodifiableList(edMap.getFieldsList(entityType));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

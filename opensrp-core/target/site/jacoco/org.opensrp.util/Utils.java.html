@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Utils.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.util</a> &gt; <span class="el_source">Utils.java</span></div><h1>Utils.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.opensrp.util;</span>
+
+import static java.lang.String.valueOf;
+import static org.opensrp.common.AllConstants.Form.ANM_ID;
+import static org.opensrp.common.AllConstants.Form.CLIENT_VERSION;
+import static org.opensrp.common.AllConstants.Form.ENTITY_ID;
+import static org.opensrp.common.AllConstants.Form.FORM_NAME;
+import static org.opensrp.common.AllConstants.Form.INSTANCE_ID;
+import static org.opensrp.common.AllConstants.Form.SERVER_VERSION;
+import static org.opensrp.common.util.EasyMap.create;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.CouchDbInstance;
+import org.ektorp.http.HttpClient;
+import org.ektorp.http.StdHttpClient;
+import org.ektorp.impl.StdCouchDbConnector;
+import org.ektorp.impl.StdCouchDbInstance;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.form.domain.FormSubmission;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.mysql.jdbc.StringUtils;
+
+<span class="nc" id="L42">public class Utils {</span>
+
+	public static Map&lt;String, String&gt; getStringMapFromJSON(String fields) {
+<span class="fc" id="L45">		return new Gson().fromJson(fields, new TypeToken&lt;Map&lt;String, String&gt;&gt;() {</span>
+<span class="fc" id="L46">		}.getType());</span>
+	}
+
+	public static List&lt;String&gt; getFieldsAsList(Class&lt;?&gt; cls) {
+<span class="nc" id="L50">		List&lt;String&gt; fieldList = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L51">		Field[] fieldSet = cls.getDeclaredFields();</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">		for (Field field : fieldSet) {</span>
+<span class="nc" id="L53">			fieldList.add(field.getName());</span>
+		}
+<span class="nc" id="L55">		return fieldList;</span>
+	}
+
+	public static String getZiggyParams(FormSubmission formSubmission) {
+<span class="fc" id="L59">		return new Gson().toJson(create(ANM_ID, formSubmission.anmId()).put(INSTANCE_ID, formSubmission.instanceId()).put(ENTITY_ID, formSubmission.entityId())</span>
+<span class="fc" id="L60">				.put(FORM_NAME, formSubmission.formName()).put(CLIENT_VERSION, valueOf(formSubmission.clientVersion()))</span>
+<span class="fc" id="L61">				.put(SERVER_VERSION, valueOf(formSubmission.serverVersion())).map());</span>
+	}
+
+	public static JSONArray getXlsToJson(String path) throws JSONException, IOException {
+<span class="fc" id="L65">		FileInputStream inp = new FileInputStream(new File(path));</span>
+		// Get the workbook instance for XLS file
+<span class="fc" id="L67">		HSSFWorkbook workbook = new HSSFWorkbook(inp);</span>
+
+		// Get first sheet from the workbook
+<span class="fc" id="L70">		HSSFSheet sheet = workbook.getSheetAt(0);</span>
+
+<span class="fc" id="L72">		int hrn = getHeaderRowNum(sheet);</span>
+<span class="fc" id="L73">		List&lt;String&gt; hr = getRowContent(sheet, hrn);</span>
+		// Start constructing JSON.
+<span class="fc" id="L75">		JSONArray jarr = new JSONArray();</span>
+
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (int i = hrn + 1; i &lt;= sheet.getLastRowNum(); i++) {</span>
+<span class="fc" id="L78">			List&lt;String&gt; rc = getRowContent(sheet, i);</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">			if (!isRowEmpty(rc)) {</span>
+<span class="fc" id="L80">				JSONObject row = new JSONObject();</span>
+<span class="fc bfc" id="L81" title="All 2 branches covered.">				for (int j = 0; j &lt; hr.size(); j++) {</span>
+<span class="fc" id="L82">					row.put(hr.get(j), rc.get(j));</span>
+				}
+<span class="fc" id="L84">				jarr.put(row);</span>
+			}
+		}
+
+<span class="fc" id="L88">		workbook.close();</span>
+<span class="fc" id="L89">		return jarr;</span>
+	}
+
+	private static int getHeaderRowNum(HSSFSheet sheet) {
+<span class="fc" id="L93">		Iterator&lt;Row&gt; i = sheet.iterator();</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		while (i.hasNext()) {</span>
+<span class="fc" id="L95">			Row r = i.next();</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">			for (Cell c : r) {</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">				if (!StringUtils.isEmptyOrWhitespaceOnly(c.getStringCellValue())) {</span>
+<span class="fc" id="L98">					return r.getRowNum();</span>
+				}
+			}
+		}
+<span class="nc" id="L102">		return -1;</span>
+	}
+
+	private static boolean isRowEmpty(List&lt;String&gt; rcontent) {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">		for (String r : rcontent) {</span>
+<span class="pc bpc" id="L107" title="1 of 2 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(r)) {</span>
+<span class="fc" id="L108">				return false;</span>
+			}
+		}
+<span class="fc" id="L111">		return true;</span>
+	}
+
+	private static List&lt;String&gt; getRowContent(HSSFSheet sheet, int rowNum) {
+<span class="fc" id="L115">		List&lt;String&gt; hc = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L116">		HSSFRow r = sheet.getRow(rowNum);</span>
+<span class="pc bpc" id="L117" title="1 of 4 branches missed.">		if (r != null &amp;&amp; r.getPhysicalNumberOfCells() &gt; 0) {</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">			for (int i = 0; i &lt; r.getLastCellNum(); i++) {</span>
+<span class="fc" id="L119">				Cell c = r.getCell(i);</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">				hc.add(c == null ? &quot;&quot; : c.getStringCellValue());</span>
+			}
+		}
+
+		/*
+		 * Iterator&lt;Cell&gt; it = sheet.getRow(rowNum).cellIterator(); while
+		 * (it.hasNext()) { Cell c = it.next(); hc.add(c.getStringCellValue());
+		 * }
+		 */
+<span class="fc" id="L129">		return hc;</span>
+	}
+
+	/**
+	 * Connect to the database specified by DatabaseConnectionParams
+	 * 
+	 * @param dbParams
+	 * @return
+	 * @throws MalformedURLException
+	 */
+	public static CouchDbConnector connectToDB(DatabaseConnectionParams dbParams) throws MalformedURLException {
+<span class="nc" id="L140">		HttpClient authenticatedHttpClient = null;</span>
+<span class="nc bnc" id="L141" title="All 8 branches missed.">		if (dbParams.userName != null &amp;&amp; !dbParams.userName.isEmpty() &amp;&amp; dbParams.password != null &amp;&amp; !dbParams.password.isEmpty()) {</span>
+
+<span class="nc" id="L143">			authenticatedHttpClient = new StdHttpClient.Builder().url(dbParams.url.concat(&quot;:&quot;).concat(dbParams.portNumber)).username(dbParams.userName)</span>
+<span class="nc" id="L144">					.password(dbParams.password).build();</span>
+<span class="nc" id="L145">		} else {</span>
+<span class="nc" id="L146">			authenticatedHttpClient = new StdHttpClient.Builder().url(dbParams.url.concat(&quot;:&quot;).concat(dbParams.portNumber)).build();</span>
+		}
+
+<span class="nc" id="L149">		CouchDbInstance dbInstance = new StdCouchDbInstance(authenticatedHttpClient);</span>
+
+<span class="nc" id="L151">		CouchDbConnector db = new StdCouchDbConnector(dbParams.dbName, dbInstance);</span>
+<span class="nc" id="L152">		return db;</span>
+
+	}
+
+<span class="fc" id="L156">	public static class DatabaseConnectionParams {</span>
+		public String url;
+		public String portNumber;
+		public String userName;
+		public String password;
+		public String dbName;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

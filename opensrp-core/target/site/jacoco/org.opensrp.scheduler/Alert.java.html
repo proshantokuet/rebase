@@ -1,0 +1,339 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Alert.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">Alert.java</span></div><h1>Alert.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+import org.joda.time.DateTime;
+import org.motechproject.model.MotechBaseDataObject;
+import org.motechproject.util.DateUtil;
+import org.opensrp.dto.AlertStatus;
+
+/**
+ * The entity which helps in identifying the type of action applicable for the entity or provider
+ */
+@TypeDiscriminator(&quot;doc.type === 'Alert'&quot;)
+public class Alert extends MotechBaseDataObject {
+<span class="pc" id="L22">	public enum AlertType{</span>
+<span class="fc" id="L23">		notification, reminder</span>
+	}
+<span class="pc" id="L25">	public enum TriggerType{</span>
+<span class="fc" id="L26">		schedule, report, event, caseClosed</span>
+	}
+    @JsonProperty
+    private String providerId;
+    @JsonProperty
+    private String entityId;
+    @JsonProperty
+    private String beneficiaryType;
+    @JsonProperty
+    private String alertType;
+    @JsonProperty
+    private String triggerType;
+    @JsonProperty
+    private String triggerName;
+    @JsonProperty
+    private String triggerCode;
+    @JsonProperty
+    private String startDate;
+    @JsonProperty
+    private String expiryDate;
+    @JsonProperty
+    private String alertStatus;
+    @JsonProperty
+    private String closingPeriod;
+    @JsonProperty
+    private String dateClosed;
+    @JsonProperty
+    private String dateComplete;
+    @JsonProperty
+    private String reasonClosed;
+    @JsonProperty
+    private Boolean isActive;
+    @JsonProperty
+    private long timestamp;
+    @JsonProperty
+    private Map&lt;String, String&gt; details;
+
+<span class="fc" id="L63">	private Alert() {</span>
+<span class="fc" id="L64">    }</span>
+    
+    public Alert(String providerId, String entityId, String beneficiaryType, AlertType alertType, 
+    		TriggerType triggerType, String triggerName, String triggerCode, DateTime startDate, DateTime expiryDate,
+<span class="fc" id="L68">			AlertStatus alertStatus, Map&lt;String, String&gt; details) {</span>
+<span class="fc" id="L69">		this.providerId = providerId;</span>
+<span class="fc" id="L70">		this.entityId = entityId;</span>
+<span class="fc" id="L71">		this.beneficiaryType = beneficiaryType;</span>
+<span class="fc" id="L72">		this.alertType = alertType.name();</span>
+<span class="fc" id="L73">		this.triggerType = triggerType.name();</span>
+<span class="fc" id="L74">		this.triggerName = triggerName;</span>
+<span class="fc" id="L75">		this.triggerCode = triggerCode;</span>
+<span class="fc" id="L76">		this.startDate = startDate.toLocalDate().toString();</span>
+<span class="fc" id="L77">		this.expiryDate = expiryDate.toLocalDate().toString();</span>
+<span class="fc" id="L78">		this.alertStatus = alertStatus.name();</span>
+<span class="fc" id="L79">		this.isActive = true;</span>
+<span class="fc" id="L80">		this.timestamp = DateUtil.now().getMillis();</span>
+<span class="fc" id="L81">		this.details = details;</span>
+<span class="fc" id="L82">	}</span>
+
+    public Alert markAlertAsClosed(String reasonForClose) {
+<span class="pc bpc" id="L85" title="1 of 2 branches missed.">    	if(alertStatus.equalsIgnoreCase(AlertStatus.closed.name())</span>
+<span class="pc bpc" id="L86" title="1 of 2 branches missed.">    			|| alertStatus.equalsIgnoreCase(AlertStatus.complete.name())){</span>
+<span class="nc" id="L87">    		throw new IllegalStateException(&quot;Alert was found &quot;+alertStatus);</span>
+    	}
+<span class="fc" id="L89">    	this.closingPeriod = this.alertStatus;</span>
+<span class="fc" id="L90">    	this.reasonClosed = reasonForClose;</span>
+<span class="fc" id="L91">    	this.alertStatus = AlertStatus.closed.name();</span>
+<span class="fc" id="L92">    	this.dateClosed = new DateTime().toLocalDate().toString();</span>
+<span class="fc" id="L93">    	this.isActive = false;</span>
+    	
+<span class="fc" id="L95">    	return this;</span>
+    }
+    
+    public Alert markAlertAsComplete(String completionDate) {
+<span class="nc bnc" id="L99" title="All 2 branches missed.">    	if(alertStatus.equalsIgnoreCase(AlertStatus.closed.name())</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">    			|| alertStatus.equalsIgnoreCase(AlertStatus.complete.name())){</span>
+<span class="nc" id="L101">    		throw new IllegalStateException(&quot;Alert was found &quot;+alertStatus);</span>
+    	}
+<span class="nc" id="L103">    	this.dateComplete = completionDate;</span>
+<span class="nc" id="L104">    	this.closingPeriod = this.alertStatus;</span>
+<span class="nc" id="L105">    	this.alertStatus = AlertStatus.complete.name();</span>
+<span class="nc" id="L106">    	this.dateClosed = new DateTime().toLocalDate().toString();</span>
+<span class="nc" id="L107">    	this.isActive = false;</span>
+    	
+<span class="nc" id="L109">    	return this;</span>
+	}
+
+	public String providerId() {
+<span class="nc" id="L113">		return providerId;</span>
+	}
+
+	public String entityId() {
+<span class="nc" id="L117">		return entityId;</span>
+	}
+
+	public String beneficiaryType() {
+<span class="nc" id="L121">		return beneficiaryType;</span>
+	}
+
+	public String alertType() {
+<span class="nc" id="L125">		return alertType;</span>
+	}
+
+	public String triggerType() {
+<span class="nc" id="L129">		return triggerType;</span>
+	}
+
+	public String triggerName() {
+<span class="nc" id="L133">		return triggerName;</span>
+	}
+
+	public String triggerCode() {
+<span class="fc" id="L137">		return triggerCode;</span>
+	}
+
+	public String startDate() {
+<span class="nc" id="L141">		return startDate;</span>
+	}
+
+	public String expiryDate() {
+<span class="nc" id="L145">		return expiryDate;</span>
+	}
+
+	public String alertStatus() {
+<span class="fc" id="L149">		return alertStatus;</span>
+	}
+
+	public String closingPeriod() {
+<span class="nc" id="L153">		return closingPeriod;</span>
+	}
+
+	public String dateClosed() {
+<span class="nc" id="L157">		return dateClosed;</span>
+	}
+
+	public String reasonClosed() {
+<span class="nc" id="L161">		return reasonClosed;</span>
+	}
+
+	@JsonIgnore
+	public Boolean isActive() {
+<span class="nc" id="L166">		return isActive;</span>
+	}
+
+	public long timestamp() {
+<span class="fc" id="L170">		return timestamp;</span>
+	}
+
+	public Map&lt;String, String&gt; details() {
+<span class="fc bfc" id="L174" title="All 2 branches covered.">		if(details == null){</span>
+<span class="fc" id="L175">			details = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L177">		return details;</span>
+	}
+    
+    public Alert withDetails(String key, String val) {
+<span class="nc bnc" id="L181" title="All 2 branches missed.">    	if(details == null){</span>
+<span class="nc" id="L182">    		details = new HashMap&lt;&gt;();</span>
+    	}
+<span class="nc" id="L184">    	details.put(key, val);</span>
+<span class="nc" id="L185">		return this;</span>
+	}
+
+
+    String getProviderId() {
+<span class="nc" id="L190">		return providerId;</span>
+	}
+
+	String getEntityId() {
+<span class="nc" id="L194">		return entityId;</span>
+	}
+
+	String getBeneficiaryType() {
+<span class="nc" id="L198">		return beneficiaryType;</span>
+	}
+
+	String getTriggerType() {
+<span class="nc" id="L202">		return triggerType;</span>
+	}
+	
+	String getAlertType() {
+<span class="nc" id="L206">		return alertType;</span>
+	}
+    public String getTriggerName() {
+<span class="fc" id="L209">		return triggerName;</span>
+	}
+
+	public void setTriggerName(String triggerName) {
+<span class="fc" id="L213">		this.triggerName = triggerName;</span>
+<span class="fc" id="L214">	}</span>
+
+	public String getTriggerCode() {
+<span class="fc" id="L217">		return triggerCode;</span>
+	}
+
+	public void setTriggerCode(String triggerCode) {
+<span class="fc" id="L221">		this.triggerCode = triggerCode;</span>
+<span class="fc" id="L222">	}</span>
+
+	public String getStartDate() {
+<span class="fc" id="L225">		return startDate;</span>
+	}
+
+	public void setStartDate(String startDate) {
+<span class="fc" id="L229">		this.startDate = startDate;</span>
+<span class="fc" id="L230">	}</span>
+
+	public String getExpiryDate() {
+<span class="fc" id="L233">		return expiryDate;</span>
+	}
+
+	public void setExpiryDate(String expiryDate) {
+<span class="fc" id="L237">		this.expiryDate = expiryDate;</span>
+<span class="fc" id="L238">	}</span>
+
+	public String getAlertStatus() {
+<span class="fc" id="L241">		return alertStatus;</span>
+	}
+
+	public void setAlertStatus(String alertStatus) {
+<span class="fc" id="L245">		this.alertStatus = alertStatus;</span>
+<span class="fc" id="L246">	}</span>
+
+	public String getClosingPeriod() {
+<span class="fc" id="L249">		return closingPeriod;</span>
+	}
+
+	public void setClosingPeriod(String closingPeriod) {
+<span class="fc" id="L253">		this.closingPeriod = closingPeriod;</span>
+<span class="fc" id="L254">	}</span>
+
+	public String getDateClosed() {
+<span class="fc" id="L257">		return dateClosed;</span>
+	}
+
+	public void setDateClosed(String dateClosed) {
+<span class="fc" id="L261">		this.dateClosed = dateClosed;</span>
+<span class="fc" id="L262">	}</span>
+
+	public String getDateComplete() {
+<span class="fc" id="L265">		return dateComplete;</span>
+	}
+
+	public void setDateComplete(String dateComplete) {
+<span class="nc" id="L269">		this.dateComplete = dateComplete;</span>
+<span class="nc" id="L270">	}</span>
+
+	public String getReasonClosed() {
+<span class="fc" id="L273">		return reasonClosed;</span>
+	}
+
+	public void setReasonClosed(String reasonClosed) {
+<span class="fc" id="L277">		this.reasonClosed = reasonClosed;</span>
+<span class="fc" id="L278">	}</span>
+
+	public Boolean getIsActive() {
+<span class="fc" id="L281">		return isActive;</span>
+	}
+
+	public void setIsActive(Boolean isActive) {
+<span class="fc" id="L285">		this.isActive = isActive;</span>
+<span class="fc" id="L286">	}</span>
+
+	public long getTimestamp() {
+<span class="fc" id="L289">		return timestamp;</span>
+	}
+
+	public void setTimestamp(long timestamp) {
+<span class="fc" id="L293">		this.timestamp = timestamp;</span>
+<span class="fc" id="L294">	}</span>
+
+	public Map&lt;String, String&gt; getDetails() {
+<span class="fc" id="L297">		return details;</span>
+	}
+
+	public void setDetails(Map&lt;String, String&gt; details) {
+<span class="fc" id="L301">		this.details = details;</span>
+<span class="fc" id="L302">	}</span>
+
+	public void setProviderId(String providerId) {
+<span class="fc" id="L305">		this.providerId = providerId;</span>
+<span class="fc" id="L306">	}</span>
+
+	public void setEntityId(String entityId) {
+<span class="fc" id="L309">		this.entityId = entityId;</span>
+<span class="fc" id="L310">	}</span>
+
+	public void setBeneficiaryType(String beneficiaryType) {
+<span class="fc" id="L313">		this.beneficiaryType = beneficiaryType;</span>
+<span class="fc" id="L314">	}</span>
+
+	public void setAlertType(String alertType) {
+<span class="fc" id="L317">		this.alertType = alertType;</span>
+<span class="fc" id="L318">	}</span>
+
+	public void setTriggerType(String triggerType) {
+<span class="fc" id="L321">		this.triggerType = triggerType;</span>
+<span class="fc" id="L322">	}</span>
+
+	@Override
+    public boolean equals(Object o) {
+<span class="fc" id="L326">        return EqualsBuilder.reflectionEquals(this, o, &quot;timeStamp&quot;, &quot;revision&quot;);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L331">        return HashCodeBuilder.reflectionHashCode(this, &quot;timeStamp&quot;, &quot;revision&quot;);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L336">        return ToStringBuilder.reflectionToString(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

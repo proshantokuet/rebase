@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RepeatingSchedule.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">RepeatingSchedule.java</span></div><h1>RepeatingSchedule.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+public class RepeatingSchedule {
+	public final String SUBJECT;
+	public final int START_DELAY;
+    public final int REPEAT_INTERVAL;
+    public final TimeUnit START_DELAY_UNIT;
+    public final TimeUnit REPEAT_INTERVAL_UNIT;
+	protected Date endTime;
+	protected Map&lt;String, Object&gt; data;
+    
+	public RepeatingSchedule(String subject, int startDelay, TimeUnit startDelayUnit
+<span class="nc" id="L17">			, int repeatInterval, TimeUnit repeatIntervalUnit) {</span>
+<span class="nc" id="L18">		this.SUBJECT = subject;</span>
+<span class="nc" id="L19">		this.START_DELAY = startDelay;</span>
+<span class="nc" id="L20">		this.REPEAT_INTERVAL = repeatInterval;</span>
+<span class="nc" id="L21">		this.START_DELAY_UNIT = startDelayUnit;   </span>
+<span class="nc" id="L22">		this.REPEAT_INTERVAL_UNIT = repeatIntervalUnit;</span>
+<span class="nc" id="L23">	}</span>
+	
+	public RepeatingSchedule(String subject, int startDelay, TimeUnit startDelayUnit
+<span class="nc" id="L26">			, int repeatInterval, TimeUnit repeatIntervalUnit, Date endTime, Map&lt;String, Object&gt; data) {</span>
+<span class="nc" id="L27">		this.SUBJECT = subject;</span>
+<span class="nc" id="L28">		this.START_DELAY = startDelay;</span>
+<span class="nc" id="L29">		this.REPEAT_INTERVAL = repeatInterval;</span>
+<span class="nc" id="L30">		this.START_DELAY_UNIT = startDelayUnit;   </span>
+<span class="nc" id="L31">		this.REPEAT_INTERVAL_UNIT = repeatIntervalUnit;</span>
+<span class="nc" id="L32">		this.endTime = endTime;</span>
+<span class="nc" id="L33">		this.data = data;</span>
+<span class="nc" id="L34">	}</span>
+
+	public Date getEndTime() {
+<span class="nc" id="L37">		return endTime;</span>
+	}
+	
+	public RepeatingSchedule withEndTime(Date endTime) {
+<span class="nc" id="L41">		this.endTime = endTime;</span>
+<span class="nc" id="L42">		return this;</span>
+	}
+
+	public Map&lt;String, Object&gt; getData() {
+<span class="nc" id="L46">		return data;</span>
+	}
+
+	public RepeatingSchedule addData(String key, Object value) {
+<span class="nc" id="L50">		data.put(key, value);</span>
+<span class="nc" id="L51">		return this;</span>
+	}
+	
+	public RepeatingSchedule withData(Map&lt;String, Object&gt; data) {
+<span class="nc" id="L55">		this.data = data;</span>
+<span class="nc" id="L56">		return this;</span>
+	}
+
+	public long getStartDelayMilis() {
+<span class="nc" id="L60">		return START_DELAY*millisConverter(START_DELAY_UNIT);</span>
+	}
+	
+	public long getRepeatIntervalMilis() {
+<span class="nc" id="L64">		return REPEAT_INTERVAL*millisConverter(REPEAT_INTERVAL_UNIT);</span>
+	}
+	
+	protected long millisConverter(TimeUnit unit){
+<span class="nc" id="L68">		long millis = 1L;</span>
+<span class="nc bnc" id="L69" title="All 8 branches missed.">		switch (unit) {</span>
+		case DAYS:
+<span class="nc" id="L71">			millis = 1000*60*60*24L;</span>
+<span class="nc" id="L72">			break;</span>
+		case HOURS:
+<span class="nc" id="L74">			millis = 1000*60*60L;</span>
+<span class="nc" id="L75">			break;</span>
+		case MICROSECONDS:
+<span class="nc" id="L77">			break;</span>
+		case MILLISECONDS:
+<span class="nc" id="L79">			millis = 1;</span>
+<span class="nc" id="L80">			break;</span>
+		case MINUTES:
+<span class="nc" id="L82">			millis = 1000*60L;</span>
+<span class="nc" id="L83">			break;</span>
+		case NANOSECONDS:
+<span class="nc" id="L85">			break;</span>
+		case SECONDS:
+<span class="nc" id="L87">			millis = 1000;</span>
+<span class="nc" id="L88">			break;</span>
+		default:
+<span class="nc" id="L90">			millis = 1;</span>
+			break;
+		}
+		
+<span class="nc" id="L94">		return millis;</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

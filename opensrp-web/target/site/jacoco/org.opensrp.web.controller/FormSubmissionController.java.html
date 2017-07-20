@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormSubmissionController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">FormSubmissionController.java</span></div><h1>FormSubmissionController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import static ch.lambdaj.collection.LambdaCollections.with;
+import static java.text.MessageFormat.format;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.text.ParseException;
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.common.AllConstants;
+import org.opensrp.connector.openmrs.constants.OpenmrsHouseHold;
+import org.opensrp.connector.openmrs.service.EncounterService;
+import org.opensrp.connector.openmrs.service.HouseholdService;
+import org.opensrp.connector.openmrs.service.PatientService;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.ErrorTrace;
+import org.opensrp.domain.Event;
+import org.opensrp.domain.Multimedia;
+import org.opensrp.dto.form.FormSubmissionDTO;
+import org.opensrp.dto.form.MultimediaDTO;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormSubmissionConverter;
+import org.opensrp.form.service.FormSubmissionService;
+import org.opensrp.repository.MultimediaRepository;
+import org.opensrp.scheduler.SystemEvent;
+import org.opensrp.scheduler.TaskSchedulerService;
+import org.opensrp.service.ErrorTraceService;
+import org.opensrp.service.MultimediaService;
+import org.opensrp.service.formSubmission.FormEntityConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import ch.lambdaj.function.convert.Converter;
+
+@Controller
+public class FormSubmissionController {
+<span class="fc" id="L56">    private static Logger logger = LoggerFactory.getLogger(FormSubmissionController.class.toString());</span>
+    private FormSubmissionService formSubmissionService;
+    private TaskSchedulerService scheduler;
+    private EncounterService encounterService;
+    private FormEntityConverter formEntityConverter;
+    private PatientService patientService;
+    private HouseholdService householdService;
+    private ErrorTraceService errorTraceService;
+    private MultimediaService multimediaService;
+    private MultimediaRepository multimediaRepository;
+    
+    @Autowired
+    public FormSubmissionController(FormSubmissionService formSubmissionService, TaskSchedulerService scheduler,
+    		EncounterService encounterService, FormEntityConverter formEntityConverter, PatientService patientService, 
+    		HouseholdService householdService,MultimediaService multimediaService, MultimediaRepository multimediaRepository,
+<span class="fc" id="L71">    		ErrorTraceService errorTraceService) {</span>
+<span class="fc" id="L72">        this.formSubmissionService = formSubmissionService;</span>
+<span class="fc" id="L73">        this.scheduler = scheduler;</span>
+<span class="fc" id="L74">        this.errorTraceService=errorTraceService;</span>
+<span class="fc" id="L75">        this.encounterService = encounterService;</span>
+<span class="fc" id="L76">        this.formEntityConverter = formEntityConverter;</span>
+<span class="fc" id="L77">        this.patientService = patientService;</span>
+<span class="fc" id="L78">        this.householdService = householdService;</span>
+<span class="fc" id="L79">        this.multimediaService = multimediaService;</span>
+<span class="fc" id="L80">        this.multimediaRepository = multimediaRepository;</span>
+<span class="fc" id="L81">    }</span>
+
+    @RequestMapping(method = GET, value = &quot;/form-submissions&quot;)
+    @ResponseBody
+    private List&lt;FormSubmissionDTO&gt; getNewSubmissionsForANM(@RequestParam(&quot;anm-id&quot;) String anmIdentifier,
+                                                            @RequestParam(&quot;timestamp&quot;) Long timeStamp,
+                                                            @RequestParam(value = &quot;batch-size&quot;, required = false)
+                                                            Integer batchSize) {
+<span class="nc" id="L89">        List&lt;FormSubmission&gt; newSubmissionsForANM = formSubmissionService</span>
+<span class="nc" id="L90">                .getNewSubmissionsForANM(anmIdentifier, timeStamp, batchSize);</span>
+<span class="nc" id="L91">        return with(newSubmissionsForANM).convert(new Converter&lt;FormSubmission, FormSubmissionDTO&gt;() {</span>
+            @Override
+            public FormSubmissionDTO convert(FormSubmission submission) {
+<span class="nc" id="L94">                return FormSubmissionConverter.from(submission);</span>
+            }
+        });
+    }
+
+    @RequestMapping(method = GET, value=&quot;/all-form-submissions&quot;)
+    @ResponseBody
+    private List&lt;FormSubmissionDTO&gt; getAllFormSubmissions(@RequestParam(&quot;timestamp&quot;) Long timeStamp,
+                                                          @RequestParam(value = &quot;batch-size&quot;, required = false)
+                                                          Integer batchSize) {
+<span class="nc" id="L104">        List&lt;FormSubmission&gt; allSubmissions = formSubmissionService</span>
+<span class="nc" id="L105">                .getAllSubmissions(timeStamp, batchSize);</span>
+<span class="nc" id="L106">        return with(allSubmissions).convert(new Converter&lt;FormSubmission, FormSubmissionDTO&gt;() {</span>
+            @Override
+            public FormSubmissionDTO convert(FormSubmission submission) {
+<span class="nc" id="L109">                return FormSubmissionConverter.from(submission);</span>
+            }
+        });
+    }
+    
+ 
+
+    @RequestMapping(headers = {&quot;Accept=application/json&quot;}, method = POST, value = &quot;/form-submissions&quot;)
+    public ResponseEntity&lt;HttpStatus&gt; submitForms(@RequestBody List&lt;FormSubmissionDTO&gt; formSubmissionsDTO) {
+        try {
+<span class="nc bnc" id="L119" title="All 2 branches missed.">            if (formSubmissionsDTO.isEmpty()) {</span>
+<span class="nc" id="L120">                return new ResponseEntity&lt;&gt;(BAD_REQUEST);</span>
+            }
+
+<span class="nc" id="L123">            scheduler.notifyEvent(new SystemEvent&lt;&gt;(AllConstants.OpenSRPEvent.FORM_SUBMISSION, formSubmissionsDTO));</span>
+            
+            try{
+          
+            ////////TODO MAIMOONA : SHOULD BE IN EVENT but event needs to be moved to web so for now kept here
+<span class="nc" id="L128">            String json = new Gson().toJson(formSubmissionsDTO);</span>
+<span class="nc" id="L129">            System.out.println(&quot;MMMMMMMMMMMYYYYYYYYYYYYYY::&quot;+json);</span>
+<span class="nc" id="L130">            List&lt;FormSubmissionDTO&gt; formSubmissions = new Gson().fromJson(json, new TypeToken&lt;List&lt;FormSubmissionDTO&gt;&gt;() {</span>
+<span class="nc" id="L131">            }.getType());</span>
+<span class="nc" id="L132">            List&lt;FormSubmission&gt; fsl = with(formSubmissions).convert(new Converter&lt;FormSubmissionDTO, FormSubmission&gt;() {</span>
+                @Override
+                public FormSubmission convert(FormSubmissionDTO submission) {
+<span class="nc" id="L135">                    return FormSubmissionConverter.toFormSubmission(submission);</span>
+                }
+            });
+<span class="nc bnc" id="L138" title="All 2 branches missed.">	            for (FormSubmission formSubmission : fsl) {</span>
+	            	try{
+<span class="nc" id="L140">	            		addFormToOpenMRS(formSubmission);</span>
+	            	}
+<span class="nc" id="L142">	            	catch(Exception e){</span>
+<span class="nc" id="L143">	            		e.printStackTrace();</span>
+<span class="nc" id="L144">	            		ErrorTrace errorTrace=new ErrorTrace(new DateTime(), &quot;Parse Exception&quot;, &quot;&quot;, e.getStackTrace().toString(), &quot;Unsolved&quot;, formSubmission.formName());</span>
+<span class="nc" id="L145">						errorTrace.setRecordId(formSubmission.instanceId());</span>
+<span class="nc" id="L146">						errorTraceService.addError(errorTrace);</span>
+<span class="nc" id="L147">	            	}</span>
+<span class="nc" id="L148">	    		}</span>
+            }
+<span class="nc" id="L150">            catch(Exception e){</span>
+<span class="nc" id="L151">            	e.printStackTrace();</span>
+<span class="nc" id="L152">            }</span>
+<span class="nc" id="L153">            logger.debug(format(&quot;Added Form submissions to queue.\nSubmissions: {0}&quot;, formSubmissionsDTO));</span>
+<span class="nc" id="L154">        } catch (Exception e) {</span>
+<span class="nc" id="L155">            logger.error(format(&quot;Form submissions processing failed with exception {0}.\nSubmissions: {1}&quot;, e, formSubmissionsDTO));</span>
+<span class="nc" id="L156">            return new ResponseEntity&lt;&gt;(INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L157">        }</span>
+<span class="nc" id="L158">        return new ResponseEntity&lt;&gt;(CREATED);</span>
+    }
+    
+    private void addFormToOpenMRS(FormSubmission formSubmission) throws ParseException, IllegalStateException, JSONException{
+//    	if(formEntityConverter.isOpenmrsForm(formSubmission)){
+<span class="nc" id="L163">    		Client c = formEntityConverter.getClientFromFormSubmission(formSubmission);</span>
+<span class="nc" id="L164">			Event e = formEntityConverter.getEventFromFormSubmission(formSubmission);</span>
+<span class="nc" id="L165">			Map&lt;String, Map&lt;String, Object&gt;&gt; dep = formEntityConverter.getDependentClientsFromFormSubmission(formSubmission);</span>
+
+    		// TODO temporary because not necessarily we register inner entity for Household only
+<span class="nc bnc" id="L168" title="All 2 branches missed.">    		if(formSubmission.formName().toLowerCase().contains(&quot;household&quot;) </span>
+<span class="nc bnc" id="L169" title="All 2 branches missed.">    				|| formSubmission.formName().toLowerCase().contains(&quot;census&quot;) ){</span>
+<span class="nc" id="L170">    			OpenmrsHouseHold hh = new OpenmrsHouseHold(c, e);</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">    			for (Map&lt;String, Object&gt; cm : dep.values()) {</span>
+<span class="nc" id="L172">    				hh.addHHMember((Client)cm.get(&quot;client&quot;), (Event)cm.get(&quot;event&quot;));</span>
+<span class="nc" id="L173">    			}</span>
+    			
+<span class="nc" id="L175">    			householdService.saveHH(hh, true);</span>
+<span class="nc" id="L176">    		}</span>
+    		else {
+<span class="nc" id="L178">    			JSONObject p = patientService.getPatientByIdentifier(c.getBaseEntityId());</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">    			if(p == null){</span>
+<span class="nc" id="L180">    				System.out.println(patientService.createPatient(c));</span>
+    			}
+        	
+<span class="nc" id="L183">    			System.out.println(encounterService.createEncounter(e));</span>
+    			
+<span class="nc bnc" id="L185" title="All 2 branches missed.">    			for (Map&lt;String, Object&gt; cm : dep.values()) {</span>
+<span class="nc" id="L186">    				Client cin = (Client)cm.get(&quot;client&quot;);</span>
+<span class="nc" id="L187">    				Event evin = (Event)cm.get(&quot;event&quot;);</span>
+<span class="nc" id="L188">    				JSONObject pin = patientService.getPatientByIdentifier(cin.getBaseEntityId());</span>
+<span class="nc bnc" id="L189" title="All 2 branches missed.">        			if(pin == null){</span>
+<span class="nc" id="L190">        				System.out.println(patientService.createPatient(cin));</span>
+        			}
+            	
+<span class="nc" id="L193">        			System.out.println(encounterService.createEncounter(evin));</span>
+<span class="nc" id="L194">    			}</span>
+    		}
+    	//}
+<span class="nc" id="L197">    }</span>
+
+    @RequestMapping(headers = {&quot;Accept=application/json&quot;}, method = GET, value = &quot;/multimedia-file&quot;)
+    @ResponseBody
+    public List&lt;MultimediaDTO&gt; getFiles(@RequestParam(&quot;anm-id&quot;) String providerId) {
+    	
+<span class="nc" id="L203">    	List&lt;Multimedia&gt; allMultimedias = multimediaService.getMultimediaFiles(providerId);</span>
+    	
+<span class="nc" id="L205">    	return with(allMultimedias).convert(new Converter&lt;Multimedia, MultimediaDTO&gt;() {</span>
+			@Override
+			public MultimediaDTO convert(Multimedia md) {
+<span class="nc" id="L208">				return new MultimediaDTO(md.getCaseId(), md.getProviderId(), md.getContentType(), md.getFilePath(), md.getFileCategory());</span>
+			}
+		});
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

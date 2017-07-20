@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<project name="maven-antrun-" default="main"  >
+<target name="main">
+  <echo message="CREATING OPENSRP START"/>
+  <exec executable="curl">
+    <arg value="-X"/>
+    <arg value="PUT"/>
+    <arg value="http://${couchdb.username}:${couchdb.password}@${couchdb.server}:${couchdb.port}/${couchdb.db.opensrp}"/>
+  </exec>
+  <echo message="CREATED OPENSRP END"/>
+</target>
+</project>

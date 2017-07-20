@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="33" failures="0" name="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" time="53.199" errors="0" skipped="8">
+  <properties>
+    <property name="jboss.i18n.generate-proxies" value="true"/>
+    <property name="java.runtime.name" value="Java(TM) SE Runtime Environment"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/amd64"/>
+    <property name="java.vm.version" value="25.60-b23"/>
+    <property name="java.vm.vendor" value="Oracle Corporation"/>
+    <property name="java.vendor.url" value="http://java.oracle.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="Java HotSpot(TM) 64-Bit Server VM"/>
+    <property name="file.encoding.pkg" value="sun.io"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="sun.os.patch.level" value="unknown"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="user.dir" value="/home/proshanto/projectOpensrp/PATH/pathissue288/opensrp-server/opensrp-web"/>
+    <property name="disable_bad_sslciphers" value="yes"/>
+    <property name="java.runtime.version" value="1.8.0_60-b27"/>
+    <property name="java.awt.graphicsenv" value="sun.awt.X11GraphicsEnvironment"/>
+    <property name="jsse.enableSNIExtension" value="false"/>
+    <property name="java.endorsed.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/endorsed"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="classworlds.conf" value="/opt/apache-maven/bin/m2.conf"/>
+    <property name="log4j.configuration" value="file:/home/proshanto/projectOpensrp/PATH/pathissue288/opensrp-server/opensrp-web/../assets/config/log4j.xml"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib/amd64:/usr/lib64:/lib64:/lib:/usr/lib"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="java.class.version" value="52.0"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="4.4.0-72-generic"/>
+    <property name="user.home" value="/home/proshanto"/>
+    <property name="user.timezone" value="Asia/Dhaka"/>
+    <property name="java.awt.printerjob" value="sun.print.PSPrinterJob"/>
+    <property name="java.specification.version" value="1.8"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="user.name" value="proshanto"/>
+    <property name="java.class.path" value="/opt/apache-maven/boot/plexus-classworlds-2.5.1.jar"/>
+    <property name="java.vm.specification.version" value="1.8"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="java.home" value="/usr/lib/jvm/java-8-oracle/jre"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher clean install"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="user.language" value="en"/>
+    <property name="awt.toolkit" value="sun.awt.X11.XToolkit"/>
+    <property name="java.vm.info" value="mixed mode"/>
+    <property name="java.version" value="1.8.0_60"/>
+    <property name="java.ext.dirs" value="/usr/lib/jvm/java-8-oracle/jre/lib/ext:/usr/java/packages/lib/ext"/>
+    <property name="securerandom.source" value="file:/dev/./urandom"/>
+    <property name="sun.boot.class.path" value="/usr/lib/jvm/java-8-oracle/jre/lib/resources.jar:/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar:/usr/lib/jvm/java-8-oracle/jre/lib/sunrsasign.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jsse.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jce.jar:/usr/lib/jvm/java-8-oracle/jre/lib/charsets.jar:/usr/lib/jvm/java-8-oracle/jre/lib/jfr.jar:/usr/lib/jvm/java-8-oracle/jre/classes"/>
+    <property name="java.vendor" value="Oracle Corporation"/>
+    <property name="maven.home" value="/opt/apache-maven"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.vendor.url.bug" value="http://bugreport.sun.com/bugreport/"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="slf4j" value="false"/>
+    <property name="sun.desktop" value="gnome"/>
+    <property name="jetty.port" value="9979"/>
+    <property name="sun.cpu.isalist" value=""/>
+  </properties>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForLabRemindersATheRightTimes" time="5.618"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForExpectedDateOfDeliveryAtTheRightTimes" time="2.559"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForBCG" time="2.559">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForOPV0AndOPV1" time="2.559">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForOPV2" time="2.559">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForOPV3" time="2.559">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForOPVBooster" time="1.222"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertForMeaslesVaccination" time="1.222">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertForDPTBooster1Vaccination" time="1.869"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertForDPTBooster2Vaccination" time="1.054"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForPentavalent1" time="2.968"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForPentavalent2" time="1.916"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForPentavalent3" time="1.815"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertForBoosterDoses" time="1.816">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForPNCCloseAtTheRightTimes" time="1.291"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForDMPAInjectableRefillAtTheRightTimes" time="1.665"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForOCPRefillAtTheRightTimes" time="1.171"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForCondomRefillAtTheRightTimes" time="0.883"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForFemaleSterilizationFollowupAtTheRightTimes" time="5.6"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForMaleSterilizationFollowupAtTheRightTimes" time="2.623"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForIUDFollowupAtTheRightTimes" time="3.036"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForFPFollowupAtTheRightTimes" time="1.46"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForFPReferralFollowupAtTheRightTimes" time="2.151"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForTT1AtTheRightTimes" time="2.151">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForTT2AtTheRightTimes" time="2.151">
+    <skipped/>
+  </testcase>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForIFA1" time="1.711"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForIFA2" time="1.356"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForIFA3" time="1.244"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForHbTest1AtTheRightTimes" time="1.153"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForHbFollowupTestAtTheRightTimes" time="2.287"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForHbTest2AtTheRightTimes" time="1.116"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForDeliveryPlanAtTheRightTimes" time="1.648"/>
+  <testcase classname="org.opensrp.web.it.DrishtiSchedulesIntegrationTest" name="shouldProvideAlertsForANCAtTheRightTimes" time="3.768"/>
+</testsuite>

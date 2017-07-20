@@ -1,0 +1,405 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Address.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Address.java</span></div><h1>Address.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonIgnore;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.joda.time.DateTime;
+import org.opensrp.common.AddressField;
+
+public class Address{
+
+	@JsonProperty
+	private Boolean preferred;
+	@JsonProperty
+	private String addressType;
+	@JsonProperty
+	private DateTime startDate;
+	@JsonProperty
+	private DateTime endDate;
+	@JsonProperty
+	private Map&lt;String, String&gt; addressFields;
+	@JsonProperty
+	private String latitude;
+	@JsonProperty
+	private String longitude;
+	@JsonProperty
+	private String geopoint;
+	@JsonProperty
+	private String postalCode;
+	@JsonProperty
+	private String subTown;
+	@JsonProperty
+	private String town;
+	@JsonProperty
+	private String subDistrict;
+	@JsonProperty
+	private String countyDistrict;
+	@JsonProperty
+	private String cityVillage;
+	@JsonProperty
+	private String stateProvince;
+	@JsonProperty
+	private String country;
+	
+	
+<span class="fc" id="L49">	public Address() {	}</span>
+
+	public Address(String addressType, DateTime startDate, DateTime endDate, Map&lt;String, String&gt; addressFields, 
+<span class="fc" id="L52">			String latitude, String longitude, String postalCode, String stateProvince, String country) {</span>
+<span class="fc" id="L53">		this.addressType = addressType;</span>
+<span class="fc" id="L54">		this.startDate = startDate;</span>
+<span class="fc" id="L55">		this.endDate = endDate;</span>
+<span class="fc" id="L56">		this.addressFields = addressFields;</span>
+<span class="fc" id="L57">		this.latitude = latitude;</span>
+<span class="fc" id="L58">		this.longitude = longitude;</span>
+<span class="fc" id="L59">		this.postalCode = postalCode;</span>
+<span class="fc" id="L60">		this.stateProvince = stateProvince;</span>
+<span class="fc" id="L61">		this.country = country;</span>
+<span class="fc" id="L62">	}</span>
+
+	public String getAddressType() {
+<span class="fc" id="L65">		return addressType;</span>
+	}
+
+	public void setAddressType(String addressType) {
+<span class="fc" id="L69">		this.addressType = addressType;</span>
+<span class="fc" id="L70">	}</span>
+
+	public DateTime getStartDate() {
+<span class="fc" id="L73">		return startDate;</span>
+	}
+
+	public void setStartDate(DateTime startDate) {
+<span class="fc" id="L77">		this.startDate = startDate;</span>
+<span class="fc" id="L78">	}</span>
+
+	public DateTime getEndDate() {
+<span class="fc" id="L81">		return endDate;</span>
+	}
+
+	public void setEndDate(DateTime endDate) {
+<span class="fc" id="L85">		this.endDate = endDate;</span>
+<span class="fc" id="L86">	}</span>
+
+	public Map&lt;String, String&gt; getAddressFields() {
+<span class="fc" id="L89">		return addressFields;</span>
+	}
+	
+	public String getAddressField(String addressField) {
+<span class="fc" id="L93">		return addressFields.get(addressField);</span>
+	}
+
+	public String getAddressField(AddressField addressField) {
+<span class="nc" id="L97">		return addressFields.get(addressField.name());</span>
+	}
+	
+	/**
+	 * Returns field matching the regex. Note that incase of multiple fields matching criteria 
+	 * function would return first match. The must be well formed to find out a single value
+	 * @param regex
+	 * @return
+	 */
+	public String getAddressFieldMatchingRegex(String regex) {
+<span class="nc bnc" id="L107" title="All 2 branches missed.">		for (Entry&lt;String, String&gt; a : addressFields.entrySet()) {</span>
+<span class="nc bnc" id="L108" title="All 2 branches missed.">			if(a.getKey().matches(regex)){</span>
+<span class="nc" id="L109">				return a.getValue();</span>
+			}
+<span class="nc" id="L111">		}</span>
+<span class="nc" id="L112">		return null;</span>
+	}
+	
+	/**
+	 * WARNING: Overrides all existing fields
+	 * @param addressFields
+	 * @return
+	 */
+	public void setAddressFields(Map&lt;String, String&gt; addressFields) {
+<span class="fc" id="L121">		this.addressFields = addressFields;</span>
+<span class="fc" id="L122">	}</span>
+
+	public void addAddressField(String field, String value) {
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if(addressFields == null){</span>
+<span class="fc" id="L126">			addressFields = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L128">		addressFields.put(field, value);</span>
+<span class="fc" id="L129">	}</span>
+	
+	/**
+	 * Add field name from a list of predefined options from enum {@link AddressField}
+	 * @param field
+	 * @param value
+	 */
+	public void addAddressField(AddressField field, String value) {
+<span class="nc bnc" id="L137" title="All 2 branches missed.">		if(addressFields == null){</span>
+<span class="nc" id="L138">			addressFields = new HashMap&lt;&gt;();</span>
+		}
+<span class="nc" id="L140">		addressFields.put(field.name(), value);</span>
+<span class="nc" id="L141">	}</span>
+	
+	public void removeAddressField(AddressField field) {
+<span class="nc" id="L144">		addressFields.remove(field.name());</span>
+<span class="nc" id="L145">	}</span>
+	
+	public void removeAddressField(String field) {
+<span class="nc" id="L148">		addressFields.remove(field);</span>
+<span class="nc" id="L149">	}</span>
+	
+	public String getLatitude() {
+<span class="fc" id="L152">		return latitude;</span>
+	}
+
+	public void setLatitude(String latitude) {
+<span class="fc" id="L156">		this.latitude = latitude;</span>
+<span class="fc" id="L157">	}</span>
+
+	public String getLongitude() {
+<span class="fc" id="L160">		return longitude;</span>
+	}
+
+	public void setLongitude(String longitude) {
+<span class="fc" id="L164">		this.longitude = longitude;</span>
+<span class="fc" id="L165">	}</span>
+
+	public String getGeopoint() {
+<span class="fc" id="L168">		return geopoint;</span>
+	}
+
+	public void setGeopoint(String geopoint) {
+<span class="fc" id="L172">		this.geopoint = geopoint;</span>
+<span class="fc" id="L173">	}</span>
+
+	public String getPostalCode() {
+<span class="fc" id="L176">		return postalCode;</span>
+	}
+
+	public void setPostalCode(String postalCode) {
+<span class="fc" id="L180">		this.postalCode = postalCode;</span>
+<span class="fc" id="L181">	}</span>
+
+	public String getSubTown() {
+<span class="fc" id="L184">		return subTown;</span>
+	}
+
+	public void setSubTown(String subTown) {
+<span class="fc" id="L188">		this.subTown = subTown;</span>
+<span class="fc" id="L189">	}</span>
+
+	public String getTown() {
+<span class="fc" id="L192">		return town;</span>
+	}
+
+	public void setTown(String town) {
+<span class="fc" id="L196">		this.town = town;</span>
+<span class="fc" id="L197">	}</span>
+
+	public String getSubDistrict() {
+<span class="fc" id="L200">		return subDistrict;</span>
+	}
+
+	public void setSubDistrict(String subDistrict) {
+<span class="nc" id="L204">		this.subDistrict = subDistrict;</span>
+<span class="nc" id="L205">	}</span>
+
+	public String getCountyDistrict() {
+<span class="fc" id="L208">		return countyDistrict;</span>
+	}
+
+	public void setCountyDistrict(String countyDistrict) {
+<span class="nc" id="L212">		this.countyDistrict = countyDistrict;</span>
+<span class="nc" id="L213">	}</span>
+
+	public String getCityVillage() {
+<span class="fc" id="L216">		return cityVillage;</span>
+	}
+
+	public void setCityVillage(String cityVillage) {
+<span class="fc" id="L220">		this.cityVillage = cityVillage;</span>
+<span class="fc" id="L221">	}</span>
+
+	public String getStateProvince() {
+<span class="fc" id="L224">		return stateProvince;</span>
+	}
+
+	public void setStateProvince(String stateProvince) {
+<span class="fc" id="L228">		this.stateProvince = stateProvince;</span>
+<span class="fc" id="L229">	}</span>
+
+	public String getCountry() {
+<span class="fc" id="L232">		return country;</span>
+	}
+
+	public void setCountry(String country) {
+<span class="fc" id="L236">		this.country = country;</span>
+<span class="fc" id="L237">	}</span>
+	
+
+
+	/**
+	 * True if endDate is null or endDate is in future
+	 * @return
+	 */
+	@JsonIgnore
+	public boolean isActive() {
+<span class="nc bnc" id="L247" title="All 4 branches missed.">		return endDate==null||endDate.isAfter(DateTime.now());</span>
+	}
+
+	/**
+	 * If startDate is not specified returns -1. If endDate is not specified duration is from startDate to current date 
+	 * @return
+	 */
+	private long durationInMillis() {
+<span class="nc bnc" id="L255" title="All 2 branches missed.">		if(startDate == null){</span>
+<span class="nc" id="L256">			return -1;</span>
+		}
+<span class="nc bnc" id="L258" title="All 2 branches missed.">		if(endDate == null){</span>
+<span class="nc" id="L259">			return DateTime.now().getMillis()-startDate.getMillis();</span>
+		}
+		
+<span class="nc" id="L262">		return endDate.getMillis()-startDate.getMillis();</span>
+	}
+
+	/**
+	 * If startDate is not specified returns -1. If endDate is not specified duration is from startDate to current date 
+	 * @return
+	 */
+	public int durationInDays() {
+<span class="nc bnc" id="L270" title="All 2 branches missed.">		return (int) (durationInMillis()==-1?durationInMillis():(durationInMillis()/(1000*60*60*24)));</span>
+	}
+	/**
+	 * If startDate is not specified returns -1. If endDate is not specified duration is from startDate to current date 
+	 * @return
+	 */
+	public int durationInWeeks() {
+<span class="nc bnc" id="L277" title="All 2 branches missed.">		return durationInDays()==-1?durationInDays():(durationInDays()/7);</span>
+	}
+	/**
+	 * If startDate is not specified returns -1. If endDate is not specified duration is from startDate to current date 
+	 * @return
+	 */
+	public int durationInMonths() {
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		return durationInDays()==-1?durationInDays():((int) (durationInDays()/30));</span>
+	}
+	/**
+	 * If startDate is not specified returns -1. If endDate is not specified duration is from startDate to current date 
+	 * @return
+	 */
+	public int durationInYears() {
+<span class="nc bnc" id="L291" title="All 2 branches missed.">		return durationInDays()==-1?durationInDays():(durationInDays()/365);</span>
+	}
+	
+	/**
+	 * The type address represents
+	 * @param addressType
+	 * @return
+	 */
+	public Address withAddressType(String addressType) {
+<span class="fc" id="L300">		this.addressType = addressType;</span>
+<span class="fc" id="L301">		return this;</span>
+	}
+
+	/**
+	 * The date when address was started or owned
+	 * @param endDate
+	 * @return
+	 */
+	public Address withStartDate(DateTime startDate) {
+<span class="nc" id="L310">		this.startDate = startDate;</span>
+<span class="nc" id="L311">		return this;</span>
+	}
+
+	/**
+	 * The date when address was outdated or abandoned
+	 * @param endDate
+	 * @return
+	 */
+	public Address withEndDate(DateTime endDate) {
+<span class="nc" id="L320">		this.endDate = endDate;</span>
+<span class="nc" id="L321">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing fields
+	 * @param addressFields
+	 * @return
+	 */
+	public Address withAddressFields(Map&lt;String, String&gt; addressFields) {
+<span class="nc" id="L330">		this.addressFields = addressFields;</span>
+<span class="nc" id="L331">		return this;</span>
+	}
+
+	public Address withAddressField(String field, String value) {
+<span class="nc bnc" id="L335" title="All 2 branches missed.">		if(addressFields == null){</span>
+<span class="nc" id="L336">			addressFields = new HashMap&lt;&gt;();</span>
+		}
+<span class="nc" id="L338">		addressFields.put(field, value);</span>
+<span class="nc" id="L339">		return this;</span>
+	}
+	
+	public Address withAddressField(AddressField field, String value) {
+<span class="nc bnc" id="L343" title="All 2 branches missed.">		if(addressFields == null){</span>
+<span class="nc" id="L344">			addressFields = new HashMap&lt;&gt;();</span>
+		}
+<span class="nc" id="L346">		addressFields.put(field.name(), value);</span>
+<span class="nc" id="L347">		return this;</span>
+	}
+
+	public Address withLatitude(String latitude) {
+<span class="nc" id="L351">		this.latitude = latitude;</span>
+<span class="nc" id="L352">		return this;</span>
+	}
+
+	public Address withLongitude(String longitude) {
+<span class="nc" id="L356">		this.longitude = longitude;</span>
+<span class="nc" id="L357">		return this;</span>
+	}
+	
+	public Address withGeopoint(String geopoint) {
+<span class="nc" id="L361">		this.geopoint = geopoint;</span>
+<span class="nc" id="L362">		return this;</span>
+	}
+
+	public Address withPostalCode(String postalCode) {
+<span class="nc" id="L366">		this.postalCode = postalCode;</span>
+<span class="nc" id="L367">		return this;</span>
+	}
+
+	public Address withTown(String town) {
+<span class="fc" id="L371">		this.town = town;</span>
+<span class="fc" id="L372">		return this;</span>
+	}
+	
+	public Address withSubDistrict(String subDistrict) {
+<span class="nc" id="L376">		this.subDistrict = subDistrict;</span>
+<span class="nc" id="L377">		return this;</span>
+	}
+	
+	public Address withCountyDistrict(String countyDistrict) {
+<span class="nc" id="L381">		this.countyDistrict = countyDistrict;</span>
+<span class="nc" id="L382">		return this;</span>
+	}
+	
+	public Address withCityVillage(String cityVillage) {
+<span class="fc" id="L386">		this.cityVillage = cityVillage;</span>
+<span class="fc" id="L387">		return this;</span>
+	}
+	
+	public Address withStateProvince(String stateProvince) {
+<span class="nc" id="L391">		this.stateProvince = stateProvince;</span>
+<span class="nc" id="L392">		return this;</span>
+	}
+
+	public Address withCountry(String country) {
+<span class="nc" id="L396">		this.country = country;</span>
+<span class="nc" id="L397">		return this;</span>
+	}
+	
+    @Override
+    public String toString() {
+<span class="nc" id="L402">        return ToStringBuilder.reflectionToString(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

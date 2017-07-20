@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScheduleService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler.service</a> &gt; <span class="el_source">ScheduleService.java</span></div><h1>ScheduleService.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler.service;
+
+import static java.util.Arrays.asList;
+import static org.joda.time.LocalDate.parse;
+import static org.joda.time.LocalTime.now;
+import static org.motechproject.scheduletracking.api.domain.EnrollmentStatus.ACTIVE;
+import static org.opensrp.common.util.DateUtil.today;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+import org.motechproject.model.Time;
+import org.motechproject.scheduletracking.api.domain.Enrollment;
+import org.motechproject.scheduletracking.api.domain.Milestone;
+import org.motechproject.scheduletracking.api.domain.Schedule;
+import org.motechproject.scheduletracking.api.repository.AllSchedules;
+import org.motechproject.scheduletracking.api.service.EnrollmentRecord;
+import org.motechproject.scheduletracking.api.service.EnrollmentRequest;
+import org.motechproject.scheduletracking.api.service.EnrollmentsQuery;
+import org.motechproject.scheduletracking.api.service.ScheduleTrackingService;
+import org.opensrp.scheduler.HealthSchedulerService.MetadataField;
+import org.opensrp.scheduler.Schedule.ActionType;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ScheduleService {
+    private final ScheduleTrackingService scheduleTrackingService;
+    private final AllSchedules allSchedules;
+    private final AllEnrollmentWrapper allEnrollments;
+
+    @Autowired
+    public ScheduleService(ScheduleTrackingService scheduleTrackingService, AllSchedules allSchedules, 
+<span class="fc" id="L39">    		@Value(&quot;#{opensrp['preferred.time']}&quot;) int preferredTime, AllEnrollmentWrapper allEnrollments) {</span>
+<span class="fc" id="L40">        this.scheduleTrackingService = scheduleTrackingService;</span>
+<span class="fc" id="L41">        this.allSchedules = allSchedules;</span>
+<span class="fc" id="L42">        this.allEnrollments = allEnrollments;</span>
+<span class="fc" id="L43">    }</span>
+
+    public void enroll(String entityId, String scheduleName, String referenceDate, String formSubmissionId) {
+<span class="fc" id="L46">        String startingMilestoneName = getStartingMilestoneName(scheduleName, parse(referenceDate));</span>
+<span class="fc" id="L47">		EnrollmentRequest request = new EnrollmentRequest(entityId, scheduleName, null,</span>
+<span class="fc" id="L48">                parse(referenceDate), null, null, null, startingMilestoneName, addOrUpdateEventTrackMetadata(null, formSubmissionId, ActionType.enroll));</span>
+<span class="fc" id="L49">        scheduleTrackingService.enroll(request);</span>
+<span class="fc" id="L50">    }</span>
+
+    private String getStartingMilestoneName(String name, LocalDate referenceDate) {
+<span class="fc" id="L53">        Schedule schedule = allSchedules.getByName(name);</span>
+<span class="pc bpc" id="L54" title="1 of 2 branches missed.">        for (Milestone milestone : schedule.getMilestones()) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (referenceDate.plus(milestone.getMaximumDuration()).isAfter(today()))</span>
+<span class="fc" id="L56">                return milestone.getName();</span>
+<span class="fc" id="L57">        }</span>
+<span class="nc" id="L58">        return null;</span>
+    }
+
+    public void enroll(String entityId, String scheduleName, String milestone, String referenceDate, String formSubmissionId) {
+<span class="fc" id="L62">    	EnrollmentRequest request = new EnrollmentRequest(entityId, scheduleName,</span>
+<span class="fc" id="L63">                null, parse(referenceDate), null, null, null, milestone, addOrUpdateEventTrackMetadata(null, formSubmissionId, ActionType.enroll));</span>
+<span class="fc" id="L64">        scheduleTrackingService.enroll(request);</span>
+<span class="fc" id="L65">    }</span>
+    
+    public void fulfillMilestone(String entityId, String scheduleName, LocalDate completionDate, String formSubmissionId) {
+<span class="nc bnc" id="L68" title="All 2 branches missed.">    	if(updateExistingEnrollmentWithEventTrackMetadata(entityId, scheduleName, formSubmissionId, ActionType.fulfill))</span>
+<span class="nc" id="L69">    	scheduleTrackingService.fulfillCurrentMilestone(entityId, scheduleName, completionDate, new Time(now()));</span>
+<span class="nc" id="L70">    }</span>
+    
+    public void unenroll(String entityId, String scheduleName, String formSubmissionId) {
+<span class="nc" id="L73">    	updateExistingEnrollmentWithEventTrackMetadata(entityId, scheduleName, formSubmissionId, ActionType.unenroll);</span>
+<span class="nc" id="L74">    	scheduleTrackingService.unenroll(entityId, asList(scheduleName));</span>
+<span class="nc" id="L75">	}</span>
+    
+    public void unenroll(String entityId, List&lt;String&gt; schedules, String formSubmissionId) {
+<span class="nc bnc" id="L78" title="All 2 branches missed.">    	for (String schedule : schedules) {</span>
+<span class="nc" id="L79">    		updateExistingEnrollmentWithEventTrackMetadata(entityId, schedule, formSubmissionId, ActionType.unenroll);</span>
+<span class="nc" id="L80">		}</span>
+<span class="nc" id="L81">    	scheduleTrackingService.unenroll(entityId, schedules);</span>
+<span class="nc" id="L82">	}</span>
+    
+    public List&lt;EnrollmentRecord&gt; findOpenEnrollments(String entityId) {
+<span class="nc" id="L85">        return scheduleTrackingService.search(new EnrollmentsQuery().havingExternalId(entityId).havingState(ACTIVE));</span>
+	}
+    
+    public List&lt;Enrollment&gt; findEnrollmentByStatusAndEnrollmentDate(String status, DateTime start, DateTime end) {
+<span class="nc" id="L89">        return allEnrollments.findByEnrollmentDate(status, start, end);</span>
+	}
+    
+    public List&lt;Enrollment&gt; findEnrollmentByLastUpDate(DateTime start, DateTime end) {
+<span class="nc" id="L93">        return allEnrollments.findByLastUpDate(start, end);</span>
+	}
+    
+    public void updateEnrollmentWithMetadata(String enrollmentId, String key, String value) {
+<span class="nc" id="L97">    	Enrollment e = allEnrollments.get(enrollmentId);</span>
+<span class="nc" id="L98">    	e.getMetadata().put(key, value);</span>
+<span class="nc" id="L99">    	allEnrollments.update(e);</span>
+<span class="nc" id="L100">	}</span>
+    public List&lt;String&gt; findOpenEnrollmentNames(String entityId) {
+<span class="nc" id="L102">    	List&lt;EnrollmentRecord&gt; openEnrollments = findOpenEnrollments(entityId);</span>
+<span class="nc" id="L103">    	List&lt;String&gt; openSchedules = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L104" title="All 2 branches missed.">		for (EnrollmentRecord enrollment : openEnrollments ) {</span>
+<span class="nc" id="L105">			openSchedules.add(enrollment.getScheduleName());</span>
+<span class="nc" id="L106">        }</span>
+		
+<span class="nc" id="L108">		return openSchedules;</span>
+	}
+    
+    public Enrollment getActiveEnrollment(String entityId, String scheduleName) {
+<span class="nc" id="L112">        return allEnrollments.getActiveEnrollment(entityId, scheduleName);</span>
+	}
+
+    public Enrollment getEnrollment(String entityId, String scheduleName) {
+<span class="nc" id="L116">        return allEnrollments.getEnrollment(entityId, scheduleName);</span>
+	}
+
+    public EnrollmentRecord getEnrollmentRecord(String entityId, String scheduleName) {
+<span class="nc" id="L120">        return scheduleTrackingService.getEnrollment(entityId, scheduleName);</span>
+	}
+    public Enrollment getEnrollment(String enrollmentId) {
+<span class="nc" id="L123">    	return allEnrollments.get(enrollmentId);</span>
+    }
+    
+    private Map&lt;String, String&gt; addOrUpdateEventTrackMetadata(Map&lt;String, String&gt; map, String formSubmissionId, ActionType actionType) {
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">		if(map == null){</span>
+<span class="fc" id="L128">			map = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="fc" id="L131">		map.put(MetadataField.lastUpdate.name(), new DateTime().toString());</span>
+		
+<span class="pc bpc" id="L133" title="1 of 2 branches missed.">		if(actionType.equals(ActionType.enroll)){</span>
+<span class="fc" id="L134">			map.put(MetadataField.enrollmentEvent.name(), formSubmissionId);</span>
+		}
+<span class="nc bnc" id="L136" title="All 2 branches missed.">		else if(actionType.equals(ActionType.fulfill)){</span>
+<span class="nc" id="L137">			map.put(MetadataField.fulfillmentEvent.name(), formSubmissionId);</span>
+		}
+<span class="nc bnc" id="L139" title="All 2 branches missed.">		else if(actionType.equals(ActionType.unenroll)){</span>
+<span class="nc" id="L140">			map.put(MetadataField.unenrollmentEvent.name(), formSubmissionId);</span>
+		}
+<span class="fc" id="L142">		return map;</span>
+	}
+    private boolean updateExistingEnrollmentWithEventTrackMetadata(String entityId, String scheduleName, String formSubmissionId, ActionType actionType){
+<span class="nc" id="L145">    	Enrollment enr = allEnrollments.getActiveEnrollment(entityId, scheduleName);</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">    	if(enr==null){</span>
+<span class="nc" id="L147">    		return false;</span>
+    	}
+<span class="nc" id="L149">    	enr.setMetadata(addOrUpdateEventTrackMetadata(enr.getMetadata(), formSubmissionId, actionType));</span>
+<span class="nc" id="L150">    	allEnrollments.update(enr);</span>
+<span class="nc" id="L151">    	return true;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

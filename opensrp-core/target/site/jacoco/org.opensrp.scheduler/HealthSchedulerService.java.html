@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HealthSchedulerService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">HealthSchedulerService.java</span></div><h1>HealthSchedulerService.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import static org.opensrp.dto.AlertStatus.expired;
+import static org.opensrp.dto.AlertStatus.normal;
+import static org.opensrp.dto.AlertStatus.upcoming;
+import static org.opensrp.dto.AlertStatus.urgent;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+import org.motechproject.scheduletracking.api.domain.Enrollment;
+import org.motechproject.scheduletracking.api.domain.WindowName;
+import org.motechproject.scheduletracking.api.service.EnrollmentRecord;
+import org.opensrp.dto.AlertStatus;
+import org.opensrp.dto.BeneficiaryType;
+import org.opensrp.scheduler.service.ActionService;
+import org.opensrp.scheduler.service.ScheduleService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class HealthSchedulerService {
+<span class="pc" id="L25">	public enum MetadataField {</span>
+<span class="fc" id="L26">		enrollmentEvent,</span>
+<span class="fc" id="L27">		fulfillmentEvent,</span>
+<span class="fc" id="L28">		unenrollmentEvent,</span>
+<span class="fc" id="L29">		lastUpdate</span>
+	}
+	
+	private final ActionService actionService;
+	private final ScheduleService scheduleService;
+	private final ScheduleConfig scheduleConfig;
+
+	@Autowired
+<span class="fc" id="L37">	public HealthSchedulerService(ActionService actionService, ScheduleService scheduleService, ScheduleConfig scheduleConfig) {</span>
+<span class="fc" id="L38">		this.actionService = actionService;</span>
+<span class="fc" id="L39">		this.scheduleService = scheduleService;</span>
+<span class="fc" id="L40">		this.scheduleConfig = scheduleConfig;</span>
+<span class="fc" id="L41">	}</span>
+	
+	public List&lt;Schedule&gt; findAutomatedSchedules(String formSubmission) {
+<span class="fc" id="L44">		List&lt;Schedule&gt; schl = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">		for (Schedule schedule : scheduleConfig.getSchedules()) {</span>
+<span class="fc bfc" id="L46" title="All 2 branches covered.">			if(schedule.hasForm(formSubmission)){</span>
+<span class="fc" id="L47">				schl.add(schedule);</span>
+			}
+<span class="fc" id="L49">		}</span>
+<span class="fc" id="L50">		return schl;</span>
+	}
+	
+	public void enrollIntoSchedule(String entityId, String schedule, LocalDate referenceDate, String formSubmissionId) {
+<span class="nc" id="L54">		scheduleService.enroll(entityId, schedule, referenceDate.toString(), formSubmissionId);</span>
+<span class="nc" id="L55">	}</span>
+	
+	public void enrollIntoSchedule(String entityId, String schedule, String referenceDate, String formSubmissionId) {
+<span class="nc" id="L58">		scheduleService.enroll(entityId, schedule, referenceDate, formSubmissionId);</span>
+<span class="nc" id="L59">	}</span>
+	
+	public void enrollIntoSchedule(String entityId, String schedule, String milestone, String referenceDate, String formSubmissionId) {
+<span class="fc" id="L62">		scheduleService.enroll(entityId, schedule, milestone, referenceDate, formSubmissionId);</span>
+<span class="fc" id="L63">	}</span>
+	
+	public void fullfillMilestoneAndCloseAlert(String entityId, String providerId, String scheduleName, String milestone, LocalDate completionDate, String formSubmissionId) {
+<span class="nc" id="L66">		scheduleService.fulfillMilestone(entityId, scheduleName, completionDate, formSubmissionId);</span>
+<span class="nc" id="L67">        actionService.markAlertAsClosed(entityId, providerId, milestone, completionDate.toString());</span>
+<span class="nc" id="L68">	}</span>
+	
+	public void fullfillMilestoneAndCloseAlert(String entityId, String providerId, String scheduleName, LocalDate completionDate, String formSubmissionId) {
+<span class="nc" id="L71">		scheduleService.fulfillMilestone(entityId, scheduleName, completionDate, formSubmissionId);</span>
+<span class="nc" id="L72">        actionService.markAlertAsClosed(entityId, providerId, scheduleName, completionDate.toString());</span>
+<span class="nc" id="L73">	}</span>
+	
+	public void forceFullfillMilestonesAndCloseAlert(String entityId, String scheduleName, LocalDate completionDate) {
+<span class="nc" id="L76">		scheduleService.fulfillMilestone(entityId, scheduleName, completionDate, &quot;&quot;);</span>
+<span class="nc" id="L77">        actionService.markAlertAsClosed(entityId, scheduleName, completionDate.toString());</span>
+<span class="nc" id="L78">	}</span>
+	
+	public void unEnrollFromSchedule(String entityId, String providerId, String scheduleName, String formSubmissionId) {
+<span class="nc" id="L81">		scheduleService.unenroll(entityId, scheduleName, formSubmissionId);</span>
+<span class="nc" id="L82">        actionService.markAlertAsInactive(providerId, entityId, scheduleName);</span>
+<span class="nc" id="L83">    }</span>
+	
+	public void unEnrollAndCloseSchedule(String entityId, String providerId, String scheduleName, LocalDate completionDate, String formSubmissionId) {
+<span class="nc" id="L86">		scheduleService.unenroll(entityId, scheduleName, formSubmissionId);</span>
+<span class="nc" id="L87">        actionService.markAlertAsClosed(providerId, entityId, scheduleName, completionDate.toString());</span>
+<span class="nc" id="L88">    }</span>
+	
+	public void unEnrollFromAllSchedules(String entityId, String formSubmissionId) {
+<span class="nc" id="L91">        List&lt;String&gt; activeSchedules = scheduleService.findOpenEnrollmentNames(entityId);</span>
+
+<span class="nc" id="L93">		scheduleService.unenroll(entityId, activeSchedules, formSubmissionId);</span>
+<span class="nc" id="L94">        actionService.markAllAlertsAsInactive(entityId);</span>
+<span class="nc" id="L95">    }</span>
+	
+	public void closeBeneficiary(BeneficiaryType beneficiary, String caseId, String anmIdentifier, String reasonForClose) {
+<span class="nc" id="L98">		actionService.closeBeneficiary(beneficiary, caseId, anmIdentifier, reasonForClose);</span>
+<span class="nc" id="L99">    }</span>
+	
+	public List&lt;EnrollmentRecord&gt; findActiveEnrollments(String entityId) {
+<span class="nc" id="L102">        return scheduleService.findOpenEnrollments(entityId);</span>
+	}
+	
+	public List&lt;String&gt; findActiveSchedules(String entityId) {
+<span class="nc" id="L106">        return scheduleService.findOpenEnrollmentNames(entityId);</span>
+	}
+	
+	public boolean isNotEnrolled(String entityId, String scheduleName) {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">        return scheduleService.getEnrollment(entityId, scheduleName) == null;</span>
+    }
+	
+	public Enrollment getActiveEnrollment(String entityId, String scheduleName) {
+<span class="nc" id="L114">        return scheduleService.getActiveEnrollment(entityId, scheduleName);</span>
+    }
+	
+	public Enrollment getEnrollment(String entityId, String scheduleName) {
+<span class="nc" id="L118">        return scheduleService.getEnrollment(entityId, scheduleName);</span>
+    }
+	
+	public EnrollmentRecord getEnrollmentRecord(String entityId, String scheduleName) {
+<span class="nc" id="L122">	    return scheduleService.getEnrollmentRecord(entityId, scheduleName);</span>
+	}
+	
+	public void alertFor(String windowName, String beneficiaryType, String entityId, 
+			String providerId, String schedule, String milestone, 
+			DateTime startOfDueWindow, DateTime startOfLateWindow, DateTime startOfMaxWindow) {
+<span class="nc bnc" id="L128" title="All 2 branches missed.">		if (WindowName.late.toString().equals(windowName)) {</span>
+<span class="nc" id="L129">            actionService.alertForBeneficiary(beneficiaryType, entityId, providerId, schedule, milestone, urgent, startOfLateWindow, startOfMaxWindow);</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">        } else if (WindowName.earliest.toString().equals(windowName)) {</span>
+<span class="nc" id="L131">            actionService.alertForBeneficiary(beneficiaryType, entityId, providerId, schedule, milestone, upcoming, startOfDueWindow, startOfLateWindow);</span>
+<span class="nc bnc" id="L132" title="All 2 branches missed.">        } else if(WindowName.due.toString().equals(windowName)){</span>
+<span class="nc" id="L133">            actionService.alertForBeneficiary(beneficiaryType, entityId, providerId, schedule, milestone, normal, startOfDueWindow, startOfLateWindow);</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">        } else if(WindowName.max.toString().equals(windowName)){</span>
+<span class="nc" id="L135">            actionService.alertForBeneficiary(beneficiaryType, entityId, providerId, schedule, milestone, expired, startOfMaxWindow, startOfMaxWindow);</span>
+        }
+<span class="nc" id="L137">	}</span>
+	
+	public void alertFor(String beneficiaryType, String entityId, String providerId, String schedule, 
+			String milestone, AlertStatus alertStatus, DateTime startDate, DateTime expiryDate) {
+<span class="nc" id="L141">		actionService.alertForBeneficiary(beneficiaryType, entityId, providerId, schedule, milestone, alertStatus,</span>
+				startDate, expiryDate);
+<span class="nc" id="L143">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

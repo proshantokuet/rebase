@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ScheduleConfig.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">ScheduleConfig.java</span></div><h1>ScheduleConfig.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.scheduler.Schedule.ActionType;
+import org.opensrp.util.Utils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Repository;
+
+import ch.maxant.rules.CompileException;
+import ch.maxant.rules.DuplicateNameException;
+import ch.maxant.rules.Engine;
+import ch.maxant.rules.NoMatchingRuleFoundException;
+import ch.maxant.rules.ParseException;
+import ch.maxant.rules.Rule;
+
+@Repository
+public class ScheduleConfig {
+<span class="fc" id="L33">    private static Logger logger = LoggerFactory.getLogger(&quot;org.opensrp&quot;);</span>
+
+<span class="fc" id="L35">	private List&lt;Schedule&gt; schedules = new ArrayList&lt;&gt;();</span>
+	
+	@Autowired
+<span class="fc" id="L38">	public ScheduleConfig(@Value(&quot;#{opensrp['schedule.config.path']}&quot;) String scheduleConfigPath) throws IOException, JSONException {</span>
+<span class="fc" id="L39">		ResourceLoader loader=new DefaultResourceLoader();</span>
+<span class="fc" id="L40">    	scheduleConfigPath = loader.getResource(scheduleConfigPath).getURI().getPath();</span>
+
+<span class="fc" id="L42">    	logger.info(&quot;Loading automated schedules from &quot;+scheduleConfigPath);</span>
+    	
+<span class="fc" id="L44">		JSONArray jarr = Utils.getXlsToJson(scheduleConfigPath);</span>
+		
+<span class="fc" id="L46">		logger.info(&quot;Found &quot;+jarr.length()+&quot; automated schedules&quot;);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">		for (int i = 0; i &lt; jarr.length(); i++) {</span>
+<span class="fc" id="L48">			JSONObject jo = jarr.getJSONObject(i);</span>
+<span class="fc" id="L49">			logger.debug(jo.toString());</span>
+<span class="fc" id="L50">			schedules.add(new Schedule(jo));</span>
+		}
+<span class="fc" id="L52">	}</span>
+	
+	public void addSchedule(Schedule sch) {
+<span class="nc bnc" id="L55" title="All 2 branches missed.">		if(schedules == null){</span>
+<span class="nc" id="L56">			schedules = new ArrayList&lt;&gt;();</span>
+		}
+<span class="nc" id="L58">		schedules.add(sch);</span>
+<span class="nc" id="L59">	}</span>
+	
+	public List&lt;Schedule&gt; getSchedules() {
+<span class="fc" id="L62">		return Collections.unmodifiableList(schedules);</span>
+	}
+	
+	public List&lt;Schedule&gt; searchSchedules(String formSubmission) {
+<span class="fc" id="L66">		List&lt;Schedule&gt; schl = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">		for (Schedule schedule : schedules) {</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">			if(schedule.hasForm(formSubmission)){</span>
+<span class="fc" id="L69">				schl.add(schedule);</span>
+			}
+<span class="fc" id="L71">		}</span>
+<span class="fc" id="L72">		return schl;</span>
+	}
+	
+	public List&lt;Schedule&gt; searchSchedules(String form, String schedule, String milestone, ActionType action) {
+<span class="fc" id="L76">		List&lt;Schedule&gt; schl = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">		for (Schedule sc : schedules) {</span>
+<span class="fc bfc" id="L78" title="All 4 branches covered.">			if(sc.hasForm(form) &amp;&amp; sc.schedule().equalsIgnoreCase(schedule)</span>
+<span class="pc bpc" id="L79" title="2 of 4 branches missed.">					&amp;&amp; sc.milestone().equalsIgnoreCase(milestone) &amp;&amp; sc.action().equals(action)){</span>
+<span class="fc" id="L80">				schl.add(sc);</span>
+			}
+<span class="fc" id="L82">		}</span>
+<span class="fc" id="L83">		return schl;</span>
+	}
+	
+	
+	public static void main(String[] args) throws DuplicateNameException, CompileException, ParseException, NoMatchingRuleFoundException {
+<span class="nc" id="L88">		Map&lt;String, Object&gt; m = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L89">		m.put(&quot;a&quot;, &quot;14&quot;);</span>
+<span class="nc" id="L90">		m.put(&quot;val&quot;, &quot;&quot;);</span>
+<span class="nc" id="L91">		Rule r1 = new Rule(&quot;R1&quot;, &quot;input.a &gt; 13&quot;, &quot;true&quot;, 4, &quot;age.rules&quot;);</span>
+<span class="nc" id="L92">		Rule r2 = new Rule(&quot;R2&quot;, &quot;!#R1&quot;, &quot;false&quot;, 4, &quot;age.rules&quot;);</span>
+<span class="nc" id="L93">		List&lt;Rule&gt; rules = Arrays.asList(r1, r2);</span>
+
+<span class="nc" id="L95">		Engine engine = new Engine(rules, true);</span>
+
+<span class="nc" id="L97">		String tarif = engine.getBestOutcome(m); </span>
+<span class="nc" id="L98">		System.out.println(tarif);</span>
+		
+<span class="nc" id="L100">		String xpr = &quot;${fs.pentavalent_1} == empty and ${fs.pentavalent_1_retro} == empty&quot;;</span>
+<span class="nc" id="L101">		String kv = &quot;pentavalent_1&quot;;</span>
+<span class="nc" id="L102">		xpr = xpr.replace(&quot;${fs.&quot;+kv +&quot;}&quot;, &quot;input.&quot;+kv);</span>
+<span class="nc" id="L103">		System.out.println(xpr);</span>
+<span class="nc" id="L104">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ANMLocationController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">ANMLocationController.java</span></div><h1>ANMLocationController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.opensrp.common.util.HttpAgent;
+import org.opensrp.common.util.HttpResponse;
+import org.opensrp.dto.VillagesDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.text.MessageFormat;
+
+import javax.servlet.http.HttpServletRequest;
+
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+
+@Controller
+public class ANMLocationController {
+<span class="fc" id="L28">    private static Logger logger = LoggerFactory.getLogger(ANMLocationController.class.toString());</span>
+    private final String opensrpANMVillagesURL;
+    private UserController userController;
+    private HttpAgent httpAgent;
+
+    @Autowired
+    public ANMLocationController(@Value(&quot;#{opensrp['opensrp.anm.villages.url']}&quot;) String opensrpANMVillagesURL,
+                                 UserController userController,
+<span class="fc" id="L36">                                 HttpAgent httpAgent) {</span>
+<span class="fc" id="L37">        this.opensrpANMVillagesURL = opensrpANMVillagesURL;</span>
+<span class="fc" id="L38">        this.userController = userController;</span>
+<span class="fc" id="L39">        this.httpAgent = httpAgent;</span>
+<span class="fc" id="L40">    }</span>
+
+    @RequestMapping(method = GET, value = &quot;/anm-villages&quot;)
+    @ResponseBody
+    public ResponseEntity&lt;VillagesDTO&gt; villagesForANM(HttpServletRequest req) {
+<span class="nc" id="L45">        HttpResponse response = new HttpResponse(false, null);</span>
+        try {
+<span class="nc" id="L47">            String anmIdentifier = userController.currentUser(req).getUsername();</span>
+<span class="nc" id="L48">            response = httpAgent.get(opensrpANMVillagesURL + &quot;?anm-id=&quot; + anmIdentifier);</span>
+<span class="nc" id="L49">            VillagesDTO villagesDTOs = new Gson().fromJson(response.body(),</span>
+<span class="nc" id="L50">                    new TypeToken&lt;VillagesDTO&gt;() {</span>
+<span class="nc" id="L51">                    }.getType());</span>
+<span class="nc" id="L52">            logger.info(&quot;Fetched Villages for the ANM&quot;);</span>
+<span class="nc" id="L53">            return new ResponseEntity&lt;&gt;(villagesDTOs, HttpStatus.OK);</span>
+<span class="nc" id="L54">        } catch (Exception exception) {</span>
+<span class="nc" id="L55">            logger.error(MessageFormat.format(&quot;{0} occurred while fetching Village Details for anm. StackTrace: \n {1}&quot;, exception.getMessage(), ExceptionUtils.getFullStackTrace(exception)));</span>
+<span class="nc" id="L56">            logger.error(MessageFormat.format(&quot;Response with status {0} and body: {1} was obtained from {2}&quot;, response.isSuccess(), response.body(), opensrpANMVillagesURL));</span>
+        }
+<span class="nc" id="L58">        return new ResponseEntity&lt;&gt;(INTERNAL_SERVER_ERROR);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

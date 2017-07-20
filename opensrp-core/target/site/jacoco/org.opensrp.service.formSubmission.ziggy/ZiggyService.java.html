@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ZiggyService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.ziggy</a> &gt; <span class="el_source">ZiggyService.java</span></div><h1>ZiggyService.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.ziggy;
+
+import static java.text.MessageFormat.format;
+import static javax.script.ScriptContext.ENGINE_SCOPE;
+
+import javax.script.Bindings;
+import javax.script.Invocable;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+
+import org.opensrp.service.formSubmission.handler.FormSubmissionRouter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ZiggyService {
+    public static final String JAVA_SCRIPT = &quot;JavaScript&quot;;
+<span class="fc" id="L20">    private static Logger logger = LoggerFactory.getLogger(ZiggyService.class.toString());</span>
+    private static final String SAVE_METHOD_NAME = &quot;createOrUpdateEntity&quot;;
+    private static final String JS_INIT_SCRIPT = &quot;require([\&quot;ziggy/FormDataController\&quot;], function (FormDataController) {\n&quot; +
+            &quot;    controller = FormDataController;\n&quot; +
+            &quot;});&quot;;
+    private static final String ZIGGY_FILE_LOADER = &quot;ziggyFileLoader&quot;;
+    private static final String REPOSITORY = &quot;formDataRepositoryContext&quot;;
+    private static final String FORM_SUBMISSION_ROUTER = &quot;formSubmissionRouter&quot;;
+
+    private ZiggyFileLoader ziggyFileLoader;
+    private ZiggyDataHandler ziggyDataHandler;
+    private FormSubmissionRouter formSubmissionRouter;
+    private Object ziggyFormController;
+    private Invocable invocable;
+
+    @Autowired
+<span class="fc" id="L36">    public ZiggyService(ZiggyFileLoader ziggyFileLoader,ZiggyDataHandler ziggyDataHandler,FormSubmissionRouter formSubmissionRouter) throws Exception {</span>
+<span class="fc" id="L37">        this.ziggyFileLoader = ziggyFileLoader;</span>
+<span class="fc" id="L38">        this.ziggyDataHandler = ziggyDataHandler;</span>
+<span class="fc" id="L39">        this.formSubmissionRouter = formSubmissionRouter;</span>
+<span class="fc" id="L40">        initRhino();</span>
+<span class="fc" id="L41">    }</span>
+
+    public boolean isZiggyCompliant(String entityType) {
+<span class="fc" id="L44">		return ziggyDataHandler.isZiggyCompliant(entityType);</span>
+	}
+
+	public void saveForm(String params, String formInstance) {
+        try {
+<span class="fc" id="L49">            invocable.invokeMethod(ziggyFormController, SAVE_METHOD_NAME, params, formInstance);</span>
+<span class="fc" id="L50">            logger.info(format(&quot;Saving form successful, with params: {0}.&quot;, params));</span>
+<span class="fc" id="L51">            logger.debug(format(&quot;Saving form successful, with params: {0}, with instance {1}.&quot;, params, formInstance));</span>
+<span class="fc" id="L52">        } catch (Exception e) {</span>
+<span class="fc" id="L53">        	e.printStackTrace();</span>
+<span class="fc" id="L54">            logger.error(format(&quot;Form save failed, with params: {0}, with instance {1}. Exception: {2}&quot;, params, formInstance, e));</span>
+<span class="fc" id="L55">        }</span>
+<span class="fc" id="L56">    }</span>
+
+    private void initRhino() throws Exception {
+<span class="fc" id="L59">        ScriptEngineManager manager = new ScriptEngineManager();</span>
+<span class="fc" id="L60">        ScriptEngine engine = manager.getEngineByName(JAVA_SCRIPT);</span>
+
+<span class="fc" id="L62">        Bindings bindings = getBindings(engine);</span>
+<span class="fc" id="L63">        engine.setBindings(bindings, ENGINE_SCOPE);</span>
+
+<span class="fc" id="L65">        String jsFiles = ziggyFileLoader.getJSFiles();</span>
+
+<span class="fc" id="L67">        engine.eval(jsFiles);</span>
+<span class="fc" id="L68">        engine.eval(JS_INIT_SCRIPT);</span>
+
+<span class="fc" id="L70">        ziggyFormController = engine.get(&quot;controller&quot;);</span>
+<span class="fc" id="L71">        invocable = (Invocable) engine;</span>
+<span class="fc" id="L72">    }</span>
+
+    private Bindings getBindings(ScriptEngine engine) {
+<span class="fc" id="L75">        Bindings bindings = engine.createBindings();</span>
+<span class="fc" id="L76">        bindings.put(ZIGGY_FILE_LOADER, ziggyFileLoader);</span>
+<span class="fc" id="L77">        bindings.put(REPOSITORY, ziggyDataHandler);</span>
+<span class="fc" id="L78">        bindings.put(FORM_SUBMISSION_ROUTER, formSubmissionRouter);</span>
+<span class="fc" id="L79">        return bindings;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllProviders.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllProviders.java</span></div><h1>AllProviders.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.GenerateView;
+import org.ektorp.support.View;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.Provider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllProviders extends MotechBaseRepository&lt;Provider&gt; {
+
+	@Autowired
+	protected AllProviders(
+			@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db) {
+<span class="fc" id="L21">		super(Provider.class, db);</span>
+<span class="fc" id="L22">	}</span>
+
+	@GenerateView
+	public Provider findByBaseEntityId(String baseEntityId) {
+<span class="fc" id="L26">		List&lt;Provider&gt; providers = queryView(&quot;by_baseEntityId&quot;, baseEntityId);</span>
+<span class="pc bpc" id="L27" title="2 of 4 branches missed.">		if (providers == null || providers.isEmpty()) {</span>
+<span class="fc" id="L28">			return null;</span>
+		}
+<span class="nc" id="L30">		return providers.get(0);</span>
+	}
+
+	public boolean exists(String baseEntityId) {
+<span class="nc bnc" id="L34" title="All 2 branches missed.">		return findByBaseEntityId(baseEntityId) != null;</span>
+	}
+	
+	@View(name = &quot;all_providers&quot;, map = &quot;function(doc) { if (doc.type === 'Provider') { emit(doc.baseEntityId); } }&quot;)
+	public List&lt;Provider&gt; findAllProviders() {
+<span class="nc" id="L39">		return db.queryView(createQuery(&quot;all_providers&quot;).includeDocs(true),</span>
+<span class="nc" id="L40">				Provider.class);</span>
+	}
+
+	@View(name = &quot;all_providers_by_baseEntityIDs&quot;, map = &quot;function(doc) { if (doc.type === 'Provider' &amp;&amp; doc.baseEntityId) { emit(doc.baseEntityId); } }&quot;)
+	public List&lt;Provider&gt; findAllProviderByIds(List&lt;String&gt; Ids) {
+<span class="nc" id="L45">		return db.queryView(createQuery(&quot;all_providers_by_baseEntityIDs&quot;).keys(Ids)</span>
+<span class="nc" id="L46">				.includeDocs(true), Provider.class);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,166 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Schedule.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">Schedule.java</span></div><h1>Schedule.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import ch.maxant.rules.CompileException;
+import ch.maxant.rules.DuplicateNameException;
+import ch.maxant.rules.Engine;
+import ch.maxant.rules.NoMatchingRuleFoundException;
+import ch.maxant.rules.ParseException;
+import ch.maxant.rules.Rule;
+
+import com.mysql.jdbc.StringUtils;
+
+public class Schedule {
+
+<span class="fc" id="L23">	public enum ActionType {</span>
+<span class="fc" id="L24">		enroll,</span>
+<span class="fc" id="L25">		unenroll,</span>
+<span class="fc" id="L26">		fulfill</span>
+	}
+	private ActionType action;
+	private List&lt;String&gt; forms;
+	private String schedule;
+	private String milestone;
+	private List&lt;String&gt; triggerDateFields;
+	private String entityType;
+	private String passLogic;
+	
+<span class="nc" id="L36">	Schedule() {</span>
+
+<span class="nc" id="L38">	}</span>
+	
+	public Schedule(String json) throws JSONException{
+<span class="fc" id="L41">		this(new JSONObject(json));</span>
+<span class="fc" id="L42">	}</span>
+	
+	public Schedule(JSONObject json) throws JSONException{
+<span class="fc" id="L45">		this(ActionType.valueOf(json.getString(&quot;action&quot;).toLowerCase()), </span>
+<span class="fc" id="L46">		json.getString(&quot;form&quot;).split(&quot;,&quot;), json.getString(&quot;schedule&quot;), json.getString(&quot;milestone&quot;), </span>
+<span class="fc" id="L47">		json.getString(&quot;triggerDateField&quot;).split(&quot;,&quot;), json.getString(&quot;entityType&quot;), </span>
+<span class="pc bpc" id="L48" title="1 of 2 branches missed.">		json.has(&quot;passLogic&quot;)?json.getString(&quot;passLogic&quot;):null);</span>
+<span class="fc" id="L49">	}</span>
+	
+	public Schedule(ActionType action, String[] forms, String schedule, String milestone, 
+<span class="fc" id="L52">			String[] triggerDateFields, String entityType, String passLogic) {</span>
+<span class="fc" id="L53">		this.action = action;</span>
+<span class="fc" id="L54">		this.forms = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">		for (String f : forms) {</span>
+<span class="fc" id="L56">			this.forms.add(f.trim());</span>
+		}
+<span class="fc" id="L58">		this.schedule = schedule.trim();</span>
+<span class="fc" id="L59">		this.milestone = milestone.trim();</span>
+<span class="fc" id="L60">		this.triggerDateFields = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L61" title="All 2 branches covered.">		for (String tf : triggerDateFields) {</span>
+<span class="fc" id="L62">			this.triggerDateFields.add(tf.trim());</span>
+		}
+<span class="fc" id="L64">		this.entityType = entityType.trim();</span>
+<span class="fc" id="L65">		this.passLogic = passLogic;</span>
+<span class="fc" id="L66">	}</span>
+	
+	public boolean hasForm(String form) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		for (String f : forms) {</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">			if(f.trim().equalsIgnoreCase(form.trim())){</span>
+<span class="fc" id="L71">				return true;</span>
+			}
+<span class="fc" id="L73">		}</span>
+<span class="fc" id="L74">		return false;</span>
+	}
+	
+	public boolean applicableForEntity(String entity) {
+<span class="fc" id="L78">		return entityType.equalsIgnoreCase(entity.trim());</span>
+	}
+	
+	public boolean haspassLogic() {
+<span class="fc bfc" id="L82" title="All 2 branches covered.">		return !StringUtils.isEmptyOrWhitespaceOnly(passLogic);</span>
+	}
+	
+	public boolean passesValidations(Map&lt;String, String&gt; flvl) {
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		if(!haspassLogic()){</span>
+<span class="fc" id="L87">			return true;</span>
+		}
+		
+<span class="fc" id="L90">		String xpr = passLogic;</span>
+<span class="fc bfc" id="L91" title="All 2 branches covered.">		for (Entry&lt;String, String&gt; kv : flvl.entrySet()) {</span>
+<span class="fc bfc" id="L92" title="All 2 branches covered.">			if(kv.getValue() == null){</span>
+<span class="fc" id="L93">				flvl.put(kv.getKey(), &quot;&quot;);</span>
+			}
+<span class="fc" id="L95">			xpr = xpr.replace(&quot;${fs.&quot;+kv.getKey()+&quot;}&quot;, &quot;input.&quot;+kv.getKey());</span>
+<span class="fc" id="L96">		}</span>
+		
+<span class="fc" id="L98">		Rule r1 = new Rule(&quot;R1&quot;, xpr, &quot;true&quot;, 4, &quot;dynamic.rules&quot;);</span>
+<span class="fc" id="L99">		Rule r2 = new Rule(&quot;R2&quot;, &quot;!#R1&quot;, &quot;false&quot;, 4, &quot;dynamic.rules&quot;);</span>
+<span class="fc" id="L100">		List&lt;Rule&gt; rules = Arrays.asList(r1, r2);</span>
+		try {
+<span class="fc" id="L102">			Engine engine = new Engine(rules, true);</span>
+<span class="fc" id="L103">			String result = engine.getBestOutcome(flvl);</span>
+<span class="fc" id="L104">			return Boolean.valueOf(result);</span>
+<span class="nc" id="L105">		} catch (DuplicateNameException | CompileException | ParseException e) {</span>
+<span class="nc" id="L106">			e.printStackTrace();</span>
+<span class="nc" id="L107">			throw new RuntimeException(&quot;Error while parsing Schedule Logic: &quot;+e.getMessage(), e);</span>
+<span class="nc" id="L108">		} catch (NoMatchingRuleFoundException e) {//although it would never be thrown</span>
+<span class="nc" id="L109">			e.printStackTrace();</span>
+<span class="nc" id="L110">			throw new RuntimeException(&quot;Error while parsing Schedule Logic: &quot;+e.getMessage(), e);</span>
+		}
+	}
+	
+	
+	
+	public ActionType action() {
+<span class="fc" id="L117">		return action;</span>
+	}
+	public List&lt;String&gt; forms() {
+<span class="fc" id="L120">		return forms;</span>
+	}
+	public String schedule() {
+<span class="fc" id="L123">		return schedule;</span>
+	}
+	public String milestone() {
+<span class="fc" id="L126">		return milestone;</span>
+	}
+	public List&lt;String&gt; triggerDateFields() {
+<span class="fc" id="L129">		return triggerDateFields;</span>
+	}
+	public String entityType() {
+<span class="fc" id="L132">		return entityType;</span>
+	}
+	public String passLogic() {
+<span class="nc" id="L135">		return passLogic;</span>
+	}
+
+	public ActionType getAction() {
+<span class="fc" id="L139">		return action;</span>
+	}
+
+	public List&lt;String&gt; getForms() {
+<span class="fc" id="L143">		return forms;</span>
+	}
+
+	public String getSchedule() {
+<span class="fc" id="L147">		return schedule;</span>
+	}
+
+	public String getMilestone() {
+<span class="fc" id="L151">		return milestone;</span>
+	}
+
+	public List&lt;String&gt; getTriggerDateFields() {
+<span class="fc" id="L155">		return triggerDateFields;</span>
+	}
+
+	public String getEntityType() {
+<span class="fc" id="L159">		return entityType;</span>
+	}
+
+	public String getPassLogic() {
+<span class="fc" id="L163">		return passLogic;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

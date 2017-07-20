@@ -1,0 +1,60 @@
+GROUP,PACKAGE,CLASS,INSTRUCTION_MISSED,INSTRUCTION_COVERED,BRANCH_MISSED,BRANCH_COVERED,LINE_MISSED,LINE_COVERED,COMPLEXITY_MISSED,COMPLEXITY_COVERED,METHOD_MISSED,METHOD_COVERED
+opensrp-web,org.opensrp.web.listener,ApplicationStartupListener,28,68,1,1,6,11,1,2,0,2
+opensrp-web,org.opensrp.web.listener,DHIS2ConnectorListener,57,8,2,0,15,2,2,2,1,2
+opensrp-web,org.opensrp.web.rest,ReportResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,ResponseUtil,41,0,2,0,11,0,4,0,3,0
+opensrp-web,org.opensrp.web.rest,RestResource,24,7,0,0,6,2,4,2,4,2
+opensrp-web,org.opensrp.web.rest,EventResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,EventResource,478,27,52,0,86,7,36,2,10,2
+opensrp-web,org.opensrp.web.rest,EventResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,EventResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,EventResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,FormSubmissionResource,60,6,2,0,14,3,7,1,6,1
+opensrp-web,org.opensrp.web.rest,RestUtils,156,62,22,4,30,9,19,5,8,3
+opensrp-web,org.opensrp.web.rest,ExportResource,10,6,0,0,2,3,1,1,1,1
+opensrp-web,org.opensrp.web.rest,StockResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,StockResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,StockResource.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.rest,ReportResource,81,24,4,0,16,6,3,2,1,2
+opensrp-web,org.opensrp.web.rest,ClientResource,70,116,8,8,10,20,13,2,5,2
+opensrp-web,org.opensrp.web.rest,SearchResource,832,17,172,0,178,6,98,2,12,2
+opensrp-web,org.opensrp.web.rest,ProviderResource,134,43,10,4,30,12,13,2,6,2
+opensrp-web,org.opensrp.web.rest,StockResource,370,24,14,0,75,6,16,2,9,2
+opensrp-web,org.opensrp.web.rest,SearchResource.ChildMother,18,0,0,0,6,0,3,0,3,0
+opensrp-web,org.opensrp.web.controller,UserController.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.controller,LocationController,25,6,0,0,2,3,2,1,2,1
+opensrp-web,org.opensrp.web.controller,DHIS2Controller,48,6,0,0,10,3,1,1,1,1
+opensrp-web,org.opensrp.web.controller,ErrorTraceController,275,6,4,0,65,3,12,1,10,1
+opensrp-web,org.opensrp.web.controller,FormDownLoadController,177,209,11,17,31,41,8,12,2,4
+opensrp-web,org.opensrp.web.controller,MultimediaController,261,8,16,0,53,2,13,2,5,2
+opensrp-web,org.opensrp.web.controller,ANMLocationController,93,17,0,0,11,6,1,2,1,2
+opensrp-web,org.opensrp.web.controller,ActionConvertor,19,19,0,0,2,1,2,1,2,1
+opensrp-web,org.opensrp.web.controller,AuditMessageController.new Converter() {...},0,9,0,0,0,2,0,2,0,2
+opensrp-web,org.opensrp.web.controller,UniqueIdController,190,8,8,0,38,2,6,2,2,2
+opensrp-web,org.opensrp.web.controller,ReportController,20,6,0,0,2,3,2,1,2,1
+opensrp-web,org.opensrp.web.controller,FormSubmissionController,299,35,16,0,58,12,13,2,5,2
+opensrp-web,org.opensrp.web.controller,FormSubmissionController.new Converter() {...},9,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.controller,FormSubmissionController.new Converter() {...},9,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.controller,AuditMessageController.AuditMessageItem,0,27,0,0,0,7,0,2,0,2
+opensrp-web,org.opensrp.web.controller,UserController,258,12,12,0,47,5,14,1,8,1
+opensrp-web,org.opensrp.web.controller,XlsFormDownloaderController,114,6,2,0,24,3,4,1,3,1
+opensrp-web,org.opensrp.web.controller,XlsDataImportController,641,1847,250,88,80,361,200,45,0,23
+opensrp-web,org.opensrp.web.controller,ActionController.new Converter() {...},0,9,0,0,0,2,0,2,0,2
+opensrp-web,org.opensrp.web.controller,ActionController.new Converter() {...},9,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.controller,ANMLocationController.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.controller,ActionController,199,32,16,0,33,8,11,3,3,3
+opensrp-web,org.opensrp.web.controller,FormSubmissionController.new Converter() {...},20,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.controller,FormSubmissionController.new Converter() {...},9,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.controller,FormSubmissionController.new TypeToken() {...},6,0,0,0,1,0,1,0,1,0
+opensrp-web,org.opensrp.web.controller,AuditMessageController,0,19,0,0,0,5,0,2,0,2
+opensrp-web,org.opensrp.web.security,DrishtiAuthenticationProvider,78,58,12,2,13,13,10,3,3,3
+opensrp-web,org.opensrp.web.security,DrishtiAuthenticationProvider.new Converter() {...},11,0,0,0,2,0,2,0,2,0
+opensrp-web,org.opensrp.web.utils,PdfUtil,297,0,34,0,62,0,20,0,3,0
+opensrp-web,org.opensrp.web.rest.rapid,SimpleRestResource,27,0,0,0,7,0,5,0,5,0
+opensrp-web,org.opensrp.web.rest.rapid,RapidClientResource,913,26,58,0,195,9,39,2,10,2
+opensrp-web,org.opensrp.web.rest.rapid,RapidClientResource.new HashMap() {...},0,87,0,0,0,8,0,1,0,1
+opensrp-web,org.opensrp.web.controller.fake,FakeTimeController,9,3,0,0,2,1,1,1,1,1
+opensrp-web,org.opensrp.web.controller.fake,FakeActionController,14,6,0,0,2,3,1,1,1,1
+opensrp-web,org.opensrp.web,HttpHeaderFactory,13,0,0,0,4,0,2,0,2,0
+opensrp-web,org.opensrp.web,AuthenticationFilter,12,0,0,0,3,0,2,0,2,0
+opensrp-web,org.opensrp.web,AuthenticationFilter.new HttpServletResponseWrapper() {...},44,0,8,0,14,0,10,0,6,0

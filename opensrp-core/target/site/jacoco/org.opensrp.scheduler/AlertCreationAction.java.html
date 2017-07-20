@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AlertCreationAction.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">AlertCreationAction.java</span></div><h1>AlertCreationAction.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import static java.text.MessageFormat.format;
+
+import java.util.Map;
+
+import org.motechproject.scheduletracking.api.domain.Enrollment;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.domain.SubFormData;
+import org.opensrp.form.service.FormSubmissionService;
+import org.opensrp.scheduler.HealthSchedulerService.MetadataField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+@Component
+@Qualifier(&quot;AlertCreationAction&quot;)
+public class AlertCreationAction implements HookedEvent {
+<span class="fc" id="L21">    private static Logger logger = LoggerFactory.getLogger(AlertCreationAction.class.toString());</span>
+
+    private HealthSchedulerService scheduler;
+    private FormSubmissionService formSubmissionService;
+
+    @Autowired
+<span class="fc" id="L27">    public AlertCreationAction(HealthSchedulerService scheduler, FormSubmissionService formSubmissionService) {</span>
+<span class="fc" id="L28">        this.scheduler = scheduler;</span>
+<span class="fc" id="L29">        this.formSubmissionService = formSubmissionService;</span>
+<span class="fc" id="L30">    }</span>
+
+    @Override
+    public void invoke(MilestoneEvent event, Map&lt;String, String&gt; extraData) {
+<span class="fc" id="L34">        Enrollment enr = scheduler.getEnrollment(event.externalId(), event.scheduleName());</span>
+<span class="fc" id="L35">        String formSubmissionId = enr.getMetadata().get(MetadataField.enrollmentEvent.name());</span>
+<span class="fc" id="L36">        FormSubmission fs = formSubmissionService.findByInstanceId(formSubmissionId);</span>
+<span class="fc" id="L37">        String entityType = getEntityType(event.externalId(), fs);</span>
+        
+<span class="fc" id="L39">        logger.debug(format(&quot;Generating alert for entity {0} of type {1} , formSubmission {2} &quot;</span>
+        		+ &quot;for schedule {3} in window {4} &quot;, 
+<span class="fc" id="L41">        		event.externalId(), entityType, fs.instanceId(), enr.getScheduleName(), event.windowName()));</span>
+		
+<span class="fc" id="L43">        scheduler.alertFor(event.windowName(), entityType, event.externalId(), fs.anmId(), event.scheduleName(), event.milestoneName(), event.startOfDueWindow(), event.startOfLateWindow(), event.startOfMaxWindow());</span>
+<span class="fc" id="L44">    }</span>
+    
+    String getEntityType(String externalId, FormSubmission formSubmission) {
+<span class="pc bpc" id="L47" title="1 of 2 branches missed.">		if(formSubmission.entityId().equalsIgnoreCase(externalId)){</span>
+<span class="fc" id="L48">			return formSubmission.bindType();</span>
+		}
+		
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		for (SubFormData sf : formSubmission.subForms()) {</span>
+<span class="nc bnc" id="L52" title="All 2 branches missed.">			for (Map&lt;String, String&gt; fld : sf.instances()) {</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">				if(fld.get(&quot;id&quot;).equalsIgnoreCase(externalId)){</span>
+<span class="nc" id="L54">					return sf.bindType();</span>
+				}
+<span class="nc" id="L56">			}</span>
+<span class="nc" id="L57">		}</span>
+<span class="nc" id="L58">		return &quot;unknown&quot;;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

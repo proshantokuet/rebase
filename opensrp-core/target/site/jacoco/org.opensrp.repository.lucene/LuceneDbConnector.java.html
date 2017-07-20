@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LuceneDbConnector.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">LuceneDbConnector.java</span></div><h1>LuceneDbConnector.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+
+import org.codehaus.jackson.JsonProcessingException;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.impl.StdCouchDbInstance;
+import org.json.JSONObject;
+import org.opensrp.common.AllConstants;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+
+import com.github.ldriscoll.ektorplucene.LuceneAwareCouchDbConnector;
+import com.github.ldriscoll.ektorplucene.LuceneResult;
+import com.github.ldriscoll.ektorplucene.LuceneResult.Row;
+
+@Component
+class LuceneDbConnector extends LuceneAwareCouchDbConnector{
+
+	@Autowired
+	public LuceneDbConnector(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, StdCouchDbInstance dbinst) throws IOException {
+<span class="fc" id="L27">		super(db.getDatabaseName(), dbinst);</span>
+<span class="fc" id="L28">	}</span>
+	
+	public &lt;T&gt; List&lt;T&gt; asList(LuceneResult result, Class&lt;T&gt; type) throws JsonProcessingException, IOException {
+<span class="fc" id="L31">		List&lt;T&gt; ol = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L32" title="All 2 branches covered.">		for (Row r : result.getRows()) {</span>
+<span class="fc" id="L33">			HashMap&lt;String, Object&gt; doc = r.getDoc();</span>
+			
+<span class="fc" id="L35">			T ro = new ObjectMapper().readValue(new JSONObject(doc).toString(), type);</span>
+<span class="fc" id="L36">			ol.add(ro);</span>
+		}
+<span class="fc" id="L38">		return ol;</span>
+	}
+	
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

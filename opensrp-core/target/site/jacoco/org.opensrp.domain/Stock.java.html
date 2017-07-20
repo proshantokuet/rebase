@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Stock.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Stock.java</span></div><h1>Stock.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@TypeDiscriminator(&quot;doc.type == 'Stock'&quot;)
+public class Stock extends BaseDataObject {
+	
+	@JsonProperty
+	private Long identifier;
+	
+	@JsonProperty
+	private String vaccine_type_id;
+	
+	@JsonProperty
+	private String transaction_type;
+	
+	@JsonProperty
+	private String providerid;
+	
+	@JsonProperty
+	private int value;
+	
+	@JsonProperty
+	private Long date_created;
+	
+	@JsonProperty
+	private String to_from;
+	
+	@JsonProperty
+	private Long date_updated;
+	
+	@JsonProperty
+	private long version;
+	
+<span class="nc" id="L38">	public Stock() {</span>
+<span class="nc" id="L39">		this.version = System.currentTimeMillis();</span>
+<span class="nc" id="L40">	}</span>
+	
+	public Stock(Long identifier, String vaccine_type_id, String transaction_type, String providerid, int value,
+<span class="fc" id="L43">	    Long date_created, String to_from, Long date_updated, long version) {</span>
+<span class="fc" id="L44">		this.identifier = identifier;</span>
+<span class="fc" id="L45">		this.vaccine_type_id = vaccine_type_id;</span>
+<span class="fc" id="L46">		this.transaction_type = transaction_type;</span>
+<span class="fc" id="L47">		this.providerid = providerid;</span>
+<span class="fc" id="L48">		this.value = value;</span>
+<span class="fc" id="L49">		this.date_created = date_created;</span>
+<span class="fc" id="L50">		this.to_from = to_from;</span>
+<span class="fc" id="L51">		this.date_updated = date_updated;</span>
+<span class="fc" id="L52">		this.version = version;</span>
+<span class="fc" id="L53">	}</span>
+	
+	public Long getIdentifier() {
+<span class="nc" id="L56">		return identifier;</span>
+	}
+	
+	public void setIdentifier(Long identifier) {
+<span class="nc" id="L60">		this.identifier = identifier;</span>
+<span class="nc" id="L61">	}</span>
+	
+	public String getVaccine_type_id() {
+<span class="nc" id="L64">		return vaccine_type_id;</span>
+	}
+	
+	public void setVaccine_type_id(String vaccine_type_id) {
+<span class="nc" id="L68">		this.vaccine_type_id = vaccine_type_id;</span>
+<span class="nc" id="L69">	}</span>
+	
+	public String getTransaction_type() {
+<span class="nc" id="L72">		return transaction_type;</span>
+	}
+	
+	public void setTransaction_type(String transaction_type) {
+<span class="nc" id="L76">		this.transaction_type = transaction_type;</span>
+<span class="nc" id="L77">	}</span>
+	
+	public String getProviderid() {
+<span class="fc" id="L80">		return providerid;</span>
+	}
+	
+	public void setProviderid(String providerid) {
+<span class="nc" id="L84">		this.providerid = providerid;</span>
+<span class="nc" id="L85">	}</span>
+	
+	public int getValue() {
+<span class="nc" id="L88">		return value;</span>
+	}
+	
+	public void setValue(int value) {
+<span class="nc" id="L92">		this.value = value;</span>
+<span class="nc" id="L93">	}</span>
+	
+	public Long getDate_created() {
+<span class="nc" id="L96">		return date_created;</span>
+	}
+	
+	public void setDate_created(Long date_created) {
+<span class="nc" id="L100">		this.date_created = date_created;</span>
+<span class="nc" id="L101">	}</span>
+	
+	public String getTo_from() {
+<span class="nc" id="L104">		return to_from;</span>
+	}
+	
+	public void setTo_from(String to_from) {
+<span class="nc" id="L108">		this.to_from = to_from;</span>
+<span class="nc" id="L109">	}</span>
+	
+	public Long getDate_updated() {
+<span class="nc" id="L112">		return date_updated;</span>
+	}
+	
+	public void setDate_updated(Long date_updated) {
+<span class="nc" id="L116">		this.date_updated = date_updated;</span>
+<span class="nc" id="L117">	}</span>
+	
+	public long getVersion() {
+<span class="nc" id="L120">		return version;</span>
+	}
+	
+	public void setVersion(long version) {
+<span class="nc" id="L124">		this.version = version;</span>
+<span class="nc" id="L125">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

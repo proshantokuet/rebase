@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>MilestoneEvent.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">MilestoneEvent.java</span></div><h1>MilestoneEvent.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import static org.motechproject.scheduletracking.api.events.constants.EventDataKeys.MILESTONE_NAME;
+import static org.motechproject.scheduletracking.api.events.constants.EventDataKeys.SCHEDULE_NAME;
+import static org.motechproject.scheduletracking.api.events.constants.EventDataKeys.WINDOW_NAME;
+
+import org.joda.time.DateTime;
+import org.motechproject.scheduler.domain.MotechEvent;
+import org.motechproject.scheduletracking.api.domain.MilestoneAlert;
+import org.motechproject.scheduletracking.api.events.constants.EventDataKeys;
+
+public class MilestoneEvent {
+    private final MotechEvent event;
+
+<span class="fc" id="L15">    public MilestoneEvent(MotechEvent event) {</span>
+<span class="fc" id="L16">        this.event = event;</span>
+<span class="fc" id="L17">    }</span>
+
+    public String scheduleName() {
+<span class="fc" id="L20">        return (String) event.getParameters().get(SCHEDULE_NAME);</span>
+    }
+
+    public String windowName() {
+<span class="fc" id="L24">        return (String) event.getParameters().get(WINDOW_NAME);</span>
+    }
+
+    public String milestoneName() {
+<span class="fc" id="L28">        return alert().getMilestoneName();</span>
+    }
+
+    public String externalId() {
+<span class="fc" id="L32">        return event.getParameters().get(EventDataKeys.EXTERNAL_ID).toString();</span>
+    }
+
+    public DateTime startOfDueWindow() {
+<span class="fc" id="L36">        return alert().getDueDateTime();</span>
+    }
+
+    public DateTime startOfLateWindow() {
+<span class="fc" id="L40">        return alert().getLateDateTime();</span>
+    }
+
+    public DateTime startOfMaxWindow() {
+<span class="fc" id="L44">        return alert().getDefaultmentDateTime();</span>
+    }
+
+    @Override
+    public boolean equals(Object o) {
+<span class="pc bpc" id="L49" title="1 of 2 branches missed.">        if (this == o) return true;</span>
+<span class="pc bpc" id="L50" title="2 of 4 branches missed.">        if (o == null || getClass() != o.getClass()) return false;</span>
+
+<span class="fc" id="L52">        MilestoneEvent that = (MilestoneEvent) o;</span>
+
+<span class="pc bpc" id="L54" title="3 of 6 branches missed.">        return !(event != null ? !event.equals(that.event) : that.event != null);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        return event != null ? event.hashCode() : 0;</span>
+    }
+
+    private MilestoneAlert alert() {
+<span class="fc" id="L63">        return (MilestoneAlert) event.getParameters().get(MILESTONE_NAME);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

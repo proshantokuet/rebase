@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LuceneReportRepository.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">LuceneReportRepository.java</span></div><h1>LuceneReportRepository.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import static org.opensrp.common.AllConstants.BaseEntity.BASE_ENTITY_ID;
+import static org.opensrp.common.AllConstants.BaseEntity.LAST_UPDATE;
+import static org.opensrp.common.AllConstants.Report.REPORT_DATE;
+import static org.opensrp.common.AllConstants.Report.REPORT_TYPE;
+import static org.opensrp.common.AllConstants.Report.LOCATION_ID;
+import static org.opensrp.common.AllConstants.Report.PROVIDER_ID;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.joda.time.DateTime;
+import org.opensrp.common.AllConstants.BaseEntity;
+import org.opensrp.domain.Report;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.github.ldriscoll.ektorplucene.CouchDbRepositorySupportWithLucene;
+import com.github.ldriscoll.ektorplucene.LuceneQuery;
+import com.github.ldriscoll.ektorplucene.LuceneResult;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.FullText;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.Index;
+import com.mysql.jdbc.StringUtils;
+
+@FullText({
+        @Index(name = &quot;by_all_criteria&quot;, analyzer = &quot;perfield:{baseEntityId:\&quot;keyword\&quot;,locationId:\&quot;keyword\&quot;}&quot;, index = &quot;function(doc) {   if(doc.type !== 'Report') return null;   var arr1 = ['baseEntityId','reportType','providerId','locationId'];   var ret = new Document(); var serverVersion = doc.serverVersion;ret.add(serverVersion, {'field': 'serverVersion'});  for (var i in arr1){     ret.add(doc[arr1[i]], {'field':arr1[i]});   }   if(doc.reportDate){     var bd=doc.reportDate.substring(0,19);      ret.add(bd, {'field':'reportDate','type':'date'});   }          var crd = doc.dateCreated.substring(0, 19);     ret.add(crd, {'field' : 'lastEdited','type' : 'date'});          if(doc.dateEdited){     var led = doc.dateEdited.substring(0, 19);     ret.add(led, {'field' : 'lastEdited','type' : 'date'});         }        return ret;   }&quot;),
+        @Index(name = &quot;by_all_criteria_v2&quot;, analyzer = &quot;perfield:{baseEntityId:\&quot;keyword\&quot;,locationId:\&quot;keyword\&quot;}&quot;, index = &quot;function(doc) {   if(doc.type !== 'Report') return null;   var arr1 = ['baseEntityId','reportType','providerId','locationId'];   var ret = new Document(); var serverVersion = doc.serverVersion;ret.add(serverVersion, {'field': 'serverVersion'});  for (var i in arr1){     ret.add(doc[arr1[i]], {'field':arr1[i]});   }   if(doc.reportDate){     var bd=doc.reportDate.substring(0,19);      ret.add(bd, {'field':'reportDate','type':'date'});   }          var crd = doc.dateCreated.substring(0, 19);     ret.add(crd, {'field' : 'lastEdited','type' : 'date'});          if(doc.dateEdited){     var led = doc.dateEdited.substring(0, 19);     ret.add(led, {'field' : 'lastEdited','type' : 'date'});         }        return ret;   }&quot;) })
+
+@Component
+public class LuceneReportRepository extends CouchDbRepositorySupportWithLucene&lt;Report&gt; {
+	
+	private LuceneDbConnector ldb;
+	
+	@Autowired
+	protected LuceneReportRepository(LuceneDbConnector db) {
+<span class="fc" id="L39">		super(Report.class, db);</span>
+<span class="fc" id="L40">		this.ldb = db;</span>
+<span class="fc" id="L41">		initStandardDesignDocument();</span>
+<span class="fc" id="L42">	}</span>
+	
+	public List&lt;Report&gt; getByCriteria(String baseEntityId, DateTime reportDatefrom, DateTime reportDateto, String reportType,
+	                                  String providerId, String locationId, DateTime lastEditFrom, DateTime lastEditTo) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L47">		LuceneQuery query = new LuceneQuery(&quot;Report&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L49">		Query qf = new Query(FilterType.AND);</span>
+<span class="nc bnc" id="L50" title="All 4 branches missed.">		if (reportDatefrom != null &amp;&amp; reportDateto != null) {</span>
+<span class="nc" id="L51">			qf.between(REPORT_DATE, reportDatefrom, reportDateto);</span>
+		}
+<span class="nc bnc" id="L53" title="All 4 branches missed.">		if (lastEditFrom != null &amp;&amp; lastEditTo != null) {</span>
+<span class="nc" id="L54">			qf.between(LAST_UPDATE, lastEditFrom, lastEditTo);</span>
+		}
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(baseEntityId)) {</span>
+<span class="nc" id="L57">			qf.eq(BASE_ENTITY_ID, baseEntityId);</span>
+		}
+<span class="nc bnc" id="L59" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(reportType)) {</span>
+<span class="nc" id="L60">			qf.eq(REPORT_TYPE, reportType);</span>
+		}
+<span class="nc bnc" id="L62" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(providerId)) {</span>
+<span class="nc" id="L63">			qf.eq(PROVIDER_ID, providerId);</span>
+		}
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(locationId)) {</span>
+<span class="nc" id="L66">			qf.eq(LOCATION_ID, locationId);</span>
+		}
+		
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L70">			throw new RuntimeException(&quot;Atleast one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L72">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L74">		query.setStaleOk(false);</span>
+<span class="nc" id="L75">		query.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L78">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L79">			return ldb.asList(result, Report.class);</span>
+		}
+<span class="nc" id="L81">		catch (IOException e) {</span>
+<span class="nc" id="L82">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	/**
+	 * @param providerId- health worker id
+	 * @param locationId
+	 * @param baseEntityId
+	 * @param serverVersion
+	 * @param sortBy Prefix with / for ascending order and \ for descending order (ascending is the
+	 *            default if not specified).
+	 * @param sortOrder either descending or ascending
+	 * @param limit
+	 * @param team this is a comma separated string of team members id
+	 * @return
+	 */
+	public List&lt;Report&gt; getByCriteria(String team, String providerId, String locationId, String baseEntityId,
+	                                  Long serverVersion, String sortBy, String sortOrder, int limit) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L101">		LuceneQuery query = new LuceneQuery(&quot;Report&quot;, &quot;by_all_criteria_v2&quot;);</span>
+		
+<span class="nc" id="L103">		Query qf = new Query(FilterType.AND);</span>
+		
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (serverVersion != null) {</span>
+<span class="nc" id="L106">			qf.between(BaseEntity.SERVER_VERSIOIN, serverVersion, Long.MAX_VALUE);</span>
+		}
+		
+<span class="nc bnc" id="L109" title="All 4 branches missed.">		if (team != null &amp;&amp; !team.isEmpty()) {</span>
+			//convert team string to list
+<span class="nc" id="L111">			String[] idsArray = org.apache.commons.lang.StringUtils.split(team, &quot;,&quot;);</span>
+<span class="nc" id="L112">			List&lt;String&gt; ids = new ArrayList&lt;String&gt;(Arrays.asList(idsArray));</span>
+			//include providerId records also
+<span class="nc bnc" id="L114" title="All 4 branches missed.">			if (providerId != null &amp;&amp; !ids.contains(providerId)) {</span>
+<span class="nc" id="L115">				ids.add(providerId);</span>
+			}
+<span class="nc" id="L117">			qf.inList(PROVIDER_ID, ids);</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">		} else if ((providerId != null &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(providerId))) {</span>
+<span class="nc" id="L119">			qf.eq(PROVIDER_ID, providerId);</span>
+		}
+		
+<span class="nc bnc" id="L122" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(locationId)) {</span>
+<span class="nc" id="L123">			qf.eq(LOCATION_ID, locationId);</span>
+		}
+		
+<span class="nc bnc" id="L126" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(baseEntityId)) {</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">			if (baseEntityId.contains(&quot;,&quot;)) {</span>
+<span class="nc" id="L128">				Query q = new Query(FilterType.OR);</span>
+<span class="nc" id="L129">				String[] idsArray = org.apache.commons.lang.StringUtils.split(baseEntityId, &quot;,&quot;);</span>
+<span class="nc" id="L130">				List&lt;String&gt; ids = new ArrayList&lt;String&gt;(Arrays.asList(idsArray));</span>
+<span class="nc" id="L131">				q.inList(BASE_ENTITY_ID, ids);</span>
+				
+<span class="nc" id="L133">				qf.addToQuery(q);</span>
+<span class="nc" id="L134">			} else {</span>
+<span class="nc" id="L135">				qf.eq(BASE_ENTITY_ID, baseEntityId);</span>
+			}
+		}
+		
+<span class="nc bnc" id="L139" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L140">			throw new RuntimeException(&quot;Atleast one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L142">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L144">		query.setStaleOk(false);</span>
+<span class="nc" id="L145">		query.setIncludeDocs(true);</span>
+<span class="nc" id="L146">		query.setLimit(limit);</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">		query.setSort((sortOrder.toLowerCase().contains(&quot;desc&quot;) ? &quot;\\&quot; : &quot;/&quot;) + sortBy);</span>
+		
+		try {
+<span class="nc" id="L150">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L151">			return ldb.asList(result, Report.class);</span>
+		}
+<span class="nc" id="L153">		catch (IOException e) {</span>
+<span class="nc" id="L154">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	public List&lt;Report&gt; getByCriteria(String query) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L160">		LuceneQuery q = new LuceneQuery(&quot;Report&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L162">		q.setQuery(query);</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L164">		q.setStaleOk(false);</span>
+<span class="nc" id="L165">		q.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L168">			LuceneResult result = db.queryLucene(q);</span>
+<span class="nc" id="L169">			return ldb.asList(result, Report.class);</span>
+		}
+<span class="nc" id="L171">		catch (IOException e) {</span>
+<span class="nc" id="L172">			throw new RuntimeException(e);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Location.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Location.java</span></div><h1>Location.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+import org.opensrp.domain.Location;
+
+@TypeDiscriminator(&quot;doc.type == 'Location'&quot;)
+public class Location extends BaseDataObject{
+
+	@JsonProperty
+	private String locationId;
+	@JsonProperty
+	private String name;
+	@JsonProperty
+	private Address	address;
+	@JsonProperty
+	private Map&lt;String, String&gt; identifiers;
+	@JsonProperty
+	private Location parentLocation;
+	@JsonProperty
+	private Set&lt;String&gt; tags;
+	@JsonProperty
+	private Map&lt;String, Object&gt; attributes;
+	
+<span class="fc" id="L33">	public Location() {	}</span>
+
+<span class="nc" id="L35">	public Location(String locationId, String name, Address address, Location parentLocation) {</span>
+<span class="nc" id="L36">		this.locationId = locationId;</span>
+<span class="nc" id="L37">		this.name = name;</span>
+<span class="nc" id="L38">		this.address = address;</span>
+<span class="nc" id="L39">		this.parentLocation = parentLocation;</span>
+<span class="nc" id="L40">	}</span>
+	
+	public Location(String locationId, String name, Address address,
+			Map&lt;String, String&gt; identifiers, Location parentLocation,
+<span class="nc" id="L44">			Set&lt;String&gt; tags, Map&lt;String, Object&gt; attributes) {</span>
+<span class="nc" id="L45">		this.locationId = locationId;</span>
+<span class="nc" id="L46">		this.name = name;</span>
+<span class="nc" id="L47">		this.address = address;</span>
+<span class="nc" id="L48">		this.identifiers = identifiers;</span>
+<span class="nc" id="L49">		this.parentLocation = parentLocation;</span>
+<span class="nc" id="L50">		this.tags = tags;</span>
+<span class="nc" id="L51">		this.attributes = attributes;</span>
+<span class="nc" id="L52">	}</span>
+
+	public String getLocationId() {
+<span class="fc" id="L55">		return locationId;</span>
+	}
+
+	public void setLocationId(String locationId) {
+<span class="nc" id="L59">		this.locationId = locationId;</span>
+<span class="nc" id="L60">	}</span>
+
+	public String getName() {
+<span class="fc" id="L63">		return name;</span>
+	}
+
+	public void setName(String name) {
+<span class="nc" id="L67">		this.name = name;</span>
+<span class="nc" id="L68">	}</span>
+
+	public Address getAddress() {
+<span class="fc" id="L71">		return address;</span>
+	}
+
+	public void setAddress(Address address) {
+<span class="nc" id="L75">		this.address = address;</span>
+<span class="nc" id="L76">	}</span>
+
+	public Map&lt;String, String&gt; getIdentifiers() {
+<span class="fc" id="L79">		return identifiers;</span>
+	}
+	
+	public String getIdentifier(String identifierType) {
+<span class="nc" id="L83">		return identifiers.get(identifierType);</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing identifiers
+	 * @param identifiers
+	 * @return
+	 */
+	public void setIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="nc" id="L92">		this.identifiers = identifiers;</span>
+<span class="nc" id="L93">	}</span>
+
+	public void addIdentifier(String identifierType, String identifier) {
+<span class="nc bnc" id="L96" title="All 2 branches missed.">		if(identifiers == null){</span>
+<span class="nc" id="L97">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L100">		identifiers.put(identifierType, identifier);</span>
+<span class="nc" id="L101">	}</span>
+
+	public void removeIdentifier(String identifierType) {
+<span class="nc" id="L104">		identifiers.remove(identifierType);</span>
+<span class="nc" id="L105">	}</span>
+	
+	public Location getParentLocation() {
+<span class="fc" id="L108">		return parentLocation;</span>
+	}
+
+	public void setParentLocation(Location parentLocation) {
+<span class="nc" id="L112">		this.parentLocation = parentLocation;</span>
+<span class="nc" id="L113">	}</span>
+
+	public Set&lt;String&gt; getTags() {
+<span class="fc" id="L116">		return tags;</span>
+	}
+	
+	public boolean hasTag(String tag) {
+<span class="nc" id="L120">		return tags.contains(tag);</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing tags
+	 * @param tags
+	 * @return
+	 */
+	public void setTags(Set&lt;String&gt; tags) {
+<span class="nc" id="L129">		this.tags = tags;</span>
+<span class="nc" id="L130">	}</span>
+	
+	public void addTag(String tag) {
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		if(tags ==  null){</span>
+<span class="nc" id="L134">			tags = new HashSet&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L137">		tags.add(tag);</span>
+<span class="nc" id="L138">	}</span>
+
+	public boolean removeTag(String tag) {
+<span class="nc" id="L141">		return tags.remove(tag);</span>
+	}
+	
+	public Map&lt;String, Object&gt; getAttributes() {
+<span class="fc" id="L145">		return attributes;</span>
+	}
+
+	public Object getAttribute(String name) {
+<span class="nc" id="L149">		return attributes.get(name);</span>
+	}
+	
+	/**
+	 * WARNING: Overrides all existing attributes
+	 * @param attributes
+	 * @return
+	 */
+	public void setAttributes(Map&lt;String, Object&gt; attributes) {
+<span class="nc" id="L158">		this.attributes = attributes;</span>
+<span class="nc" id="L159">	}</span>
+	
+	public void addAttribute(String name, Object value) {
+<span class="nc bnc" id="L162" title="All 2 branches missed.">		if(attributes == null){</span>
+<span class="nc" id="L163">			attributes = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L166">		attributes.put(name, value);</span>
+<span class="nc" id="L167">	}</span>
+
+	public void removeAttribute(String name) {
+<span class="nc" id="L170">		attributes.remove(name);</span>
+<span class="nc" id="L171">	}</span>
+	
+	public Location withLocationId(String locationId) {
+<span class="fc" id="L174">		this.locationId = locationId;</span>
+<span class="fc" id="L175">		return this;</span>
+	}
+
+	public Location withName(String name) {
+<span class="fc" id="L179">		this.name = name;</span>
+<span class="fc" id="L180">		return this;</span>
+	}
+
+	public Location withAddress(Address address) {
+<span class="fc" id="L184">		this.address = address;</span>
+<span class="fc" id="L185">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing identifiers
+	 * @param identifiers
+	 * @return 
+	 * @return
+	 */
+	public Location withIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="fc" id="L195">		this.identifiers = identifiers;</span>
+<span class="fc" id="L196">		return this;</span>
+	}
+
+	public Location withIdentifier(String identifierType, String identifier) {
+<span class="nc bnc" id="L200" title="All 2 branches missed.">		if(identifiers == null){</span>
+<span class="nc" id="L201">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L204">		identifiers.put(identifierType, identifier);</span>
+<span class="nc" id="L205">		return this;</span>
+	}
+	
+	public Location withParentLocation(Location parentLocation) {
+<span class="nc" id="L209">		this.parentLocation = parentLocation;</span>
+<span class="nc" id="L210">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing tags
+	 * @param tags
+	 * @return 
+	 * @return
+	 */
+	public Location withTags(Set&lt;String&gt; tags) {
+<span class="fc" id="L220">		this.tags = tags;</span>
+<span class="fc" id="L221">		return this;</span>
+	}
+	
+	public Location withTag(String tag) {
+<span class="nc bnc" id="L225" title="All 2 branches missed.">		if(tags ==  null){</span>
+<span class="nc" id="L226">			tags = new HashSet&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L229">		tags.add(tag);</span>
+<span class="nc" id="L230">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing attributes
+	 * @param attributes
+	 * @return 
+	 * @return
+	 */
+	public Location withAttributes(Map&lt;String, Object&gt; attributes) {
+<span class="fc" id="L240">		this.attributes = attributes;</span>
+<span class="fc" id="L241">		return this;</span>
+	}
+	
+	public Location withAttribute(String name, Object value) {
+<span class="nc bnc" id="L245" title="All 2 branches missed.">		if(attributes == null){</span>
+<span class="nc" id="L246">			attributes = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L249">		attributes.put(name, value);</span>
+<span class="nc" id="L250">		return this;</span>
+	}
+
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L255">		return EqualsBuilder.reflectionEquals(this, o, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L260">		return HashCodeBuilder.reflectionHashCode(this, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L265">		return ToStringBuilder.reflectionToString(this);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

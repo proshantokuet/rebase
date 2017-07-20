@@ -1,0 +1,407 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SearchResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">SearchResource.java</span></div><h1>SearchResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import static org.opensrp.common.AllConstants.BaseEntity.LAST_UPDATE;
+import static org.opensrp.common.AllConstants.Client.BIRTH_DATE;
+import static org.opensrp.common.AllConstants.Client.FIRST_NAME;
+import static org.opensrp.common.AllConstants.Client.GENDER;
+import static org.opensrp.common.AllConstants.Client.LAST_NAME;
+import static org.opensrp.common.AllConstants.Client.MIDDLE_NAME;
+import static org.opensrp.web.rest.RestUtils.getDateRangeFilter;
+import static org.opensrp.web.rest.RestUtils.getIntegerFilter;
+import static org.opensrp.web.rest.RestUtils.getStringFilter;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.joda.time.DateTime;
+import org.opensrp.common.AllConstants.BaseEntity;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.Event;
+import org.opensrp.service.ClientService;
+import org.opensrp.service.EventService;
+import org.opensrp.service.SearchService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.mysql.jdbc.StringUtils;
+
+@Controller
+@RequestMapping(value = &quot;/rest/search&quot;)
+public class SearchResource extends RestResource&lt;Client&gt; {
+	
+<span class="fc" id="L42">	private static Logger logger = LoggerFactory.getLogger(SearchResource.class.toString());</span>
+	
+	private SearchService searchService;
+	
+	private ClientService clientService;
+	
+	private EventService eventService;
+	
+	@Autowired
+<span class="fc" id="L51">	public SearchResource(SearchService searchService, ClientService clientService, EventService eventService) {</span>
+<span class="fc" id="L52">		this.searchService = searchService;</span>
+<span class="fc" id="L53">		this.clientService = clientService;</span>
+<span class="fc" id="L54">		this.eventService = eventService;</span>
+<span class="fc" id="L55">	}</span>
+	
+	@Override
+	public List&lt;Client&gt; search(HttpServletRequest request) throws ParseException {//TODO search should not call different url but only add params
+<span class="nc" id="L59">		String firstName = getStringFilter(FIRST_NAME, request);</span>
+<span class="nc" id="L60">		String middleName = getStringFilter(MIDDLE_NAME, request);</span>
+<span class="nc" id="L61">		String lastName = getStringFilter(LAST_NAME, request);</span>
+		
+<span class="nc" id="L63">		String nameLike = getStringFilter(&quot;name&quot;, request);</span>
+		
+<span class="nc" id="L65">		String gender = getStringFilter(GENDER, request);</span>
+<span class="nc" id="L66">		DateTime[] birthdate = getDateRangeFilter(BIRTH_DATE, request);//TODO add ranges like fhir do http://hl7.org/fhir/search.html</span>
+<span class="nc" id="L67">		DateTime[] lastEdit = getDateRangeFilter(LAST_UPDATE, request);//TODO client by provider id</span>
+		//TODO lookinto Swagger https://slack-files.com/files-pri-safe/T0EPSEJE9-F0TBD0N77/integratingswagger.pdf?c=1458211183-179d2bfd2e974585c5038fba15a86bf83097810a
+		
+<span class="nc" id="L70">		Map&lt;String, String&gt; attributeMap = null;</span>
+<span class="nc" id="L71">		String attributes = getStringFilter(&quot;attribute&quot;, request);</span>
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(attributes)) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			String attributeType = StringUtils.isEmptyOrWhitespaceOnly(attributes) ? null : attributes.split(&quot;:&quot;, -1)[0];</span>
+<span class="nc bnc" id="L74" title="All 2 branches missed.">			String attributeValue = StringUtils.isEmptyOrWhitespaceOnly(attributes) ? null : attributes.split(&quot;:&quot;, -1)[1];</span>
+			
+<span class="nc" id="L76">			attributeMap = new HashMap&lt;String, String&gt;();</span>
+<span class="nc" id="L77">			attributeMap.put(attributeType, attributeValue);</span>
+		}
+		
+<span class="nc bnc" id="L80" title="All 8 branches missed.">		return searchService.searchClient(nameLike, firstName, middleName, lastName, gender, null, attributeMap,</span>
+		    birthdate == null ? null : birthdate[0], birthdate == null ? null : birthdate[1], lastEdit == null ? null
+		            : lastEdit[0], lastEdit == null ? null : lastEdit[1], null);
+	}
+	
+	@RequestMapping(method = RequestMethod.GET, value = &quot;/path&quot;)
+	@ResponseBody
+	private List&lt;ChildMother&gt; searchPathBy(HttpServletRequest request) throws ParseException {
+<span class="nc" id="L88">		List&lt;ChildMother&gt; childMotherList = new ArrayList&lt;ChildMother&gt;();</span>
+		
+		try {
+<span class="nc" id="L91">			String ZEIR_ID = &quot;zeir_id&quot;;</span>
+			
+<span class="nc" id="L93">			String FIRST_NAME = &quot;first_name&quot;;</span>
+<span class="nc" id="L94">			String MIDDLE_NAME = &quot;middle_name&quot;;</span>
+<span class="nc" id="L95">			String LAST_NAME = &quot;last_name&quot;;</span>
+<span class="nc" id="L96">			String BIRTH_DATE = &quot;birth_date&quot;;</span>
+			
+<span class="nc" id="L98">			String INACTIVE = &quot;inactive&quot;;</span>
+<span class="nc" id="L99">			String LOST_TO_FOLLOW_UP = &quot;lost_to_follow_up&quot;;</span>
+			
+<span class="nc" id="L101">			Integer limit = getIntegerFilter(&quot;limit&quot;, request);</span>
+<span class="nc bnc" id="L102" title="All 4 branches missed.">			if(limit == null || limit.intValue() == 0){</span>
+<span class="nc" id="L103">				limit = 100;</span>
+			}
+			
+<span class="nc" id="L106">			String zeirId = getStringFilter(ZEIR_ID, request);</span>
+<span class="nc" id="L107">			String firstName = getStringFilter(FIRST_NAME, request);</span>
+<span class="nc" id="L108">			String middleName = getStringFilter(MIDDLE_NAME, request);</span>
+<span class="nc" id="L109">			String lastName = getStringFilter(LAST_NAME, request);</span>
+<span class="nc" id="L110">			String gender = getStringFilter(GENDER, request);</span>
+<span class="nc" id="L111">			String inActive = getStringFilter(INACTIVE, request);</span>
+<span class="nc" id="L112">			String lostToFollowUp = getStringFilter(LOST_TO_FOLLOW_UP, request);</span>
+			
+<span class="nc" id="L114">			DateTime[] birthdate = getDateRangeFilter(BIRTH_DATE, request);//TODO add ranges like fhir do http://hl7.org/fhir/search.html</span>
+<span class="nc" id="L115">			DateTime[] lastEdit = getDateRangeFilter(LAST_UPDATE, request);//TODO client by provider id</span>
+			//TODO lookinto Swagger https://slack-files.com/files-pri-safe/T0EPSEJE9-F0TBD0N77/integratingswagger.pdf?c=1458211183-179d2bfd2e974585c5038fba15a86bf83097810a
+			
+<span class="nc" id="L118">			String ZEIR_ID_KEY = &quot;ZEIR_ID&quot;;</span>
+<span class="nc" id="L119">			Map&lt;String, String&gt; identifiers = new HashMap&lt;String, String&gt;();</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(zeirId)) {</span>
+<span class="nc" id="L121">				zeirId = formatChildUniqueId(zeirId);</span>
+<span class="nc" id="L122">				identifiers.put(ZEIR_ID_KEY, zeirId);</span>
+			}
+			
+<span class="nc" id="L125">			Map&lt;String, String&gt; attributes = new HashMap&lt;String, String&gt;();</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(inActive) || !StringUtils.isEmptyOrWhitespaceOnly(lostToFollowUp)) {</span>
+				
+<span class="nc bnc" id="L128" title="All 2 branches missed.">				if (!StringUtils.isEmptyOrWhitespaceOnly(inActive)) {</span>
+<span class="nc" id="L129">					attributes.put(INACTIVE, inActive);</span>
+				}
+				
+<span class="nc bnc" id="L132" title="All 2 branches missed.">				if (!StringUtils.isEmptyOrWhitespaceOnly(lostToFollowUp)) {</span>
+<span class="nc" id="L133">					attributes.put(LOST_TO_FOLLOW_UP, lostToFollowUp);</span>
+				}
+			}
+			
+<span class="nc" id="L137">			List&lt;Client&gt; children = new ArrayList&lt;Client&gt;();</span>
+			
+<span class="nc bnc" id="L139" title="All 4 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(firstName) || !StringUtils.isEmptyOrWhitespaceOnly(middleName)</span>
+<span class="nc bnc" id="L140" title="All 4 branches missed.">			        || !StringUtils.isEmptyOrWhitespaceOnly(lastName) || !StringUtils.isEmptyOrWhitespaceOnly(gender)</span>
+<span class="nc bnc" id="L141" title="All 8 branches missed.">			        || !identifiers.isEmpty() || !attributes.isEmpty() || birthdate != null || lastEdit != null) {</span>
+				
+<span class="nc bnc" id="L143" title="All 8 branches missed.">				children = searchService.searchClient(null, firstName, middleName, lastName, gender, identifiers,</span>
+				    attributes, birthdate == null ? null : birthdate[0], birthdate == null ? null : birthdate[1],
+				    lastEdit == null ? null : lastEdit[0], lastEdit == null ? null : lastEdit[1], limit);
+				
+			}
+			
+			// Mother
+<span class="nc" id="L150">			String MOTHER_GUARDIAN_FIRST_NAME = &quot;mother_first_name&quot;;</span>
+<span class="nc" id="L151">			String MOTHER_GUARDIAN_LAST_NAME = &quot;mother_last_name&quot;;</span>
+<span class="nc" id="L152">			String MOTHER_GUARDIAN_NRC_NUMBER = &quot;mother_nrc_number&quot;;</span>
+<span class="nc" id="L153">			String MOTHER_GUARDIAN_PHONE_NUMBER = &quot;mother_contact_phone_number&quot;;</span>
+			
+<span class="nc" id="L155">			String motherFirstName = getStringFilter(MOTHER_GUARDIAN_FIRST_NAME, request);</span>
+<span class="nc" id="L156">			String motherLastName = getStringFilter(MOTHER_GUARDIAN_LAST_NAME, request);</span>
+<span class="nc" id="L157">			String motherGuardianNrc = getStringFilter(MOTHER_GUARDIAN_NRC_NUMBER, request);</span>
+<span class="nc" id="L158">			String motherGuardianPhoneNumber = getStringFilter(MOTHER_GUARDIAN_PHONE_NUMBER, request);</span>
+			
+<span class="nc" id="L160">			String NRC_NUMBER_KEY = &quot;NRC_Number&quot;;</span>
+<span class="nc" id="L161">			Map&lt;String, String&gt; motherAttributes = new HashMap&lt;String, String&gt;();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(motherGuardianNrc)) {</span>
+<span class="nc" id="L163">				motherAttributes.put(NRC_NUMBER_KEY, motherGuardianNrc);</span>
+			}
+			
+<span class="nc" id="L166">			List&lt;Client&gt; mothers = new ArrayList&lt;Client&gt;();</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(motherFirstName)</span>
+<span class="nc bnc" id="L168" title="All 4 branches missed.">			        || !StringUtils.isEmptyOrWhitespaceOnly(motherLastName) || !motherAttributes.isEmpty()) {</span>
+				
+<span class="nc" id="L170">				String nameLike = null;</span>
+<span class="nc bnc" id="L171" title="All 2 branches missed.">				if ((!StringUtils.isEmptyOrWhitespaceOnly(motherFirstName) &amp;&amp; !StringUtils</span>
+<span class="nc bnc" id="L172" title="All 4 branches missed.">				        .isEmptyOrWhitespaceOnly(motherLastName)) &amp;&amp; motherFirstName.equals(motherLastName)) {</span>
+<span class="nc bnc" id="L173" title="All 2 branches missed.">					if (org.apache.commons.lang3.StringUtils.containsWhitespace(motherFirstName.trim())) {</span>
+<span class="nc" id="L174">						String[] arr = motherFirstName.split(&quot;\\s+&quot;);</span>
+<span class="nc" id="L175">						motherFirstName = arr[0];</span>
+<span class="nc" id="L176">						motherLastName = arr[1];</span>
+<span class="nc" id="L177">					} else {</span>
+<span class="nc" id="L178">						nameLike = motherFirstName;</span>
+<span class="nc" id="L179">						motherFirstName = null;</span>
+<span class="nc" id="L180">						motherLastName = null;</span>
+					}
+				}
+<span class="nc bnc" id="L183" title="All 4 branches missed.">				mothers = searchService.searchClient(nameLike, motherFirstName, null, motherLastName, null, null,</span>
+				    motherAttributes, null, null, lastEdit == null ? null : lastEdit[0], lastEdit == null ? null
+				            : lastEdit[1], limit);
+				
+			}
+			
+<span class="nc" id="L189">			List&lt;Client&gt; eventChildren = new ArrayList&lt;Client&gt;();</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">			if (!StringUtils.isEmptyOrWhitespaceOnly(motherGuardianPhoneNumber)) {</span>
+<span class="nc" id="L191">				List&lt;Event&gt; events = eventService.findEventsByConceptAndValue(&quot;159635AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;,</span>
+				    motherGuardianPhoneNumber);
+<span class="nc bnc" id="L193" title="All 4 branches missed.">				if (events != null &amp;&amp; !events.isEmpty()) {</span>
+<span class="nc" id="L194">					List&lt;String&gt; clientIds = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L195" title="All 2 branches missed.">					for (Event event : events) {</span>
+<span class="nc" id="L196">						String entityId = event.getBaseEntityId();</span>
+<span class="nc bnc" id="L197" title="All 4 branches missed.">						if (entityId != null &amp;&amp; !clientIds.contains(entityId)) {</span>
+<span class="nc" id="L198">							clientIds.add(entityId);</span>
+						}
+<span class="nc" id="L200">					}</span>
+					
+<span class="nc" id="L202">					eventChildren = clientService.findByFieldValue(BaseEntity.BASE_ENTITY_ID, clientIds);</span>
+					
+				}
+			}
+			
+			// Search conjunction is &quot;AND&quot; find intersection
+<span class="nc" id="L208">			children = intersection(children, eventChildren);</span>
+			
+<span class="nc" id="L210">			List&lt;Client&gt; linkedMothers = new ArrayList&lt;Client&gt;();</span>
+			
+<span class="nc" id="L212">			String RELATIONSHIP_KEY = &quot;mother&quot;;</span>
+<span class="nc bnc" id="L213" title="All 2 branches missed.">			if (!children.isEmpty()) {</span>
+<span class="nc" id="L214">				List&lt;String&gt; clientIds = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L215" title="All 2 branches missed.">				for (Client c : children) {</span>
+<span class="nc" id="L216">					String relationshipId = getRelationalId(c, RELATIONSHIP_KEY);</span>
+<span class="nc bnc" id="L217" title="All 4 branches missed.">					if (relationshipId != null &amp;&amp; !clientIds.contains(relationshipId)) {</span>
+<span class="nc" id="L218">						clientIds.add(relationshipId);</span>
+					}
+<span class="nc" id="L220">				}</span>
+				
+<span class="nc" id="L222">				linkedMothers = clientService.findByFieldValue(BaseEntity.BASE_ENTITY_ID, clientIds);</span>
+				
+			}
+			
+<span class="nc" id="L226">			List&lt;Client&gt; linkedChildren = new ArrayList&lt;Client&gt;();</span>
+			
+<span class="nc" id="L228">			String M_ZEIR_ID = &quot;M_ZEIR_ID&quot;;</span>
+<span class="nc bnc" id="L229" title="All 2 branches missed.">			if (!mothers.isEmpty()) {</span>
+<span class="nc" id="L230">				List&lt;String&gt; cIndentifers = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">				for (Client m : mothers) {</span>
+<span class="nc" id="L232">					String childIdentifier = getChildIndentifier(m, M_ZEIR_ID, RELATIONSHIP_KEY);</span>
+<span class="nc bnc" id="L233" title="All 4 branches missed.">					if (childIdentifier != null &amp;&amp; !cIndentifers.contains(childIdentifier)) {</span>
+<span class="nc" id="L234">						cIndentifers.add(childIdentifier);</span>
+					}
+<span class="nc" id="L236">				}</span>
+				
+<span class="nc" id="L238">				linkedChildren = clientService.findByFieldValue(ZEIR_ID_KEY, cIndentifers);</span>
+				
+			}
+			
+			// Search conjunction is &quot;AND&quot; find intersection
+<span class="nc" id="L243">			children = intersection(children, linkedChildren);</span>
+			
+<span class="nc bnc" id="L245" title="All 2 branches missed.">			for (Client linkedMother : linkedMothers) {</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">				if (!contains(mothers, linkedMother)) {</span>
+<span class="nc" id="L247">					mothers.add(linkedMother);</span>
+				}
+<span class="nc" id="L249">			}</span>
+			
+<span class="nc bnc" id="L251" title="All 2 branches missed.">			for (Client child : children) {</span>
+<span class="nc bnc" id="L252" title="All 2 branches missed.">				for (Client mother : mothers) {</span>
+<span class="nc" id="L253">					String relationalId = getRelationalId(child, RELATIONSHIP_KEY);</span>
+<span class="nc" id="L254">					String motherEntityId = mother.getBaseEntityId();</span>
+<span class="nc bnc" id="L255" title="All 6 branches missed.">					if (relationalId != null &amp;&amp; motherEntityId != null &amp;&amp; relationalId.equalsIgnoreCase(motherEntityId)) {</span>
+<span class="nc" id="L256">						childMotherList.add(new ChildMother(child, mother));</span>
+					}
+<span class="nc" id="L258">				}</span>
+<span class="nc" id="L259">			}</span>
+			
+		}
+<span class="nc" id="L262">		catch (Exception e) {</span>
+<span class="nc" id="L263">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L264">		}</span>
+		
+<span class="nc" id="L266">		return childMotherList;</span>
+	}
+	
+	@Override
+	public List&lt;Client&gt; filter(String query) {
+		// TODO Auto-generated method stub
+<span class="nc" id="L272">		return null;</span>
+	}
+	
+	@Override
+	public Client getByUniqueId(String uniqueId) {
+		// TODO Auto-generated method stub
+<span class="nc" id="L278">		return null;</span>
+	}
+	
+	@Override
+	public List&lt;String&gt; requiredProperties() {
+		// TODO Auto-generated method stub
+<span class="nc" id="L284">		return null;</span>
+	}
+	
+	@Override
+	public Client create(Client entity) {
+		// TODO Auto-generated method stub
+<span class="nc" id="L290">		return null;</span>
+	}
+	
+	@Override
+	public Client update(Client entity) {
+		// TODO Auto-generated method stub
+<span class="nc" id="L296">		return null;</span>
+	}
+	
+	private String getRelationalId(Client c, String relationshipKey) {
+<span class="nc" id="L300">		Map&lt;String, List&lt;String&gt;&gt; relationships = c.getRelationships();</span>
+<span class="nc bnc" id="L301" title="All 2 branches missed.">		if (relationships != null) {</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">			for (Map.Entry&lt;String, List&lt;String&gt;&gt; entry : relationships.entrySet()) {</span>
+<span class="nc" id="L303">				String key = entry.getKey();</span>
+<span class="nc bnc" id="L304" title="All 2 branches missed.">				if (key.equalsIgnoreCase(relationshipKey)) {</span>
+<span class="nc" id="L305">					List&lt;String&gt; rList = entry.getValue();</span>
+<span class="nc bnc" id="L306" title="All 2 branches missed.">					if (!rList.isEmpty()) {</span>
+<span class="nc" id="L307">						return rList.get(0);</span>
+					}
+				}
+<span class="nc" id="L310">			}</span>
+		}
+		
+<span class="nc" id="L313">		return null;</span>
+	}
+	
+	private String getChildIndentifier(Client m, String motherIdentifier, String relationshipKey) {
+<span class="nc" id="L317">		String identifier = m.getIdentifier(motherIdentifier);</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(identifier)) {</span>
+<span class="nc" id="L319">			String[] arr = identifier.split(&quot;_&quot;);</span>
+<span class="nc bnc" id="L320" title="All 6 branches missed.">			if (arr != null &amp;&amp; arr.length == 2 &amp;&amp; arr[1].contains(relationshipKey)) {</span>
+<span class="nc" id="L321">				return arr[0];</span>
+			}
+		}
+<span class="nc" id="L324">		return null;</span>
+	}
+	
+	private class ChildMother {
+		
+		private Client child;
+		
+		private Client mother;
+		
+<span class="nc" id="L333">		public ChildMother(Client child, Client mother) {</span>
+<span class="nc" id="L334">			this.child = child;</span>
+<span class="nc" id="L335">			this.mother = mother;</span>
+<span class="nc" id="L336">		}</span>
+		
+		@SuppressWarnings(&quot;unused&quot;)
+		public Client getMother() {
+<span class="nc" id="L340">			return mother;</span>
+		}
+		
+		@SuppressWarnings(&quot;unused&quot;)
+		public Client getChild() {
+<span class="nc" id="L345">			return child;</span>
+		}
+	}
+	
+	private static String formatChildUniqueId(String unformattedId) {
+<span class="nc bnc" id="L350" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(unformattedId)) {</span>
+<span class="nc bnc" id="L351" title="All 2 branches missed.">			if (unformattedId.contains(&quot;-&quot;)) {</span>
+<span class="nc" id="L352">				unformattedId = unformattedId.split(&quot;-&quot;)[0];</span>
+<span class="nc bnc" id="L353" title="All 2 branches missed.">			} else if (unformattedId.length() &gt; 6) {</span>
+<span class="nc" id="L354">				unformattedId = unformattedId.substring(0, 6);</span>
+			}
+		}
+		
+<span class="nc" id="L358">		return unformattedId;</span>
+	}
+	
+	private boolean contains(List&lt;Client&gt; clients, Client c) {
+<span class="nc bnc" id="L362" title="All 6 branches missed.">		if (clients == null || clients.isEmpty() || c == null) {</span>
+<span class="nc" id="L363">			return false;</span>
+		}
+<span class="nc bnc" id="L365" title="All 2 branches missed.">		for (Client client : clients) {</span>
+<span class="nc bnc" id="L366" title="All 6 branches missed.">			if (client != null &amp;&amp; client.getBaseEntityId() != null &amp;&amp; c.getBaseEntityId() != null) {</span>
+<span class="nc bnc" id="L367" title="All 2 branches missed.">				if (client.getBaseEntityId().equals(c.getBaseEntityId())) {</span>
+<span class="nc" id="L368">					return true;</span>
+				}
+			}
+<span class="nc" id="L371">		}</span>
+<span class="nc" id="L372">		return false;</span>
+	}
+	
+	public List&lt;Client&gt; intersection(List&lt;Client&gt; list1, List&lt;Client&gt; list2) {
+<span class="nc bnc" id="L376" title="All 2 branches missed.">		if (list1 == null) {</span>
+<span class="nc" id="L377">			list1 = new ArrayList&lt;Client&gt;();</span>
+		}
+		
+<span class="nc bnc" id="L380" title="All 2 branches missed.">		if (list2 == null) {</span>
+<span class="nc" id="L381">			list2 = new ArrayList&lt;Client&gt;();</span>
+		}
+		
+<span class="nc bnc" id="L384" title="All 4 branches missed.">		if (list1.isEmpty() &amp;&amp; list2.isEmpty()) {</span>
+<span class="nc" id="L385">			return new ArrayList&lt;Client&gt;();</span>
+		}
+		
+<span class="nc bnc" id="L388" title="All 4 branches missed.">		if (list1.isEmpty() &amp;&amp; !list2.isEmpty()) {</span>
+<span class="nc" id="L389">			return list2;</span>
+		}
+		
+<span class="nc bnc" id="L392" title="All 4 branches missed.">		if (list2.isEmpty() &amp;&amp; !list1.isEmpty()) {</span>
+<span class="nc" id="L393">			return list1;</span>
+		}
+		
+<span class="nc" id="L396">		List&lt;Client&gt; list = new ArrayList&lt;Client&gt;();</span>
+		
+<span class="nc bnc" id="L398" title="All 2 branches missed.">		for (Client t : list1) {</span>
+<span class="nc bnc" id="L399" title="All 2 branches missed.">			if (contains(list2, t)) {</span>
+<span class="nc" id="L400">				list.add(t);</span>
+			}
+<span class="nc" id="L402">		}</span>
+		
+<span class="nc" id="L404">		return list;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

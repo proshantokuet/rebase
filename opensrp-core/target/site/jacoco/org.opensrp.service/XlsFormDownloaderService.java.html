@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>XlsFormDownloaderService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">XlsFormDownloaderService.java</span></div><h1>XlsFormDownloaderService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
+import java.io.Writer;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
+
+import org.codehaus.jackson.JsonProcessingException;
+import org.joda.time.DateTime;
+import org.opensrp.util.FileCreator;
+import org.opensrp.util.JsonParser;
+import org.opensrp.util.NetClientGet;
+import org.springframework.stereotype.Service;
+import org.w3c.dom.Node;
+import org.w3c.dom.bootstrap.DOMImplementationRegistry;
+import org.w3c.dom.ls.DOMImplementationLS;
+import org.w3c.dom.ls.LSSerializer;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+
+import com.sun.org.apache.xml.internal.serialize.OutputFormat;
+import com.sun.org.apache.xml.internal.serialize.XMLSerializer;
+
+/**
+ * @author muhammad.ahmed@ihsinformatics.com
+ *  Created on 17-September, 2015
+ */
+@Service
+public class XlsFormDownloaderService {
+	private NetClientGet netClientGet;
+	private FileCreator fileCreator;
+	private JsonParser jsonParser;
+	
+<span class="fc" id="L40">	private byte[] formJson=null; </span>
+<span class="fc" id="L41">	public XlsFormDownloaderService() {</span>
+<span class="fc" id="L42">	netClientGet=new NetClientGet();</span>
+<span class="fc" id="L43">	fileCreator=new FileCreator();</span>
+	
+<span class="fc" id="L45">	jsonParser=new JsonParser();</span>
+<span class="fc" id="L46">	}</span>
+
+	public static void main(String[] args) {
+		try {
+
+			/*System.out.println(DateTime.now().getWeekOfWeekyear());
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;crvs_verbal_autopsy&quot;, &quot;156735&quot;);
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;crvs_death_notification&quot;, &quot;156734&quot;);
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;crvs_birth_notification&quot;, &quot;156733&quot;);
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;crvs_pregnancy_notification&quot;, &quot;156721&quot;);
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;new_member_registration&quot;, &quot;148264&quot;);
+			
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;family_registration_form&quot;, &quot;148263&quot;);
+			*/
+			/*new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;vaccine_stock_position&quot;, &quot;151804&quot;);
+*/			
+
+			
+			/*new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;child_vaccination_enrollment&quot;, &quot;135187&quot;);
+			//-------------------------			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;child_vaccination_followup&quot;, &quot;135199&quot;);
+			//---------------------------
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;woman_tt_enrollement_form&quot;, &quot;135200&quot;);
+			//----------------------------
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;woman_tt_followup_form&quot;, &quot;135203&quot;);
+			
+			*/
+			
+			
+			/*new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;offsite_child_vaccination_followup&quot;, &quot;115138&quot;);
+			
+			
+			new XlsFormDownloaderService().downloadFormFiles(&quot;D:\\opensrpVaccinatorWkspc\\forms&quot;, 
+					&quot;maimoonak&quot;, &quot;opensrp&quot;, JustForFun.Form, &quot;offsite_woman_followup_form&quot;, &quot;115135&quot;);*/
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+<span class="nc" id="L100">	}</span>
+	
+	public String formatXML(String input)
+    {
+        try
+        {
+<span class="nc" id="L106">            final InputSource src = new InputSource(new StringReader(input));</span>
+<span class="nc" id="L107">            final Node document = DocumentBuilderFactory.newInstance()</span>
+<span class="nc" id="L108">                    .newDocumentBuilder().parse(src).getDocumentElement();</span>
+
+            final DOMImplementationRegistry registry = DOMImplementationRegistry
+<span class="nc" id="L111">                    .newInstance();</span>
+<span class="nc" id="L112">            final DOMImplementationLS impl = (DOMImplementationLS) registry</span>
+<span class="nc" id="L113">                    .getDOMImplementation(&quot;LS&quot;);</span>
+<span class="nc" id="L114">            final LSSerializer writer = impl.createLSSerializer();</span>
+
+<span class="nc" id="L116">            writer.getDomConfig().setParameter(&quot;format-pretty-print&quot;,</span>
+                    Boolean.TRUE);
+<span class="nc" id="L118">            writer.getDomConfig().setParameter(&quot;xml-declaration&quot;, false);</span>
+
+<span class="nc" id="L120">            return writer.writeToString(document);</span>
+<span class="nc" id="L121">        } catch (Exception e)</span>
+        {
+<span class="nc" id="L123">            e.printStackTrace();</span>
+<span class="nc" id="L124">            return input;</span>
+        }
+    }
+	
+	public String format(String unformattedXml) {
+        try {
+<span class="nc" id="L130">            final org.w3c.dom.Document document = parseXmlFile(unformattedXml);</span>
+
+<span class="nc" id="L132">            OutputFormat format = new OutputFormat(document);</span>
+<span class="nc" id="L133">            format.setLineWidth(380);</span>
+            //format.setIndenting(true);
+<span class="nc" id="L135">            format.setIndent(2);</span>
+<span class="nc" id="L136">            Writer out = new StringWriter();</span>
+<span class="nc" id="L137">            XMLSerializer serializer = new XMLSerializer(out, format);</span>
+<span class="nc" id="L138">            serializer.serialize(document);</span>
+
+<span class="nc" id="L140">            return out.toString();</span>
+<span class="nc" id="L141">        } catch (IOException e) {</span>
+<span class="nc" id="L142">            throw new RuntimeException(e);</span>
+        }
+    }
+
+    private org.w3c.dom.Document parseXmlFile(String in) {
+        try {
+<span class="nc" id="L148">            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();</span>
+<span class="nc" id="L149">            DocumentBuilder db = dbf.newDocumentBuilder();</span>
+<span class="nc" id="L150">            InputSource is = new InputSource(new StringReader(in));</span>
+<span class="nc" id="L151">            return db.parse(is);</span>
+<span class="nc" id="L152">        } catch (ParserConfigurationException e) {</span>
+<span class="nc" id="L153">            throw new RuntimeException(e);</span>
+<span class="nc" id="L154">        } catch (SAXException e) {</span>
+<span class="nc" id="L155">            throw new RuntimeException(e);</span>
+<span class="nc" id="L156">        } catch (IOException e) {</span>
+<span class="nc" id="L157">            throw new RuntimeException(e);</span>
+        }
+    }
+    
+	
+	public boolean downloadFormFiles(String directory,String username ,String formPath, String password,String formId, String formPk) throws IOException{
+		
+<span class="nc" id="L164">		String xmlData=netClientGet.convertToString(&quot;&quot;, formPath, formId);</span>
+<span class="nc" id="L165">		String modelData=netClientGet.getModel(xmlData);</span>
+<span class="nc" id="L166">		String formData=fileCreator.prettyFormat(netClientGet.getForm(xmlData));</span>
+		
+<span class="nc" id="L168">		modelData=format(modelData);</span>
+		
+<span class="nc" id="L170">		formData = formData.replaceAll(&quot;selected\\(&quot;, &quot;contains(&quot;);</span>
+<span class="nc" id="L171">		formData = formData.replaceAll(&quot;&lt;span.*lang=\&quot;openmrs_code\&quot;.*&lt;/span&gt;&quot;, &quot;&quot;);</span>
+<span class="nc" id="L172">		formData = formData.replaceAll(&quot;&lt;option value=\&quot;openmrs_code\&quot;&gt;openmrs_code&lt;/option&gt;&quot;, &quot;&quot;);</span>
+		
+<span class="nc" id="L174">		formJson=netClientGet.downloadJson(username,password,  formPk);</span>
+		
+		//formData=fileCreator.prettyFormat(formData);
+<span class="nc" id="L177">		System.out.println(getFormDefinition());</span>
+<span class="nc" id="L178">		fileCreator.createFile(&quot;form_definition.json&quot;, fileCreator.osDirectorySet(directory)+formId, getFormDefinition().getBytes());</span>
+<span class="nc" id="L179">		return fileCreator.createFormFiles(fileCreator.osDirectorySet(directory)+formId, formId, formData.getBytes(), modelData.getBytes(), formJson);</span>
+	}
+	
+	public String getFormDefinition() throws JsonProcessingException, IOException{
+<span class="nc bnc" id="L183" title="All 2 branches missed.">		if(formJson==null){</span>
+<span class="nc" id="L184">			return &quot;Data not found on server . Please retry again !&quot;;</span>
+			
+		}
+<span class="nc" id="L187">		return jsonParser.getFormDefinition(formJson);</span>
+		
+	}	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

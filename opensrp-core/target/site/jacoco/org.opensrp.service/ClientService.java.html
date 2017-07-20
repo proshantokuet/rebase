@@ -1,0 +1,315 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ClientService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">ClientService.java</span></div><h1>ClientService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.joda.time.DateTime;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.domain.Address;
+import org.opensrp.domain.Client;
+import org.opensrp.repository.AllClients;
+import org.opensrp.util.DateTimeTypeConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+@Service
+public class ClientService {
+	
+	private final AllClients allClients;
+	
+	@Autowired
+<span class="fc" id="L27">	public ClientService(AllClients allClients) {</span>
+<span class="fc" id="L28">		this.allClients = allClients;</span>
+<span class="fc" id="L29">	}</span>
+	
+	public Client getByBaseEntityId(String baseEntityId) {
+<span class="fc" id="L32">		return allClients.findByBaseEntityId(baseEntityId);</span>
+	}
+	
+	public List&lt;Client&gt; findAllClients() {
+<span class="nc" id="L36">		return allClients.findAllClients();</span>
+	}
+	
+	public List&lt;Client&gt; findAllByIdentifier(String identifier) {
+<span class="fc" id="L40">		return allClients.findAllByIdentifier(identifier);</span>
+	}
+	
+	public List&lt;Client&gt; findAllByIdentifier(String identifierType, String identifier) {
+<span class="fc" id="L44">		return allClients.findAllByIdentifier(identifierType, identifier);</span>
+	}
+	
+	public List&lt;Client&gt; findByRelationshipIdAndDateCreated(String relationalId, String dateFrom, String dateTo) {
+<span class="nc" id="L48">		return allClients.findByRelationshipIdAndDateCreated(relationalId, dateFrom, dateTo);</span>
+	}
+	public List&lt;Client&gt; findByRelationship(String relationalId) {
+<span class="nc" id="L51">		return allClients.findByRelationShip(relationalId);</span>
+	}
+	
+	public List&lt;Client&gt; findAllByAttribute(String attributeType, String attribute) {
+<span class="fc" id="L55">		return allClients.findAllByAttribute(attributeType, attribute);</span>
+	}
+	
+	public List&lt;Client&gt; findAllByMatchingName(String nameMatches) {
+<span class="nc" id="L59">		return allClients.findAllByMatchingName(nameMatches);</span>
+	}
+	
+	public List&lt;Client&gt; findByCriteria(String nameLike, String gender, DateTime birthdateFrom, DateTime birthdateTo,
+	                                   DateTime deathdateFrom, DateTime deathdateTo, String attributeType,
+	                                   String attributeValue, String addressType, String country, String stateProvince,
+	                                   String cityVillage, String countyDistrict, String subDistrict, String town,
+	                                   String subTown, DateTime lastEditFrom, DateTime lastEditTo) {
+<span class="nc" id="L67">		return allClients.findByCriteria(nameLike, gender, birthdateFrom, birthdateTo, deathdateFrom, deathdateTo,</span>
+		    attributeType, attributeValue, addressType, country, stateProvince, cityVillage, countyDistrict, subDistrict,
+		    town, subTown, lastEditFrom, lastEditTo);//db.queryView(q.includeDocs(true), Client.class);
+	}
+	
+	public List&lt;Client&gt; findByCriteria(String nameLike, String gender, DateTime birthdateFrom, DateTime birthdateTo,
+	                                   DateTime deathdateFrom, DateTime deathdateTo, String attributeType,
+	                                   String attributeValue, DateTime lastEditFrom, DateTime lastEditTo,
+	                                   Long serverVersion) {
+<span class="fc" id="L76">		return allClients.findByCriteria(nameLike, gender, birthdateFrom, birthdateTo, deathdateFrom, deathdateTo,</span>
+		    attributeType, attributeValue, null, null, null, null, null, null, null, null, lastEditFrom, lastEditTo);
+	}
+	
+	/*	public List&lt;Client&gt; findByCriteria(String addressType, String country, String stateProvince, String cityVillage, String countyDistrict, 
+				String  subDistrict, String town, String subTown, DateTime lastEditFrom, DateTime lastEditTo) {
+			return allClients.findByCriteria(null, null, null, null, null, null, null, null, addressType, country, stateProvince, cityVillage, countyDistrict, subDistrict, town, subTown, lastEditFrom, lastEditTo);
+		}*/
+	
+	public List&lt;Client&gt; findByDynamicQuery(String query) {
+<span class="nc" id="L86">		return allClients.findByDynamicQuery(query);</span>
+	}
+	
+	public Client addClient(Client client) {
+<span class="pc bpc" id="L90" title="1 of 2 branches missed.">		if (client.getBaseEntityId() == null) {</span>
+<span class="nc" id="L91">			throw new RuntimeException(&quot;No baseEntityId&quot;);</span>
+		}
+<span class="fc" id="L93">		Client c = findClient(client);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">		if (c != null) {</span>
+			try {
+<span class="nc" id="L96">				updateClient(client);</span>
+			}
+<span class="nc" id="L98">			catch (JSONException e) {</span>
+<span class="nc" id="L99">				throw new IllegalArgumentException(</span>
+			        &quot;A client already exists with given list of identifiers. Consider updating data.[&quot; + c + &quot;]&quot;);
+<span class="nc" id="L101">			}</span>
+		}
+		
+<span class="fc" id="L104">		client.setDateCreated(DateTime.now());</span>
+<span class="fc" id="L105">		allClients.add(client);</span>
+<span class="fc" id="L106">		return client;</span>
+	}
+	
+	public Client addClient(CouchDbConnector targetDb, Client client) {
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (client.getBaseEntityId() == null) {</span>
+<span class="nc" id="L111">			throw new RuntimeException(&quot;No baseEntityId&quot;);</span>
+		}
+<span class="nc" id="L113">		Client c = findClient(targetDb, client);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">		if (c != null) {</span>
+<span class="nc" id="L115">			throw new IllegalArgumentException(</span>
+			        &quot;A client already exists with given list of identifiers. Consider updating data.[&quot; + c + &quot;]&quot;);
+		}
+		
+<span class="nc" id="L119">		client.setDateCreated(new DateTime());</span>
+<span class="nc" id="L120">		allClients.add(targetDb, client);</span>
+<span class="nc" id="L121">		return client;</span>
+	}
+	
+	public Client findClient(Client client) {
+		// find by auto assigned entity id
+<span class="fc" id="L126">		Client c = allClients.findByBaseEntityId(client.getBaseEntityId());</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">		if (c != null) {</span>
+<span class="fc" id="L128">			return c;</span>
+		}
+		
+		//still not found!! search by generic identifiers
+		
+<span class="fc bfc" id="L133" title="All 2 branches covered.">		for (String idt : client.getIdentifiers().keySet()) {</span>
+<span class="fc" id="L134">			List&lt;Client&gt; cl = allClients.findAllByIdentifier(client.getIdentifier(idt));</span>
+<span class="pc bpc" id="L135" title="1 of 2 branches missed.">			if (cl.size() &gt; 1) {</span>
+<span class="nc" id="L136">				throw new IllegalArgumentException(</span>
+<span class="nc" id="L137">				        &quot;Multiple clients with identifier type &quot; + idt + &quot; and ID &quot; + client.getIdentifier(idt) + &quot; exist.&quot;);</span>
+<span class="pc bpc" id="L138" title="1 of 2 branches missed.">			} else if (cl.size() != 0) {</span>
+<span class="nc" id="L139">				return cl.get(0);</span>
+			}
+<span class="fc" id="L141">		}</span>
+<span class="fc" id="L142">		return c;</span>
+	}
+	
+	/**
+	 * Find a client from the specified db
+	 * 
+	 * @param targetDb
+	 * @param client
+	 * @return
+	 */
+	public Client findClient(CouchDbConnector targetDb, Client client) {
+		// find by auto assigned entity id
+		try {
+<span class="nc" id="L155">			Client c = allClients.findByBaseEntityId(client.getBaseEntityId());</span>
+<span class="nc bnc" id="L156" title="All 2 branches missed.">			if (c != null) {</span>
+<span class="nc" id="L157">				return c;</span>
+			}
+			
+			//still not found!! search by generic identifiers
+			
+<span class="nc bnc" id="L162" title="All 2 branches missed.">			for (String idt : client.getIdentifiers().keySet()) {</span>
+<span class="nc" id="L163">				List&lt;Client&gt; cl = allClients.findAllByIdentifier(targetDb, client.getIdentifier(idt));</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">				if (cl.size() &gt; 1) {</span>
+<span class="nc" id="L165">					throw new IllegalArgumentException(&quot;Multiple clients with identifier type &quot; + idt + &quot; and ID &quot;</span>
+<span class="nc" id="L166">					        + client.getIdentifier(idt) + &quot; exist.&quot;);</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">				} else if (cl.size() != 0) {</span>
+<span class="nc" id="L168">					return cl.get(0);</span>
+				}
+<span class="nc" id="L170">			}</span>
+<span class="nc" id="L171">			return c;</span>
+		}
+<span class="nc" id="L173">		catch (Exception e) {</span>
+			
+<span class="nc" id="L175">			return null;</span>
+		}
+	}
+	
+	public Client find(String uniqueId) {
+		// find by document id
+<span class="nc" id="L181">		Client c = allClients.findByBaseEntityId(uniqueId);</span>
+<span class="nc bnc" id="L182" title="All 2 branches missed.">		if (c != null) {</span>
+<span class="nc" id="L183">			return c;</span>
+		}
+		
+		// if not found find if it is in any identifiers TODO refactor it later
+<span class="nc" id="L187">		List&lt;Client&gt; cl = allClients.findAllByIdentifier(uniqueId);</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">		if (cl.size() &gt; 1) {</span>
+<span class="nc" id="L189">			throw new IllegalArgumentException(&quot;Multiple clients with identifier &quot; + uniqueId + &quot; exist.&quot;);</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">		} else if (cl.size() != 0) {</span>
+<span class="nc" id="L191">			return cl.get(0);</span>
+		}
+		
+<span class="nc" id="L194">		return c;</span>
+	}
+	
+	public void updateClient(Client updatedClient) throws JSONException {
+		// If update is on original entity
+<span class="nc bnc" id="L199" title="All 2 branches missed.">		if (updatedClient.isNew()) {</span>
+<span class="nc" id="L200">			throw new IllegalArgumentException(</span>
+			        &quot;Client to be updated is not an existing and persisting domain object. Update database object instead of new pojo&quot;);
+		}
+		
+<span class="nc bnc" id="L204" title="All 2 branches missed.">		if (findClient(updatedClient) == null) {</span>
+<span class="nc" id="L205">			throw new IllegalArgumentException(&quot;No client found with given list of identifiers. Consider adding new!&quot;);</span>
+		}
+		
+<span class="nc" id="L208">		updatedClient.setDateEdited(DateTime.now());</span>
+<span class="nc" id="L209">		allClients.update(updatedClient);</span>
+<span class="nc" id="L210">	}</span>
+	
+	public Client mergeClient(Client updatedClient) {
+		try {
+<span class="fc" id="L214">			Client original = findClient(updatedClient);</span>
+<span class="pc bpc" id="L215" title="1 of 2 branches missed.">			if (original == null) {</span>
+<span class="nc" id="L216">				throw new IllegalArgumentException(&quot;No client found with given list of identifiers. Consider adding new!&quot;);</span>
+			}
+			
+<span class="fc" id="L219">			Gson gs = new GsonBuilder().registerTypeAdapter(DateTime.class, new DateTimeTypeConverter()).create();</span>
+<span class="fc" id="L220">			JSONObject originalJo = new JSONObject(gs.toJson(original));</span>
+			
+<span class="fc" id="L222">			JSONObject updatedJo = new JSONObject(gs.toJson(updatedClient));</span>
+<span class="fc" id="L223">			List&lt;Field&gt; fn = Arrays.asList(Client.class.getDeclaredFields());</span>
+			
+<span class="fc" id="L225">			JSONObject mergedJson = new JSONObject();</span>
+<span class="pc bpc" id="L226" title="1 of 2 branches missed.">			if (originalJo.length() &gt; 0) {</span>
+<span class="fc" id="L227">				mergedJson = new JSONObject(originalJo, JSONObject.getNames(originalJo));</span>
+			}
+<span class="pc bpc" id="L229" title="1 of 2 branches missed.">			if (updatedJo.length() &gt; 0) {</span>
+<span class="fc bfc" id="L230" title="All 2 branches covered.">				for (Field key : fn) {</span>
+<span class="fc" id="L231">					String jokey = key.getName();</span>
+<span class="fc bfc" id="L232" title="All 2 branches covered.">					if (updatedJo.has(jokey))</span>
+<span class="fc" id="L233">						mergedJson.put(jokey, updatedJo.get(jokey));</span>
+<span class="fc" id="L234">				}</span>
+				
+<span class="fc" id="L236">				original = gs.fromJson(mergedJson.toString(), Client.class);</span>
+				
+<span class="fc bfc" id="L238" title="All 2 branches covered.">				for (Address a : updatedClient.getAddresses()) {</span>
+<span class="pc bpc" id="L239" title="1 of 2 branches missed.">					if (original.getAddress(a.getAddressType()) == null) {</span>
+<span class="fc" id="L240">						original.addAddress(a);</span>
+					} else {
+<span class="nc" id="L242">						original.removeAddress(a.getAddressType());</span>
+<span class="nc" id="L243">						original.addAddress(a);</span>
+					}
+<span class="fc" id="L245">				}</span>
+<span class="pc bpc" id="L246" title="1 of 2 branches missed.">				for (String k : updatedClient.getIdentifiers().keySet()) {</span>
+<span class="nc" id="L247">					original.addIdentifier(k, updatedClient.getIdentifier(k));</span>
+<span class="nc" id="L248">				}</span>
+<span class="fc bfc" id="L249" title="All 2 branches covered.">				for (String k : updatedClient.getAttributes().keySet()) {</span>
+<span class="fc" id="L250">					original.addAttribute(k, updatedClient.getAttribute(k));</span>
+<span class="fc" id="L251">				}</span>
+			}
+			
+<span class="fc" id="L254">			original.setDateEdited(DateTime.now());</span>
+<span class="fc" id="L255">			allClients.update(original);</span>
+<span class="fc" id="L256">			return original;</span>
+		}
+<span class="nc" id="L258">		catch (JSONException e) {</span>
+<span class="nc" id="L259">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	public List&lt;Client&gt; findByServerVersion(long serverVersion) {
+<span class="nc" id="L264">		return allClients.findByServerVersion(serverVersion);</span>
+	}
+	
+	public List&lt;Client&gt; findByFieldValue(String field, List&lt;String&gt; ids) {
+<span class="nc" id="L268">		return allClients.findByFieldValue(field, ids);</span>
+	}
+	public List&lt;Client&gt; findByFieldValue(String id) {
+<span class="nc" id="L271">		return allClients.findByRelationShip(id);</span>
+	}
+	
+	public Client addorUpdate(Client client) {
+<span class="nc bnc" id="L275" title="All 2 branches missed.">		if (client.getBaseEntityId() == null) {</span>
+<span class="nc" id="L276">			throw new RuntimeException(&quot;No baseEntityId&quot;);</span>
+		}
+<span class="nc" id="L278">		Client c = findClient(client);</span>
+<span class="nc bnc" id="L279" title="All 2 branches missed.">		if (c != null) {</span>
+<span class="nc" id="L280">			client.setRevision(c.getRevision());</span>
+<span class="nc" id="L281">			client.setId(c.getId());</span>
+<span class="nc" id="L282">			c.setDateEdited(DateTime.now());</span>
+<span class="nc" id="L283">			c.setServerVersion(null);</span>
+<span class="nc" id="L284">			allClients.update(client);</span>
+			
+		} else {
+			
+<span class="nc" id="L288">			client.setDateCreated(DateTime.now());</span>
+<span class="nc" id="L289">			allClients.add(client);</span>
+		}
+<span class="nc" id="L291">		return client;</span>
+	}
+	public Client addorUpdate(Client client, boolean resetServerVersion) {
+<span class="nc bnc" id="L294" title="All 2 branches missed.">		if (client.getBaseEntityId() == null) {</span>
+<span class="nc" id="L295">			throw new RuntimeException(&quot;No baseEntityId&quot;);</span>
+		}
+<span class="nc" id="L297">		Client c = findClient(client);</span>
+<span class="nc bnc" id="L298" title="All 2 branches missed.">		if (c != null) {</span>
+<span class="nc" id="L299">			client.setRevision(c.getRevision());</span>
+<span class="nc" id="L300">			client.setId(c.getId());</span>
+<span class="nc" id="L301">			c.setDateEdited(DateTime.now());</span>
+<span class="nc bnc" id="L302" title="All 2 branches missed.">			if(resetServerVersion){</span>
+<span class="nc" id="L303">			c.setServerVersion(null);</span>
+			}
+<span class="nc" id="L305">			allClients.update(client);</span>
+			
+		} else {
+			
+<span class="nc" id="L309">			client.setDateCreated(DateTime.now());</span>
+<span class="nc" id="L310">			allClients.add(client);</span>
+		}
+<span class="nc" id="L312">		return client;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

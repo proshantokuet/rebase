@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EventsListener.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission</a> &gt; <span class="el_source">EventsListener.java</span></div><h1>EventsListener.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.opensrp.service.formSubmission;</span>
+
+import static java.text.MessageFormat.format;
+import static java.util.Collections.sort;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+
+import java.text.MessageFormat;
+import java.util.Comparator;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.joda.time.DateTime;
+import org.motechproject.scheduler.domain.MotechEvent;
+import org.motechproject.server.event.annotations.MotechListener;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.AppStateToken;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.ErrorTrace;
+import org.opensrp.domain.Event;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.repository.AllClients;
+import org.opensrp.repository.AllEvents;
+import org.opensrp.service.ConfigService;
+import org.opensrp.service.ErrorTraceService;
+import org.opensrp.service.EventService;
+import org.opensrp.service.formSubmission.handler.EventsRouter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class EventsListener {
+	
+<span class="nc" id="L35">	private static Logger logger = LoggerFactory.getLogger(EventsListener.class.toString());</span>
+	
+<span class="nc" id="L37">	private static final ReentrantLock lock = new ReentrantLock();</span>
+	
+	private ConfigService configService;
+	
+	private AllEvents allEvents;
+	
+	@Autowired
+	private AllClients allClients;
+	@Autowired
+	EventService eventService;
+	
+	private EventsRouter eventsRouter;
+	
+	private ErrorTraceService errorTraceService;
+	
+	@Autowired
+<span class="nc" id="L53">	public EventsListener(EventsRouter eventsRouter, ConfigService configService, AllEvents allEvents,</span>
+	    ErrorTraceService errorTraceService) {
+<span class="nc" id="L55">		this.configService = configService;</span>
+<span class="nc" id="L56">		this.errorTraceService = errorTraceService;</span>
+<span class="nc" id="L57">		this.eventsRouter = eventsRouter;</span>
+<span class="nc" id="L58">		this.allEvents = allEvents;</span>
+<span class="nc" id="L59">		this.configService.registerAppStateToken(AllConstants.Config.EVENTS_PARSER_LAST_PROCESSED_EVENT, 0,</span>
+<span class="nc" id="L60">		    &quot;Token to keep track of events processed for client n event parsing and schedule handling&quot;, true);</span>
+<span class="nc" id="L61">	}</span>
+	
+	@MotechListener(subjects = AllConstants.EVENTS_SCHEDULE_SUBJECT)
+	public void processEvent(MotechEvent motechEvent) {
+<span class="nc bnc" id="L65" title="All 2 branches missed.">		if (!lock.tryLock()) {</span>
+<span class="nc" id="L66">			logger.warn(&quot;Not fetching events from Message Queue. It is already in progress.&quot;);</span>
+<span class="nc" id="L67">			return;</span>
+		}
+		try {
+			//update server version first
+<span class="nc" id="L71">			addServerVersion();</span>
+<span class="nc" id="L72">			logger.info(&quot;Fetching Events&quot;);</span>
+<span class="nc" id="L73">			long version = getVersion();</span>
+			
+<span class="nc" id="L75">			List&lt;Event&gt; events = allEvents.findByServerVersion(version);</span>
+			
+<span class="nc bnc" id="L77" title="All 2 branches missed.">			if (events.isEmpty()) {</span>
+<span class="nc" id="L78">				logger.info(&quot;No new events found. Export token: &quot; + version);</span>
+<span class="nc" id="L79">				return;</span>
+			}
+			
+<span class="nc" id="L82">			logger.info(format(&quot;Fetched {0} new events found. Export token: {1}&quot;, events.size(), version));</span>
+			
+<span class="nc" id="L84">			sort(events, serverVersionComparator());</span>
+			
+<span class="nc bnc" id="L86" title="All 2 branches missed.">			for (Event event : events) {</span>
+				try {
+<span class="nc" id="L88">					event=eventService.processOutOfArea(event);</span>
+<span class="nc" id="L89">					eventsRouter.route(event);</span>
+<span class="nc" id="L90">					configService.updateAppStateToken(AllConstants.Config.EVENTS_PARSER_LAST_PROCESSED_EVENT,</span>
+<span class="nc" id="L91">					    event.getServerVersion());</span>
+<span class="nc" id="L92">				}</span>
+<span class="nc" id="L93">				catch (Exception e) {</span>
+<span class="nc" id="L94">					e.printStackTrace();</span>
+<span class="nc" id="L95">					errorTraceService</span>
+<span class="nc" id="L96">					        .addError(new ErrorTrace(new DateTime(), &quot;FormSubmissionProcessor&quot;, this.getClass().getName(),</span>
+<span class="nc" id="L97">					                e.getStackTrace().toString(), &quot;unsolved&quot;, FormSubmission.class.getName()));</span>
+				}
+			}
+<span class="nc" id="L100">		}</span>
+<span class="nc" id="L101">		catch (Exception e) {</span>
+<span class="nc" id="L102">			logger.error(MessageFormat.format(&quot;{0} occurred while trying to fetch forms. Message: {1} with stack trace {2}&quot;,</span>
+<span class="nc" id="L103">			    e.toString(), e.getMessage(), getFullStackTrace(e)));</span>
+		}
+<span class="nc" id="L105">		finally {</span>
+<span class="nc" id="L106">			lock.unlock();</span>
+<span class="nc" id="L107">		}</span>
+<span class="nc" id="L108">	}</span>
+	
+	private void addServerVersion() {
+		try {
+<span class="nc" id="L112">			List&lt;Client&gt; clients = allClients.findByEmptyServerVersion();</span>
+<span class="nc bnc" id="L113" title="All 4 branches missed.">			while (clients != null &amp;&amp; !clients.isEmpty()) {</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">				for (Client client : clients) {</span>
+					try {
+<span class="nc" id="L116">						Thread.sleep(1);</span>
+<span class="nc" id="L117">						client.setServerVersion(System.currentTimeMillis());</span>
+<span class="nc" id="L118">						allClients.update(client);</span>
+<span class="nc" id="L119">						logger.debug(&quot;Add server_version: found new client &quot; + client.getBaseEntityId());</span>
+<span class="nc" id="L120">					}</span>
+<span class="nc" id="L121">					catch (InterruptedException e) {</span>
+<span class="nc" id="L122">						logger.error(&quot;&quot;, e);</span>
+					}
+				}
+<span class="nc" id="L125">				clients = allClients.findByEmptyServerVersion();</span>
+			}
+			
+<span class="nc" id="L128">			List&lt;Event&gt; events = allEvents.findByEmptyServerVersion();</span>
+<span class="nc bnc" id="L129" title="All 4 branches missed.">			while (events != null &amp;&amp; !events.isEmpty()) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">				for (Event event : events) {</span>
+					try {
+<span class="nc" id="L132">						Thread.sleep(1);</span>
+<span class="nc" id="L133">						event=eventService.processOutOfArea(event);</span>
+<span class="nc" id="L134">						event.setServerVersion(System.currentTimeMillis());</span>
+<span class="nc" id="L135">						allEvents.update(event);</span>
+						
+<span class="nc" id="L137">						logger.debug(&quot;Add server_version: found new event &quot; + event.getBaseEntityId());</span>
+<span class="nc" id="L138">					}</span>
+<span class="nc" id="L139">					catch (InterruptedException e) {</span>
+<span class="nc" id="L140">						logger.error(&quot;&quot;, e);</span>
+					}
+				}
+				
+<span class="nc" id="L144">				events = allEvents.findByEmptyServerVersion();</span>
+			}
+<span class="nc" id="L146">		}</span>
+<span class="nc" id="L147">		catch (Exception e) {</span>
+<span class="nc" id="L148">			logger.error(&quot;&quot;, e);</span>
+		}
+		
+<span class="nc" id="L151">	}</span>
+	
+	private long getVersion() {
+<span class="nc" id="L154">		AppStateToken token = configService.getAppStateTokenByName(AllConstants.Config.EVENTS_PARSER_LAST_PROCESSED_EVENT);</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">		return token == null ? 0L : token.longValue();</span>
+	}
+	
+	private Comparator&lt;Event&gt; serverVersionComparator() {
+<span class="nc" id="L159">		return new Comparator&lt;Event&gt;() {</span>
+			
+			public int compare(Event firstEvent, Event secondEvent) {
+<span class="nc" id="L162">				long firstTimestamp = firstEvent.getVersion();</span>
+<span class="nc" id="L163">				long secondTimestamp = secondEvent.getVersion();</span>
+<span class="nc bnc" id="L164" title="All 4 branches missed.">				return firstTimestamp == secondTimestamp ? 0 : firstTimestamp &lt; secondTimestamp ? -1 : 1;</span>
+			}
+		};
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

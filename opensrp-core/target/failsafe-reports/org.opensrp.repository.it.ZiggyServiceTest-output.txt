@@ -1,0 +1,5 @@
+[REPORT] 20072017 11:20:05,194 INFO  [main] [TestContextManager] @TestExecutionListeners is not present for class [class org.opensrp.repository.it.ZiggyServiceTest]: using defaults.
+[REPORT] 20072017 11:20:06,326 INFO  [main] [FormSubmissionRouter] Handling new_household_registration form submission with instance Id: 88c0e824-10b4-44c2-9429-754b8d823776 for entity: a3f2abf4-2699-4761-819a-cea739224164
+CUSTOM FORM CALLED
+[REPORT] 20072017 11:20:06,327 INFO  [main] [ZiggyService] Saving form successful, with params: {"instanceId":"88c0e824-10b4-44c2-9429-754b8d823776", "anmId":"demotest", "entityId":"a3f2abf4-2699-4761-819a-cea739224164","formName":"new_household_registration","clientVersion":"1430997074596", "serverVersion": "1430998001293"}.
+

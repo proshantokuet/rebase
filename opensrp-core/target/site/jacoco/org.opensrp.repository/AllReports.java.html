@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllReports.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllReports.java</span></div><h1>AllReports.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.List;
+
+import org.ektorp.ComplexKey;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.GenerateView;
+import org.ektorp.support.View;
+import org.joda.time.DateTime;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.Report;
+import org.opensrp.repository.lucene.LuceneReportRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllReports extends MotechBaseRepository&lt;Report&gt; {
+	
+	private LuceneReportRepository lrr;
+	
+	@Autowired
+	protected AllReports(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db,
+	    LuceneReportRepository lrr) {
+<span class="fc" id="L26">		super(Report.class, db);</span>
+<span class="fc" id="L27">		this.lrr = lrr;</span>
+<span class="fc" id="L28">	}</span>
+	
+	public Report findById(String id) {
+<span class="nc" id="L31">		Report report = db.get(Report.class, id);</span>
+<span class="nc" id="L32">		return report;</span>
+	}
+	
+	@GenerateView
+	public List&lt;Report&gt; getAll() {
+<span class="nc" id="L37">		return super.getAll();</span>
+	}
+	
+	@GenerateView
+	public List&lt;Report&gt; findByBaseEntityId(String baseEntityId) {
+<span class="nc" id="L42">		return queryView(&quot;by_baseEntityId&quot;, baseEntityId);</span>
+	}
+	
+	@View(name = &quot;all_reports_by_identifier&quot;, map = &quot;function(doc) {if (doc.type === 'Report') {for(var key in doc.identifiers) {emit(doc.identifiers[key]);}}}&quot;)
+	public List&lt;Report&gt; findAllByIdentifier(String identifier) {
+<span class="nc" id="L47">		return db.queryView(createQuery(&quot;all_reports_by_identifier&quot;).key(identifier).includeDocs(true), Report.class);</span>
+	}
+	
+	@View(name = &quot;all_reports_by_base_entity_and_type&quot;, map = &quot;function(doc) { if (doc.type === 'Report'){  emit([doc.baseEntityId, doc.reportType], doc); } }&quot;)
+	public List&lt;Report&gt; findByBaseEntityAndType(String baseEntityId, String reportType) {
+<span class="nc" id="L52">		return db.queryView(createQuery(&quot;all_reports_by_base_entity_and_type&quot;).key(ComplexKey.of(baseEntityId, reportType))</span>
+<span class="nc" id="L53">		        .includeDocs(true),</span>
+<span class="nc" id="L54">		    Report.class);</span>
+	}
+	
+	@View(name = &quot;reports_by_empty_server_version&quot;, map = &quot;function(doc) { if (doc.type == 'Report' &amp;&amp; !doc.serverVersion) { emit(doc._id, doc); } }&quot;)
+	public List&lt;Report&gt; findByEmptyServerVersion() {
+<span class="nc" id="L59">		return db.queryView(createQuery(&quot;reports_by_empty_server_version&quot;).limit(200).includeDocs(true), Report.class);</span>
+	}
+	
+	@View(name = &quot;reports_by_version&quot;, map = &quot;function(doc) { if (doc.type === 'Report') { emit([doc.serverVersion], null); } }&quot;)
+	public List&lt;Report&gt; findByServerVersion(long serverVersion) {
+<span class="nc" id="L64">		ComplexKey startKey = ComplexKey.of(serverVersion + 1);</span>
+<span class="nc" id="L65">		ComplexKey endKey = ComplexKey.of(Long.MAX_VALUE);</span>
+<span class="nc" id="L66">		return db.queryView(createQuery(&quot;reports_by_version&quot;).startKey(startKey).endKey(endKey).includeDocs(true),</span>
+<span class="nc" id="L67">		    Report.class);</span>
+	}
+	
+	@View(name = &quot;all_reports_by_base_entity_and_form_submission&quot;, map = &quot;function(doc) { if (doc.type === 'Report'){  emit([doc.baseEntityId, doc.formSubmissionId], doc); } }&quot;)
+	public List&lt;Report&gt; findByBaseEntityAndFormSubmissionId(String baseEntityId, String formSubmissionId) {
+<span class="nc" id="L72">		return db.queryView(createQuery(&quot;all_reports_by_base_entity_and_form_submission&quot;)</span>
+<span class="nc" id="L73">		        .key(ComplexKey.of(baseEntityId, formSubmissionId)).includeDocs(true),</span>
+<span class="nc" id="L74">		    Report.class);</span>
+	}
+	
+	public List&lt;Report&gt; findReports(String team, String providerId, String locationId, String baseEntityId,
+	                                Long serverVersion, String sortBy, String sortOrder, int limit) {
+<span class="nc" id="L79">		return lrr.getByCriteria(team, providerId, locationId, baseEntityId, serverVersion, sortBy, sortOrder, limit);</span>
+	}
+	
+	public List&lt;Report&gt; findReports(String baseEntityId, DateTime from, DateTime to, String reportType, String providerId,
+	                                String locationId, DateTime lastEditFrom, DateTime lastEditTo) {
+<span class="nc" id="L84">		return lrr.getByCriteria(baseEntityId, from, to, reportType, providerId, locationId, lastEditFrom, lastEditTo);</span>
+	}
+	
+	public List&lt;Report&gt; findReportsByDynamicQuery(String query) {
+<span class="nc" id="L88">		return lrr.getByCriteria(query);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

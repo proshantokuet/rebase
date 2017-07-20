@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LuceneSearchRepository.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">LuceneSearchRepository.java</span></div><h1>LuceneSearchRepository.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import static org.opensrp.common.AllConstants.BaseEntity.LAST_UPDATE;
+import static org.opensrp.common.AllConstants.Client.BIRTH_DATE;
+import static org.opensrp.common.AllConstants.Client.FIRST_NAME;
+import static org.opensrp.common.AllConstants.Client.GENDER;
+import static org.opensrp.common.AllConstants.Client.LAST_NAME;
+import static org.opensrp.common.AllConstants.Client.MIDDLE_NAME;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import org.joda.time.DateTime;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.Search;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.github.ldriscoll.ektorplucene.CouchDbRepositorySupportWithLucene;
+import com.github.ldriscoll.ektorplucene.LuceneQuery;
+import com.github.ldriscoll.ektorplucene.LuceneResult;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.FullText;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.Index;
+import com.mysql.jdbc.StringUtils;
+
+@FullText({ @Index(name = &quot;by_all_criteria&quot;, index = &quot;function(doc){ if(doc.type!=='Client') return null; var arr1=['firstName','middleName','lastName','gender']; var ret=new Document(); for(var i in arr1){ ret.add(doc[arr1[i]],{'field':arr1[i]}) } for (var key in doc.identifiers) { ret.add(doc.identifiers[key], {'field': key}); } for(var key in doc.attributes){ ret.add(doc.attributes[key],{'field':key}) } var bd=doc.birthdate.substring(0,19); ret.add(bd,{'field':'birthdate','type':'date'}); var crd=doc.dateCreated.substring(0,19); ret.add(crd,{'field':'lastEdited','type':'date'}); if(doc.dateEdited){ var led=doc.dateEdited.substring(0,19); ret.add(led,{'field':'lastEdited','type':'date'}) } return ret }&quot;) })
+@Component
+public class LuceneSearchRepository extends CouchDbRepositorySupportWithLucene&lt;Search&gt; {
+	
+	private LuceneDbConnector ldb;
+	
+	@Autowired
+	protected LuceneSearchRepository(LuceneDbConnector db) {
+<span class="fc" id="L35">		super(Search.class, db);</span>
+<span class="fc" id="L36">		this.ldb = db;</span>
+<span class="fc" id="L37">		initStandardDesignDocument();</span>
+<span class="fc" id="L38">	}</span>
+	
+	public List&lt;Client&gt; getByCriteria(String nameLike, String firstName, String middleName, String lastName, String gender,
+	                                  Map&lt;String, String&gt; identifiers, Map&lt;String, String&gt; attributes,
+	                                  DateTime birthdateFrom, DateTime birthdateTo, DateTime lastEditFrom,
+	                                  DateTime lastEditTo, Integer limit) {
+		// create a simple query against the view/search function that we've
+		// created
+<span class="nc" id="L46">		LuceneQuery query = new LuceneQuery(&quot;Search&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L48">		Query q = new Query(FilterType.OR);</span>
+<span class="nc bnc" id="L49" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(nameLike)) {</span>
+<span class="nc" id="L50">			q.likeWithWildCard(FIRST_NAME, nameLike);</span>
+<span class="nc" id="L51">			q.likeWithWildCard(MIDDLE_NAME, nameLike);</span>
+<span class="nc" id="L52">			q.likeWithWildCard(LAST_NAME, nameLike);</span>
+		}
+		
+<span class="nc" id="L55">		Query qf = new Query(FilterType.AND, q);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(firstName)) {</span>
+<span class="nc" id="L57">			qf.likeWithWildCard(FIRST_NAME, firstName);</span>
+		}
+		
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(middleName)) {</span>
+<span class="nc" id="L61">			qf.likeWithWildCard(MIDDLE_NAME, middleName);</span>
+		}
+		
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(lastName)) {</span>
+<span class="nc" id="L65">			qf.likeWithWildCard(LAST_NAME, lastName);</span>
+		}
+		
+<span class="nc bnc" id="L68" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(gender)) {</span>
+<span class="nc" id="L69">			qf.eq(GENDER, gender);</span>
+		}
+		
+<span class="nc bnc" id="L72" title="All 4 branches missed.">		if (identifiers != null &amp;&amp; !identifiers.isEmpty()) {</span>
+<span class="nc bnc" id="L73" title="All 2 branches missed.">			for (Map.Entry&lt;String, String&gt; entry : identifiers.entrySet()) {</span>
+<span class="nc" id="L74">				String identifierType = entry.getKey();</span>
+<span class="nc" id="L75">				String identifierValue = entry.getValue();</span>
+<span class="nc bnc" id="L76" title="All 2 branches missed.">				if (!StringUtils.isEmptyOrWhitespaceOnly(identifierType)</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">				        &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(identifierValue)) {</span>
+<span class="nc" id="L78">					qf.likeWithWildCard(identifierType, identifierValue);</span>
+				}
+			}
+		}
+		
+<span class="nc" id="L83">		String INACTIVE = &quot;inactive&quot;;</span>
+<span class="nc" id="L84">		String LOST_TO_FOLLOW_UP = &quot;lost_to_follow_up&quot;;</span>
+<span class="nc" id="L85">		Query sq = new Query(FilterType.OR);</span>
+<span class="nc bnc" id="L86" title="All 4 branches missed.">		if (attributes != null &amp;&amp; !attributes.isEmpty()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">			for (Map.Entry&lt;String, String&gt; entry : attributes.entrySet()) {</span>
+<span class="nc" id="L88">				String attributeType = entry.getKey();</span>
+<span class="nc" id="L89">				String attributeValue = entry.getValue();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">				if (!StringUtils.isEmptyOrWhitespaceOnly(attributeType)</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">				        &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(attributeValue)) {</span>
+<span class="nc bnc" id="L92" title="All 4 branches missed.">					if (attributeType.equals(INACTIVE) || attributeType.equals(LOST_TO_FOLLOW_UP)) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">						if (attributeValue.equals(Boolean.TRUE.toString())) {</span>
+<span class="nc" id="L94">							sq.eq(attributeType, attributeValue);</span>
+<span class="nc bnc" id="L95" title="All 4 branches missed.">						} else if (attributeType.equals(INACTIVE) &amp;&amp; attributeValue.equals(Boolean.FALSE.toString())){</span>
+							//ACTIVE
+<span class="nc" id="L97">							Query aq = new Query(FilterType.AND);</span>
+<span class="nc" id="L98">							aq.notEq(INACTIVE, Boolean.TRUE.toString());</span>
+<span class="nc" id="L99">							aq.notEq(LOST_TO_FOLLOW_UP, Boolean.TRUE.toString());</span>
+<span class="nc" id="L100">							sq.addToQuery(aq);</span>
+						}
+<span class="nc" id="L102">					} else {</span>
+<span class="nc" id="L103">						qf.likeWithWildCard(attributeType, attributeValue);</span>
+					}
+				}
+			}
+		}
+		
+<span class="nc" id="L109">		qf.addToQuery(sq);</span>
+		
+<span class="nc bnc" id="L111" title="All 4 branches missed.">		if (birthdateFrom != null &amp;&amp; birthdateTo != null) {</span>
+<span class="nc" id="L112">			qf.between(BIRTH_DATE, birthdateFrom, birthdateTo);</span>
+		}
+		
+<span class="nc bnc" id="L115" title="All 6 branches missed.">		if (lastEditFrom != null &amp; lastEditTo != null) {</span>
+<span class="nc" id="L116">			qf.between(LAST_UPDATE, lastEditFrom, lastEditTo);</span>
+		}
+		
+<span class="nc bnc" id="L119" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L120">			throw new RuntimeException(&quot;Atleast one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L122">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L124">		query.setStaleOk(false);</span>
+<span class="nc" id="L125">		query.setIncludeDocs(true);</span>
+<span class="nc bnc" id="L126" title="All 4 branches missed.">		if(limit != null &amp;&amp; limit.intValue() &gt; 0){</span>
+<span class="nc" id="L127">			query.setLimit(limit);</span>
+		}
+		try {
+<span class="nc" id="L130">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L131">			return ldb.asList(result, Client.class);</span>
+		}
+<span class="nc" id="L133">		catch (IOException e) {</span>
+<span class="nc" id="L134">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	public List&lt;Client&gt; getByCriteria(String query) {
+		// create a simple query against the view/search function that we've
+		// created
+<span class="nc" id="L141">		LuceneQuery lq = new LuceneQuery(&quot;Search&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L143">		lq.setQuery(query);</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L145">		lq.setStaleOk(false);</span>
+<span class="nc" id="L146">		lq.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L149">			LuceneResult result = db.queryLucene(lq);</span>
+<span class="nc" id="L150">			return ldb.asList(result, Client.class);</span>
+		}
+<span class="nc" id="L152">		catch (IOException e) {</span>
+<span class="nc" id="L153">			throw new RuntimeException(e);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RapidProServiceImpl.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">RapidProServiceImpl.java</span></div><h1>RapidProServiceImpl.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+
+import com.google.gson.Gson;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpDelete;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+@Component
+<span class="fc" id="L25">public class RapidProServiceImpl implements RapidProService {</span>
+	@Value(&quot;#{opensrp['rapidpro.url']}&quot;)
+	private String rapidproUrl;
+
+	@Value(&quot;#{opensrp['rapidpro.token']}&quot;)
+	private String rapidproToken;
+
+<span class="fc" id="L32">	private static Logger logger = LoggerFactory.getLogger(RapidProServiceImpl.class.toString());</span>
+
+<span class="fc" id="L34">	HttpClient client = HttpClientBuilder.create().build();</span>
+
+	/**
+	 * urns - JSON array of URNs to send the message to (array of strings,
+	 * optional) contacts - JSON array of contact UUIDs to send the message to
+	 * (array of strings, optional) groups - JSON array of group UUIDs to send
+	 * the message to (array of strings, optional) text - the text of the
+	 * message to send (string, limit of 480 characters) channel - the id of the
+	 * channel to use. Contacts and URNs which can't be reached with this
+	 * channel are ignored (int, optional)
+	 * 
+	 * @param urns
+	 * @param contacts
+	 * @param groups
+	 * @param text
+	 * @param channel
+	 * @return
+	 */
+
+	@Override
+	public String sendMessage(List&lt;String&gt; urns, List&lt;String&gt; contacts, List&lt;String&gt; groups, String text, String channel) {
+		try {
+<span class="fc" id="L56">			HttpPost post = new HttpPost();</span>
+<span class="fc bfc" id="L57" title="All 6 branches covered.">			if (text == null || text.isEmpty() || text.length() &gt; 480) {</span>
+<span class="fc" id="L58">				logger.info(&quot;RapidPro: Message character limit of 480 exceeded&quot;);</span>
+<span class="fc" id="L59">				return &quot;Empty text or text longer than 480 characters not allowed&quot;;</span>
+			}
+<span class="fc" id="L61">			String uri = rapidproUrl + &quot;/api/v1/broadcasts.json&quot;;</span>
+<span class="fc" id="L62">			post = setPostAuthHeader(uri, post);</span>
+
+<span class="fc" id="L64">			JSONObject jsonParams = new JSONObject();</span>
+
+<span class="pc bpc" id="L66" title="1 of 4 branches missed.">			if (urns != null &amp;&amp; !urns.isEmpty()) {</span>
+<span class="nc" id="L67">				jsonParams.put(&quot;urns&quot;, new JSONArray(urns));</span>
+			}
+<span class="pc bpc" id="L69" title="1 of 4 branches missed.">			if (contacts != null &amp;&amp; !contacts.isEmpty()) {</span>
+<span class="nc" id="L70">				jsonParams.put(&quot;contacts&quot;, new JSONArray(contacts));</span>
+			}
+<span class="pc bpc" id="L72" title="1 of 4 branches missed.">			if (groups != null &amp;&amp; !groups.isEmpty()) {</span>
+<span class="nc" id="L73">				jsonParams.put(&quot;groups&quot;, new JSONArray(groups));</span>
+			}
+<span class="pc bpc" id="L75" title="2 of 4 branches missed.">			if (channel != null &amp;&amp; !channel.isEmpty()) {</span>
+<span class="nc" id="L76">				jsonParams.put(&quot;channel&quot;, channel);</span>
+			}
+
+<span class="pc bpc" id="L79" title="3 of 6 branches missed.">			if (!jsonParams.has(&quot;urns&quot;) &amp;&amp; !jsonParams.has(&quot;contacts&quot;) &amp;&amp; !jsonParams.has(&quot;groups&quot;)) {</span>
+<span class="fc" id="L80">				logger.info(&quot;RapidPro: No one to send message to!&quot;);</span>
+<span class="fc" id="L81">				return &quot;No recipients specified&quot;;</span>
+			}
+
+<span class="nc" id="L84">			jsonParams.put(&quot;text&quot;, text);</span>
+
+<span class="nc" id="L86">			StringEntity params = new StringEntity(jsonParams.toString());</span>
+<span class="nc" id="L87">			post.setEntity(params);</span>
+
+<span class="nc" id="L89">			HttpResponse response = client.execute(post);</span>
+<span class="nc" id="L90">			HttpEntity entity = response.getEntity();</span>
+<span class="nc" id="L91">			String responseString = EntityUtils.toString(entity, &quot;UTF-8&quot;);</span>
+<span class="nc" id="L92">			return responseString;</span>
+<span class="nc" id="L93">		} catch (Exception e) {</span>
+<span class="nc" id="L94">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L95">			return &quot;Exception occurred&quot;;</span>
+		}
+	}
+
+	/**
+	 * This method creates a contact in rapidpro. The param fieldValues should
+	 * contain a key urns(a list of URNs you want associated with the contact
+	 * (java.util.arraylist)) which is required by rapidpro. uuid - the UUID of
+	 * the contact to update (string) (optional, new contact created if not
+	 * present). name - the full name of the contact (string, optional).language
+	 * - the preferred language for the contact (3 letter iso code, optional).
+	 * group_uuids - a list of the UUIDs of any groups this contact is part of
+	 * (string array, optional). fields - a hashmap of contact fields you want
+	 * to set or update on this contact (JSON, optional)
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	@Override
+	public String createContact(Map&lt;String, Object&gt; fieldValues) {
+		try {
+<span class="fc" id="L114">			HttpPost post = new HttpPost();</span>
+<span class="pc bpc" id="L115" title="1 of 6 branches missed.">			if (fieldValues == null || fieldValues.isEmpty() || !fieldValues.containsKey(&quot;urns&quot;)) {</span>
+<span class="fc" id="L116">				return &quot;Field values cannot be empty and must have urns&quot;;</span>
+			}
+<span class="nc" id="L118">			String uri = rapidproUrl + &quot;/api/v1/contacts.json&quot;;</span>
+<span class="nc" id="L119">			post = setPostAuthHeader(uri, post);</span>
+
+<span class="nc" id="L121">			JSONObject jsonParams = new JSONObject();</span>
+<span class="nc bnc" id="L122" title="All 2 branches missed.">			for (Map.Entry&lt;String, Object&gt; entry : fieldValues.entrySet()) {</span>
+<span class="nc" id="L123">				String key = entry.getKey();</span>
+<span class="nc" id="L124">				Object value = entry.getValue();</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">				if (value instanceof List) {</span>
+<span class="nc" id="L126">					value = new JSONArray((List&lt;?&gt;) value);</span>
+				}
+				// create the fields just in case they don't exist first
+<span class="nc bnc" id="L129" title="All 2 branches missed.">				if (key.equalsIgnoreCase(&quot;fields&quot;)) {</span>
+<span class="nc bnc" id="L130" title="All 2 branches missed.">					for (Map.Entry&lt;String, Object&gt; fieldEntrySet : ((Map&lt;String, Object&gt;) value).entrySet()) {</span>
+<span class="nc" id="L131">						String fieldName = fieldEntrySet.getKey();</span>
+<span class="nc" id="L132">						addField(fieldName, null);</span>
+<span class="nc" id="L133">						logger.info(&quot;Creating RapidPro field &quot; + fieldName);</span>
+<span class="nc" id="L134">					}</span>
+				}
+<span class="nc" id="L136">				jsonParams.put(key, value);</span>
+
+<span class="nc" id="L138">			}</span>
+<span class="nc" id="L139">			StringEntity params = new StringEntity(jsonParams.toString());</span>
+<span class="nc" id="L140">			post.setEntity(params);</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">			logger.info(&quot;Creating RapidPro contact for &quot; + (fieldValues.containsKey(&quot;name&quot;)?fieldValues.get(&quot;name&quot;):&quot;&quot;));</span>
+<span class="nc" id="L142">			HttpResponse response = client.execute(post);</span>
+<span class="nc" id="L143">			HttpEntity entity = response.getEntity();</span>
+<span class="nc" id="L144">			String responseString = EntityUtils.toString(entity, &quot;UTF-8&quot;);</span>
+<span class="nc" id="L145">			return responseString;</span>
+<span class="nc" id="L146">		} catch (Exception e) {</span>
+<span class="nc" id="L147">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L148">			return &quot;Exception occurred&quot;;</span>
+		}
+
+	}
+
+	private HttpPost setPostAuthHeader(String url, HttpPost post) {
+<span class="fc" id="L154">		post.setURI(URI.create(url));</span>
+		// add header Authorization: Token YOUR_API_TOKEN_GOES_HERE
+<span class="fc" id="L156">		post.setHeader(&quot;Authorization&quot;, &quot; Token &quot; + rapidproToken);</span>
+<span class="fc" id="L157">		post.addHeader(&quot;content-type&quot;, &quot;application/json&quot;);</span>
+<span class="fc" id="L158">		post.addHeader(&quot;Accept&quot;, &quot;application/json&quot;);</span>
+<span class="fc" id="L159">		return post;</span>
+	}
+
+	private HttpDelete setDeleteAuthHeader(String url, HttpDelete delete) {
+<span class="nc" id="L163">		delete.setURI(URI.create(url));</span>
+		// add header Authorization: Token YOUR_API_TOKEN_GOES_HERE
+<span class="nc" id="L165">		delete.setHeader(&quot;Authorization&quot;, &quot; Token &quot; + rapidproToken);</span>
+<span class="nc" id="L166">		delete.addHeader(&quot;content-type&quot;, &quot;application/json&quot;);</span>
+<span class="nc" id="L167">		delete.addHeader(&quot;Accept&quot;, &quot;application/json&quot;);</span>
+<span class="nc" id="L168">		return delete;</span>
+	}
+
+	@Override
+	public String createGroup(String name) {
+		// FIXME Not currently supported in rapidpro
+<span class="nc" id="L174">		return &quot;Exception occurred&quot;;</span>
+	}
+
+	/**
+	 * This method adds a field to rapidpro valuetype is a required field in
+	 * rapidpro so if empty the default is set to T-text other acceptable
+	 * fieldtypes are: N - Decimal Number D - Datetime S - State I - District
+	 * label is the field name as it will appear in rapidpro and it's used to
+	 * generate the field key e.g a field label like woman name translates to
+	 * woman_name key
+	 * 
+	 */
+	@Override
+	public String addField(String label, String valueType) {
+		try {
+<span class="fc" id="L189">			HttpPost post = new HttpPost();</span>
+<span class="pc bpc" id="L190" title="1 of 4 branches missed.">			if (label == null || label.isEmpty()) {</span>
+<span class="fc" id="L191">				return &quot;Field label is required&quot;;</span>
+			}
+<span class="nc" id="L193">			String uri = rapidproUrl + &quot;/api/v1/fields.json&quot;;</span>
+<span class="nc" id="L194">			post = setPostAuthHeader(uri, post);</span>
+<span class="nc" id="L195">			JSONObject jsonParams = new JSONObject();</span>
+<span class="nc" id="L196">			jsonParams.put(&quot;label&quot;, label);</span>
+<span class="nc bnc" id="L197" title="All 4 branches missed.">			jsonParams.put(&quot;value_type&quot;, valueType == null || valueType.isEmpty() ? &quot;T&quot; : valueType);</span>
+
+<span class="nc" id="L199">			StringEntity params = new StringEntity(jsonParams.toString());</span>
+<span class="nc" id="L200">			post.setEntity(params);</span>
+<span class="nc" id="L201">			HttpResponse response = client.execute(post);</span>
+<span class="nc" id="L202">			HttpEntity entity = response.getEntity();</span>
+<span class="nc" id="L203">			String responseString = EntityUtils.toString(entity, &quot;UTF-8&quot;);</span>
+<span class="nc" id="L204">			return responseString;</span>
+<span class="nc" id="L205">		} catch (Exception e) {</span>
+<span class="nc" id="L206">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L207">			return &quot;Exception occurred&quot;;</span>
+		}
+	}
+
+	@Override
+	public int deleteContact(String uuid) {
+		try {
+<span class="nc" id="L214">			HttpDelete delete = new HttpDelete();</span>
+<span class="nc" id="L215">			String uri = rapidproUrl + &quot;/api/v1/contacts.json?uuid=&quot; + uuid;</span>
+<span class="nc" id="L216">			delete = setDeleteAuthHeader(uri, delete);</span>
+<span class="nc" id="L217">			HttpResponse response = client.execute(delete);</span>
+<span class="nc" id="L218">			int status = response.getStatusLine().getStatusCode();</span>
+<span class="nc" id="L219">			return status;</span>
+
+<span class="nc" id="L221">		} catch (Exception e) {</span>
+<span class="nc" id="L222">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L223">			return HttpStatus.SC_INTERNAL_SERVER_ERROR;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

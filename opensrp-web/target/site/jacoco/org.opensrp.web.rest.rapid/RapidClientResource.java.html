@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>RapidClientResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest.rapid</a> &gt; <span class="el_source">RapidClientResource.java</span></div><h1>RapidClientResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest.rapid;
+
+import java.io.UnsupportedEncodingException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.StringTokenizer;
+import java.util.UUID;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.commons.codec.binary.Base64;
+import org.joda.time.DateTime;
+import org.joda.time.Weeks;
+import org.joda.time.format.DateTimeFormatter;
+import org.joda.time.format.DateTimeFormatterBuilder;
+import org.json.JSONException;
+import org.opensrp.connector.openmrs.service.EncounterService;
+import org.opensrp.connector.openmrs.service.PatientService;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.Event;
+import org.opensrp.domain.Obs;
+import org.opensrp.form.domain.FormData;
+import org.opensrp.form.domain.FormField;
+import org.opensrp.form.domain.FormInstance;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.repository.AllFormSubmissions;
+import org.opensrp.service.ClientService;
+import org.opensrp.service.EventService;
+import org.opensrp.service.formSubmission.FormEntityConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.mysql.jdbc.StringUtils;
+
+@Controller
+@RequestMapping (&quot;/rest/rapid/client&quot;)
+public class RapidClientResource {
+
+private ClientService clientService;
+private EventService eventService;
+private AllFormSubmissions allFormSubmission;
+private FormEntityConverter fec;
+private PatientService ps;
+private EncounterService es;
+
+<span class="fc" id="L55">static Map&lt;String, String[]&gt; vs = new HashMap&lt;String, String[]&gt;(){{</span>
+<span class="fc" id="L56">	put(&quot;0&quot;, new String[]{&quot;bcg&quot;});</span>
+<span class="fc" id="L57">	put(&quot;6&quot;, new String[]{&quot;penta1&quot;, &quot;pcv1&quot;, &quot;opv1&quot;});</span>
+<span class="fc" id="L58">	put(&quot;10&quot;, new String[]{&quot;penta2&quot;, &quot;pcv2&quot;, &quot;opv2&quot;});</span>
+<span class="fc" id="L59">	put(&quot;14&quot;, new String[]{&quot;penta3&quot;, &quot;pcv3&quot;, &quot;opv3&quot;});</span>
+<span class="fc" id="L60">	put(&quot;36&quot;, new String[]{&quot;measles1&quot;});</span>
+<span class="fc" id="L61">	put(&quot;60&quot;, new String[]{&quot;measles2&quot;});</span>
+
+<span class="fc" id="L63">}}	;</span>
+
+	@Autowired
+	public RapidClientResource(ClientService clientService, EventService eventService, 
+<span class="fc" id="L67">			AllFormSubmissions allFormSubmission, FormEntityConverter fec, PatientService ps, EncounterService es) {</span>
+<span class="fc" id="L68">		this.clientService = clientService;</span>
+<span class="fc" id="L69">		this.eventService = eventService;</span>
+<span class="fc" id="L70">		this.allFormSubmission = allFormSubmission;</span>
+<span class="fc" id="L71">		this.fec = fec;</span>
+<span class="fc" id="L72">		this.ps = ps;</span>
+<span class="fc" id="L73">		this.es = es;</span>
+<span class="fc" id="L74">	}</span>
+
+	@RequestMapping(value=&quot;/cv&quot;, method= RequestMethod.POST)
+	@ResponseBody
+	public Map&lt;String, Object&gt; createChild(HttpServletRequest req) {
+<span class="nc" id="L79">		Map&lt;String, Object&gt; res = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L80">		String firstName = req.getParameter(&quot;firstName&quot;);</span>
+<span class="nc" id="L81">		String lastName = req.getParameter(&quot;lastName&quot;);</span>
+<span class="nc" id="L82">		String gender = req.getParameter(&quot;gender&quot;);</span>
+<span class="nc" id="L83">		String birthdate = req.getParameter(&quot;birthdate&quot;);</span>
+<span class="nc" id="L84">		String identifier = req.getParameter(&quot;identifier&quot;);</span>
+		
+<span class="nc bnc" id="L86" title="All 2 branches missed.">		if(StringUtils.isEmptyOrWhitespaceOnly(identifier)</span>
+<span class="nc bnc" id="L87" title="All 4 branches missed.">				|| StringUtils.isEmptyOrWhitespaceOnly(firstName)||StringUtils.isEmptyOrWhitespaceOnly(lastName)</span>
+<span class="nc bnc" id="L88" title="All 4 branches missed.">				||StringUtils.isEmptyOrWhitespaceOnly(gender)||StringUtils.isEmptyOrWhitespaceOnly(birthdate)){</span>
+<span class="nc" id="L89">			res.put(&quot;ERROR&quot;, &quot;Request MUST have parameters identifier, firstName, lastName, gender, birthdate with valid values&quot;);</span>
+<span class="nc" id="L90">			return res;</span>
+		}
+		
+<span class="nc" id="L93">		Client c = new Client(UUID.randomUUID().toString());</span>
+<span class="nc" id="L94">		c.addIdentifier(&quot;Program Client ID&quot;, identifier);</span>
+<span class="nc" id="L95">		c.setFirstName(firstName);</span>
+<span class="nc" id="L96">		c.setLastName(lastName);</span>
+<span class="nc" id="L97">		c.setGender(gender);</span>
+<span class="nc" id="L98">		c.setBirthdate(new DateTime(birthdate));</span>
+		
+<span class="nc" id="L100">		clientService.addClient(c);</span>
+		
+<span class="nc" id="L102">		res.put(&quot;SUCESS&quot;, true);</span>
+<span class="nc" id="L103">		res.put(&quot;SUCCESS&quot;, true);</span>
+<span class="nc" id="L104">		res.put(&quot;data&quot;, c);</span>
+		
+		try {
+<span class="nc" id="L107">			ps.createPatient(c);</span>
+<span class="nc" id="L108">		} catch (JSONException e) {</span>
+<span class="nc" id="L109">			e.printStackTrace();</span>
+<span class="nc" id="L110">		}</span>
+		
+<span class="nc" id="L112">		return res;</span>
+	}
+	
+	private static ArrayList&lt;String&gt; eligibleVaccines(int age) {
+<span class="nc" id="L116">		ArrayList&lt;String&gt; a = new ArrayList&lt;&gt;();</span>
+<span class="nc bnc" id="L117" title="All 2 branches missed.">		for (String ag : vs.keySet()) {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			if(Integer.parseInt(ag) &lt;= age){</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">				for (String v : vs.get(ag)) {</span>
+<span class="nc" id="L120">					a.add(v);</span>
+				}
+			}
+<span class="nc" id="L123">		}</span>
+<span class="nc" id="L124">		return a;</span>
+	}
+	
+	
+	
+	private static Map&lt;String, Object&gt; makeVaccineCard(List&lt;Event&gt; el, List&lt;String&gt; eligibleVaccines) {
+<span class="nc" id="L130">		Map&lt;String, Object&gt; receivedVacines = new HashMap&lt;&gt;();</span>
+
+<span class="nc" id="L132">		System.out.println(el.size()+ &quot; FOUND EVENT&quot;);</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">		for (Event e : el) {</span>
+<span class="nc" id="L134">			System.out.println();</span>
+<span class="nc bnc" id="L135" title="All 2 branches missed.">			for (Obs o : e.getObs()) {</span>
+<span class="nc" id="L136">				System.out.println(o+ &quot; FOUND OBS&quot;);</span>
+
+<span class="nc bnc" id="L138" title="All 2 branches missed.">				if(o.getFormSubmissionField().toString().toLowerCase().matches(&quot;bcg|penta1|penta2|penta3|measles1|measles2&quot;)){</span>
+<span class="nc" id="L139">					receivedVacines.put(o.getFormSubmissionField(), o.getValue().toString());</span>
+				}
+<span class="nc" id="L141">			}</span>
+<span class="nc" id="L142">		}</span>
+		
+<span class="nc" id="L144">		Map&lt;String, Object&gt; vaccineCard = new HashMap&lt;&gt;();</span>
+<span class="nc bnc" id="L145" title="All 2 branches missed.">		for (String vl : vs.keySet()) {</span>
+<span class="nc bnc" id="L146" title="All 2 branches missed.">			for (String v : vs.get(vl)) {</span>
+<span class="nc bnc" id="L147" title="All 2 branches missed.">				if(receivedVacines.containsKey(v)){</span>
+<span class="nc" id="L148">					vaccineCard.put(v, receivedVacines.get(v));</span>
+				}
+<span class="nc bnc" id="L150" title="All 2 branches missed.">				else if(eligibleVaccines.contains(v)){</span>
+<span class="nc" id="L151">					vaccineCard.put(v, &quot;due&quot;);</span>
+				}
+				else {
+<span class="nc" id="L154">					vaccineCard.put(v, &quot;n/a&quot;);</span>
+				}
+			}
+<span class="nc" id="L157">		}</span>
+<span class="nc" id="L158">		return vaccineCard;</span>
+	}
+	@RequestMapping(value=&quot;/uvo&quot;, method=RequestMethod.POST)
+	@ResponseBody
+	public Map&lt;String, String&gt; updateVaccineO(HttpServletRequest req){
+<span class="nc" id="L163">		Map&lt;String, String&gt; resp = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L164">		String id = req.getParameter(&quot;clientId&quot;);</span>
+<span class="nc" id="L165">		String location = req.getParameter(&quot;location&quot;);</span>
+<span class="nc" id="L166">		String date = req.getParameter(&quot;date&quot;);</span>
+<span class="nc" id="L167">		String vaccine = req.getParameter(&quot;vaccine&quot;);</span>
+		
+		try {
+<span class="nc bnc" id="L170" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(vaccine)){</span>
+<span class="nc" id="L171">				resp.put(&quot;ERROR&quot;, &quot;vaccine MUST be specified.&quot;);</span>
+<span class="nc" id="L172">				return resp;</span>
+			}
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(date)){</span>
+<span class="nc" id="L175">				resp.put(&quot;ERROR&quot;, &quot;date MUST be specified.&quot;);</span>
+<span class="nc" id="L176">				return resp;</span>
+			}
+<span class="nc bnc" id="L178" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(id)){</span>
+<span class="nc" id="L179">				resp.put(&quot;ERROR&quot;, &quot;clientId MUST be specified.&quot;);</span>
+<span class="nc" id="L180">				return resp;</span>
+			}
+<span class="nc" id="L182">			Client c = clientService.find(id);</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">			if(c == null){</span>
+<span class="nc" id="L184">				resp.put(&quot;ERROR&quot;, &quot;ID Not found&quot;);</span>
+<span class="nc" id="L185">				return resp;</span>
+			}
+			
+<span class="nc" id="L188">			Event e = new Event(c.getBaseEntityId(), &quot;Immunization&quot;, new DateTime(), </span>
+<span class="nc" id="L189">					&quot;testentity&quot;, &quot;demotest&quot;, location, System.currentTimeMillis()+&quot;&quot;);</span>
+<span class="nc" id="L190">			List&lt;Object&gt; values = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L191">			values.add(date);</span>
+<span class="nc" id="L192">			e.addObs(new Obs(&quot;concept&quot;, &quot;txt&quot;, &quot;1025AAAAAAAAAAAAAAAA&quot;, null, values , &quot;&quot;, vaccine));</span>
+
+<span class="nc" id="L194">			eventService.addEvent(e);</span>
+<span class="nc" id="L195">			resp.put(&quot;SUCCESS&quot;, Boolean.toString(true));</span>
+<span class="nc" id="L196">			return resp;</span>
+		}
+<span class="nc" id="L198">		catch(Exception e){</span>
+<span class="nc" id="L199">			e.printStackTrace();</span>
+<span class="nc" id="L200">			resp.put(&quot;ERROR&quot;, e.getMessage());</span>
+<span class="nc" id="L201">			return resp;</span>
+		}
+	}
+	
+	@RequestMapping(value=&quot;/uv&quot;, method=RequestMethod.POST)
+	@ResponseBody
+	public Map&lt;String, String&gt; updateVaccine(HttpServletRequest req){
+<span class="nc" id="L208">		Map&lt;String, String&gt; resp = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L209">		String id = req.getParameter(&quot;clientId&quot;);</span>
+<span class="nc" id="L210">		String location = req.getParameter(&quot;location&quot;);</span>
+<span class="nc" id="L211">		String date = req.getParameter(&quot;date&quot;);</span>
+<span class="nc" id="L212">		String vaccine = req.getParameter(&quot;vaccine&quot;);</span>
+<span class="nc" id="L213">		Date dt = null;</span>
+		try {
+<span class="nc" id="L215">			dt = new SimpleDateFormat(&quot;dd-MM-yyyy&quot;).parse(date);</span>
+<span class="nc" id="L216">		} catch (Exception e) {</span>
+<span class="nc" id="L217">			e.printStackTrace();</span>
+			try {
+<span class="nc" id="L219">				dt = new SimpleDateFormat(&quot;yyyy-MM-dd&quot;).parse(date);</span>
+<span class="nc" id="L220">			} catch (ParseException e1) {</span>
+<span class="nc" id="L221">				e1.printStackTrace();</span>
+<span class="nc" id="L222">			}</span>
+<span class="nc" id="L223">		}</span>
+			
+		try {
+<span class="nc bnc" id="L226" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(vaccine)){</span>
+<span class="nc" id="L227">				resp.put(&quot;ERROR&quot;, &quot;vaccine MUST be specified.&quot;);</span>
+<span class="nc" id="L228">				return resp;</span>
+			}
+<span class="nc bnc" id="L230" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(date)){</span>
+<span class="nc" id="L231">				resp.put(&quot;ERROR&quot;, &quot;date MUST be specified.&quot;);</span>
+<span class="nc" id="L232">				return resp;</span>
+			}
+<span class="nc bnc" id="L234" title="All 2 branches missed.">			if(StringUtils.isEmptyOrWhitespaceOnly(id)){</span>
+<span class="nc" id="L235">				resp.put(&quot;ERROR&quot;, &quot;clientId MUST be specified.&quot;);</span>
+<span class="nc" id="L236">				return resp;</span>
+			}
+<span class="nc" id="L238">			Client c = clientService.find(id);</span>
+<span class="nc bnc" id="L239" title="All 2 branches missed.">			if(c == null){</span>
+<span class="nc" id="L240">				resp.put(&quot;ERROR&quot;, &quot;ID Not found&quot;);</span>
+<span class="nc" id="L241">				return resp;</span>
+			}
+			
+<span class="nc" id="L244">			String bindType = &quot;pkchild&quot;;</span>
+<span class="nc" id="L245">			String user = usernameWithBasicAuthentication(req);</span>
+<span class="nc" id="L246">			String insId = UUID.randomUUID().toString();</span>
+<span class="nc" id="L247">			String eid = c.getBaseEntityId();</span>
+
+<span class="nc" id="L249">			FormData form = new FormData(bindType, &quot;/model/instance/Child_Vaccination_Followup/&quot;, </span>
+<span class="nc" id="L250">					generateChildFields(eid, insId, location, user, location, DateTime.now(), vaccine, new DateTime(dt)), null);</span>
+<span class="nc" id="L251">			FormInstance formInstance = new FormInstance(form, &quot;1&quot;);</span>
+<span class="nc" id="L252">			FormSubmission fs = new FormSubmission(user, insId, &quot;child_followup&quot;, eid, DateTime.now().getMillis(), &quot;1&quot;, formInstance, DateTime.now().getMillis());</span>
+
+<span class="nc" id="L254">			allFormSubmission.add(fs);</span>
+
+<span class="nc" id="L256">			Event e = fec.getEventFromFormSubmission(fs);</span>
+		
+<span class="nc" id="L258">			eventService.addEvent(e);</span>
+			
+			try{
+<span class="nc" id="L261">				System.out.println(&quot;Creating Encounter&quot;);</span>
+<span class="nc" id="L262">				System.out.println(es.createEncounter(e));</span>
+			}
+<span class="nc" id="L264">			catch(Exception e2){</span>
+<span class="nc" id="L265">				e2.printStackTrace();</span>
+<span class="nc" id="L266">			}</span>
+<span class="nc" id="L267">			resp.put(&quot;SUCCESS&quot;, Boolean.toString(true));</span>
+
+<span class="nc" id="L269">			return resp;</span>
+		}
+<span class="nc" id="L271">		catch(Exception e){</span>
+<span class="nc" id="L272">			e.printStackTrace();</span>
+<span class="nc" id="L273">			resp.put(&quot;ERROR&quot;, e.getMessage());</span>
+<span class="nc" id="L274">			return resp;</span>
+		}
+	}
+	
+	@RequestMapping(&quot;/c&quot;)
+	@ResponseBody
+	public Map&lt;String, Object&gt; findInfo(HttpServletRequest req) {
+<span class="nc" id="L281">		String id = req.getParameter(&quot;id&quot;);</span>
+<span class="nc" id="L282">		Map&lt;String, Object&gt; m = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L283">		Client c = clientService.find(id );</span>
+<span class="nc bnc" id="L284" title="All 2 branches missed.">		if(c == null){</span>
+<span class="nc" id="L285">			m.put(&quot;found&quot;, false);</span>
+<span class="nc" id="L286">			return m;</span>
+		}
+<span class="nc" id="L288">		m.put(&quot;found&quot;, true);</span>
+<span class="nc" id="L289">		String eventType = req.getParameter(&quot;eventType&quot;);</span>
+<span class="nc" id="L290">		m.put(&quot;client&quot;, c);</span>
+		
+<span class="nc" id="L292">		int age = Weeks.weeksBetween(c.getBirthdate(), new DateTime().now()).getWeeks();</span>
+<span class="nc" id="L293">		m.put(&quot;age&quot;, age);</span>
+		
+<span class="nc" id="L295">		ArrayList&lt;String&gt; ev = eligibleVaccines(age);</span>
+<span class="nc" id="L296">		m.put(&quot;eligibleVaccines&quot;, ev);</span>
+<span class="nc" id="L297">		Map&lt;String, Object&gt; receivedVacines = new HashMap&lt;&gt;();</span>
+		try{
+<span class="nc" id="L299">			List&lt;Event&gt; el = eventService.findByBaseEntityId(c.getBaseEntityId()); //eventService.findEventsBy(c.getBaseEntityId(), null, null, eventType, null, null, null, null, null);</span>
+<span class="nc" id="L300">			m.put(&quot;vaccineCard&quot;, makeVaccineCard(el, ev));</span>
+<span class="nc" id="L301">		} catch(Exception e){</span>
+<span class="nc" id="L302">			e.printStackTrace();</span>
+<span class="nc" id="L303">		}</span>
+<span class="nc" id="L304">		m.put(&quot;receivedVaccines&quot;, receivedVacines);</span>
+<span class="nc" id="L305">		return m;</span>
+	}
+	
+	private void addField(List&lt;FormField&gt; fields, String name, String value, String bindType) {
+<span class="nc" id="L309">		fields.add(new FormField(name, value, bindType+&quot;.&quot;+name));</span>
+<span class="nc" id="L310">	}</span>
+	
+	private List&lt;FormField&gt; generateChildFields(String entityId, String instanceId, String uc, String provider, String center, DateTime eDate, String vaccine, DateTime vaccineDate) {
+<span class="nc" id="L313">		List&lt;FormField&gt; fields = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L314">		String df = &quot;yyyy-MM-dd&quot;;</span>
+<span class="nc" id="L315">		String bindType = &quot;pkchild&quot;;</span>
+<span class="nc" id="L316">		addField(fields, &quot;id&quot;, entityId, bindType);</span>
+<span class="nc" id="L317">		addField(fields, &quot;instanceID&quot;, &quot;uid:&quot;+instanceId, bindType);</span>
+<span class="nc" id="L318">		addField(fields, &quot;provider_id&quot;, provider, bindType);</span>
+<span class="nc" id="L319">		addField(fields, &quot;provider_location_id&quot;, center, bindType);</span>
+<span class="nc" id="L320">		addField(fields, &quot;start&quot;, eDate.toString(&quot;yyyy-MM-yy HH:mm:ss&quot;), bindType);</span>
+<span class="nc" id="L321">		addField(fields, &quot;end&quot;, eDate.toString(&quot;yyyy-MM-yy HH:mm:ss&quot;), bindType);</span>
+<span class="nc" id="L322">		addField(fields, &quot;today&quot;, eDate.toString(df), bindType);</span>
+
+<span class="nc" id="L324">		addField(fields, &quot;vaccination_date&quot;, vaccineDate.toString(df), bindType);</span>
+<span class="nc" id="L325">		addField(fields, &quot;vaccines&quot;, vaccine, bindType);</span>
+		
+<span class="nc" id="L327">		addField(fields, vaccine, vaccineDate.toString(df), bindType);</span>
+<span class="nc" id="L328">		String dose = vaccine.substring(vaccine.length()-1);</span>
+<span class="nc bnc" id="L329" title="All 2 branches missed.">		if(dose.matches(&quot;[0-9]&quot;)){</span>
+<span class="nc" id="L330">			addField(fields, vaccine+&quot;_dose_today&quot;, dose, bindType);</span>
+		}
+<span class="nc" id="L332">		return fields;</span>
+	}
+	
+	public String usernameWithBasicAuthentication(HttpServletRequest req) {
+<span class="nc" id="L336">	    String authHeader = req.getHeader(&quot;Authorization&quot;);</span>
+<span class="nc bnc" id="L337" title="All 2 branches missed.">	    if (authHeader != null) {</span>
+<span class="nc" id="L338">	        StringTokenizer st = new StringTokenizer(authHeader);</span>
+<span class="nc bnc" id="L339" title="All 2 branches missed.">	        if (st.hasMoreTokens()) {</span>
+<span class="nc" id="L340">	            String basic = st.nextToken();</span>
+
+<span class="nc bnc" id="L342" title="All 2 branches missed.">	            if (basic.equalsIgnoreCase(&quot;Basic&quot;)) {</span>
+	                try {
+<span class="nc" id="L344">	                    String credentials = new String(Base64.decodeBase64(st.nextToken()), &quot;UTF-8&quot;);</span>
+<span class="nc" id="L345">	                    System.out.println(&quot;Credentials: &quot; + credentials);</span>
+<span class="nc" id="L346">	                    int p = credentials.indexOf(&quot;:&quot;);</span>
+<span class="nc bnc" id="L347" title="All 2 branches missed.">	                    if (p != -1) {</span>
+<span class="nc" id="L348">	                        String login = credentials.substring(0, p).trim();</span>
+<span class="nc" id="L349">	                        String password = credentials.substring(p + 1).trim();</span>
+
+<span class="nc" id="L351">	                        return login;</span>
+	                    } else {
+<span class="nc" id="L353">	                    	System.out.println(&quot;Invalid authentication token&quot;);</span>
+	                    }
+<span class="nc" id="L355">	                } catch (UnsupportedEncodingException e) {</span>
+<span class="nc" id="L356">	                	e.printStackTrace();</span>
+<span class="nc" id="L357">	                	System.out.println(&quot;Couldn't retrieve authentication&quot;);</span>
+<span class="nc" id="L358">	                }</span>
+	            }
+	        }
+	    }
+
+<span class="nc" id="L363">	    return null;</span>
+	}
+	
+public static void main(String[] args) {
+<span class="nc" id="L367">	System.out.println(new DateTime(new Date()));</span>
+<span class="nc" id="L368">	System.out.println(&quot;vp&quot;.substring(&quot;vp&quot;.length()-1).matches(&quot;[0-9]&quot;));</span>
+<span class="nc" id="L369">	System.out.println(makeVaccineCard(new ArrayList&lt;Event&gt;(), eligibleVaccines(8)));</span>
+<span class="nc" id="L370">}</span>
+}
+
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

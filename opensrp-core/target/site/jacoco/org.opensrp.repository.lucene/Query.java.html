@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Query.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">Query.java</span></div><h1>Query.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import java.util.Iterator;
+import java.util.List;
+
+import org.joda.time.DateTime;
+
+import com.mysql.jdbc.StringUtils;
+
+public class Query {
+	
+<span class="fc" id="L12">	private String query = &quot;&quot;;</span>
+	
+	private FilterType filterType;
+	
+	public String query() {
+<span class="fc" id="L17">		return query;</span>
+	}
+	
+<span class="fc" id="L20">	public Query(FilterType filterType) {</span>
+<span class="fc" id="L21">		this.filterType = filterType;</span>
+<span class="fc" id="L22">	}</span>
+	
+<span class="fc" id="L24">	public Query(FilterType filterType, Query from) {</span>
+<span class="fc" id="L25">		this.filterType = filterType;</span>
+<span class="pc bpc" id="L26" title="1 of 4 branches missed.">		if (from != null &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(from.query)) {</span>
+<span class="fc" id="L27">			this.query = &quot;(&quot; + from.query + &quot;)&quot;;</span>
+		}
+<span class="fc" id="L29">	}</span>
+	
+	public Query eq(String name, String value) {
+<span class="fc" id="L32">		addToQuery(name + &quot;:&quot; + value + &quot; &quot;);</span>
+<span class="fc" id="L33">		return this;</span>
+	}
+	
+	public Query notEq(String name, String value) {
+<span class="nc" id="L37">		addToQuery(&quot;*:* -&quot; + name + &quot;:&quot; + value + &quot; &quot;);</span>
+<span class="nc" id="L38">		return this;</span>
+	}
+	
+	public Query like(String field, String value) {
+<span class="fc" id="L42">		addToQuery(field + &quot;:\&quot;&quot; + value + &quot;\&quot;&quot;);</span>
+<span class="fc" id="L43">		return this;</span>
+	}
+	
+	public Query likeWithWildCard(String field, String value) {
+<span class="nc" id="L47">		addToQuery(field + &quot;:&quot; + value + &quot;* &quot;);</span>
+<span class="nc" id="L48">		return this;</span>
+	}
+	
+	public Query eq(String name, DateTime value) {
+<span class="nc" id="L52">		addToQuery(name + &quot;&lt;date&gt;:[&quot; + value.withTimeAtStartOfDay().toString(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;) + &quot; TO &quot;</span>
+<span class="nc" id="L53">		        + value.plusDays(1).withTimeAtStartOfDay().toString(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;) + &quot;] &quot;);</span>
+<span class="nc" id="L54">		return this;</span>
+	}
+	
+	public Query between(String name, DateTime from, DateTime to) {
+<span class="fc" id="L58">		addToQuery(name + &quot;&lt;date&gt;:[&quot; + from.toString(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;) + &quot; TO &quot;</span>
+<span class="fc" id="L59">		        + to.toString(&quot;yyyy-MM-dd'T'HH:mm:ss&quot;) + &quot;] &quot;);</span>
+<span class="fc" id="L60">		return this;</span>
+	}
+	
+	public Query between(String field, Object start, Object to) {
+<span class="nc" id="L64">		addToQuery(field + &quot;:[&quot; + start + &quot; TO &quot; + to + &quot;]&quot;);</span>
+<span class="nc" id="L65">		return this;</span>
+	}
+	
+	//field:(value1 OR value2 OR value3)
+	public Query inList(String field, List&lt;String&gt; ids) {
+<span class="nc" id="L70">		String idString = org.apache.commons.lang.StringUtils.join(ids, &quot; OR &quot;);</span>
+<span class="nc" id="L71">		addToQuery(field + &quot;:(&quot; + idString + &quot;)&quot;);</span>
+<span class="nc" id="L72">		return this;</span>
+	}
+	
+	//field:(&quot;value1&quot; OR &quot;value2&quot; OR &quot;value3&quot;)
+	public Query likeList(String field, List&lt;String&gt; ids) {
+<span class="nc" id="L77">		String idString = quotedJoin(ids, &quot; OR &quot;);</span>
+<span class="nc" id="L78">		addToQuery(field + &quot;:(&quot; + idString + &quot;)&quot;);</span>
+<span class="nc" id="L79">		return this;</span>
+	}
+	
+	private void addToQuery(String q) {
+<span class="fc bfc" id="L83" title="All 2 branches covered.">		if (!StringUtils.isEmptyOrWhitespaceOnly(query)) {</span>
+<span class="fc" id="L84">			query += filterType.name() + &quot; &quot; + q;</span>
+		} else
+<span class="fc" id="L86">			query += q;</span>
+<span class="fc" id="L87">	}</span>
+	
+	public void addToQuery(Query from) {
+<span class="nc bnc" id="L90" title="All 4 branches missed.">		if (from != null &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(from.query)) {</span>
+<span class="nc" id="L91">			addToQuery(&quot;(&quot; + from.query + &quot;)&quot;);</span>
+		}
+<span class="nc" id="L93">	}</span>
+	
+	private String quotedJoin(List&lt;String&gt; ids, String separator) {
+<span class="nc" id="L96">		Iterator&lt;String&gt; iterator = ids.iterator();</span>
+		
+<span class="nc bnc" id="L98" title="All 2 branches missed.">		if (iterator == null) {</span>
+<span class="nc" id="L99">			return null;</span>
+		}
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		if (!iterator.hasNext()) {</span>
+<span class="nc" id="L102">			return &quot;&quot;;</span>
+		}
+<span class="nc" id="L104">		String first = iterator.next();</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">		if (!iterator.hasNext()) {</span>
+<span class="nc" id="L106">			return &quot;\&quot;&quot;+first+&quot;\&quot;&quot;;</span>
+		}
+		
+		// two or more elements
+<span class="nc" id="L110">		StringBuffer buf = new StringBuffer(256); // Java default is 16, probably too small</span>
+<span class="nc bnc" id="L111" title="All 2 branches missed.">		if (first != null) {</span>
+<span class="nc" id="L112">			buf.append(&quot;\&quot;&quot;+first+&quot;\&quot;&quot;);</span>
+		}
+		
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		while (iterator.hasNext()) {</span>
+<span class="nc" id="L116">			buf.append(separator);</span>
+<span class="nc" id="L117">			String s = iterator.next();</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">			if (s != null) {</span>
+<span class="nc" id="L119">				buf.append(&quot;\&quot;&quot;+s+&quot;\&quot;&quot;);</span>
+			}
+<span class="nc" id="L121">		}</span>
+		
+<span class="nc" id="L123">		return buf.toString();</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

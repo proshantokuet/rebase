@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Provider.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Provider.java</span></div><h1>Provider.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.ektorp.support.TypeDiscriminator;
+
+@TypeDiscriminator(&quot;doc.type == 'Provider'&quot;)
+public class Provider extends BaseEntity {
+
+	private String fullName;
+
+<span class="nc" id="L13">	protected Provider() {</span>
+		
+<span class="nc" id="L15">	}</span>
+	
+	public Provider(String baseEntityId) {
+<span class="nc" id="L18">		super(baseEntityId);</span>
+<span class="nc" id="L19">	}</span>
+
+	public Provider(String baseEntityId, String fullName) {
+<span class="nc" id="L22">		super(baseEntityId);</span>
+<span class="nc" id="L23">		this.setFullName(fullName);</span>
+<span class="nc" id="L24">	}</span>
+
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L28">		return EqualsBuilder.reflectionEquals(this, o, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L33">		return HashCodeBuilder.reflectionHashCode(this, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L38">		return ToStringBuilder.reflectionToString(this);</span>
+	}
+
+	public String getFullName() {
+<span class="nc" id="L42">		return fullName;</span>
+	}
+
+	public void setFullName(String fullName) {
+<span class="nc" id="L46">		this.fullName = fullName;</span>
+<span class="nc" id="L47">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

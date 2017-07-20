@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllClients.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllClients.java</span></div><h1>AllClients.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.ektorp.ComplexKey;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.GenerateView;
+import org.ektorp.support.View;
+import org.ektorp.util.Assert;
+import org.ektorp.util.Documents;
+import org.joda.time.DateTime;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.Client;
+import org.opensrp.repository.lucene.LuceneClientRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+import com.mysql.jdbc.StringUtils;
+
+@Repository
+public class AllClients extends MotechBaseRepository&lt;Client&gt; {
+	
+	private LuceneClientRepository lcr;
+
+	@Autowired
+	protected AllClients(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, 
+			LuceneClientRepository lcr) {
+<span class="fc" id="L31">		super(Client.class, db);</span>
+<span class="fc" id="L32">		this.lcr = lcr;</span>
+<span class="fc" id="L33">	}</span>
+
+	@GenerateView
+	public Client findByBaseEntityId(String baseEntityId) {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">		if(StringUtils.isEmptyOrWhitespaceOnly(baseEntityId))</span>
+<span class="nc" id="L38">			return null;</span>
+<span class="fc" id="L39">		List&lt;Client&gt; clients = queryView(&quot;by_baseEntityId&quot;, baseEntityId);</span>
+<span class="pc bpc" id="L40" title="1 of 4 branches missed.">		if (clients == null || clients.isEmpty()) {</span>
+<span class="fc" id="L41">			return null;</span>
+		}
+<span class="fc" id="L43">		return clients.get(0);</span>
+	}
+	
+	@GenerateView
+	public Client findByBaseEntityId(CouchDbConnector targetDb,String baseEntityId) {
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if(StringUtils.isEmptyOrWhitespaceOnly(baseEntityId))</span>
+<span class="nc" id="L49">			return null;</span>
+<span class="nc" id="L50">		List&lt;Client&gt; clients = queryView(targetDb,&quot;by_baseEntityId&quot;, baseEntityId);</span>
+<span class="nc bnc" id="L51" title="All 4 branches missed.">		if (clients == null || clients.isEmpty()) {</span>
+<span class="nc" id="L52">			return null;</span>
+		}
+<span class="nc" id="L54">		return clients.get(0);</span>
+	}
+
+	@View(name = &quot;all_clients&quot;, map = &quot;function(doc) { if (doc.type === 'Client') { emit(doc.baseEntityId); } }&quot;)
+	public List&lt;Client&gt; findAllClients() {
+<span class="nc" id="L59">		return db.queryView(createQuery(&quot;all_clients&quot;).includeDocs(true), Client.class);</span>
+	}
+	
+	@View(name = &quot;all_clients_by_identifier&quot;, map = &quot;function(doc) {if (doc.type === 'Client') {for(var key in doc.identifiers) {emit(doc.identifiers[key]);}}}&quot;)
+	public List&lt;Client&gt; findAllByIdentifier(String identifier) {
+<span class="fc" id="L64">		return db.queryView(createQuery(&quot;all_clients_by_identifier&quot;).key(identifier).includeDocs(true), Client.class);</span>
+	}
+	
+	@View(name = &quot;all_clients_by_identifier&quot;, map = &quot;function(doc) {if (doc.type === 'Client') {for(var key in doc.identifiers) {emit(doc.identifiers[key]);}}}&quot;)
+	public List&lt;Client&gt; findAllByIdentifier(CouchDbConnector targetDb,String identifier) {
+<span class="nc" id="L69">		return targetDb.queryView(createQuery(&quot;all_clients_by_identifier&quot;).key(identifier).includeDocs(true), Client.class);</span>
+	}
+
+	@View(name = &quot;all_clients_by_identifier_of_type&quot;, map = &quot;function(doc) {if (doc.type === 'Client') {for(var key in doc.identifiers) {emit([key, doc.identifiers[key]]);}}}&quot;)
+	public List&lt;Client&gt; findAllByIdentifier(String identifierType, String identifier) {
+<span class="fc" id="L74">		ComplexKey ckey = ComplexKey.of(identifierType, identifier);</span>
+<span class="fc" id="L75">		return db.queryView(createQuery(&quot;all_clients_by_identifier_of_type&quot;).key(ckey).includeDocs(true), Client.class);</span>
+	}
+	
+	@View(name = &quot;all_clients_by_attribute_of_type&quot;, map = &quot;function(doc) {if (doc.type === 'Client') {for(var key in doc.attributes) {emit([key, doc.attributes[key]]);}}}&quot;)
+	public List&lt;Client&gt; findAllByAttribute(String attributeType, String attribute) {
+<span class="fc" id="L80">		ComplexKey ckey = ComplexKey.of(attributeType, attribute);</span>
+<span class="fc" id="L81">		return db.queryView(createQuery(&quot;all_clients_by_attribute_of_type&quot;).key(ckey).includeDocs(true), Client.class);</span>
+	}
+	
+	@View(name = &quot;all_clients_by_matching_name&quot;, map = &quot;function(doc) {if(doc.type === 'Client'){emit(doc.firstName, doc);emit(doc.lastName, doc);}}&quot;)
+	public List&lt;Client&gt; findAllByMatchingName(String nameMatches) {
+<span class="nc" id="L86">		return db.queryView(createQuery(&quot;all_clients_by_matching_name&quot;).startKey(nameMatches).endKey(nameMatches+&quot;z&quot;).includeDocs(true), Client.class);</span>
+	}
+	/**
+	 * Find a client based on the relationship id and between a range of date created dates e.g given mother's id get children born at a given time
+	 * @param relationalId
+	 * @param dateFrom
+	 * @param dateTo
+	 * @return
+	 */
+	@View(name = &quot;client_by_relationship_id_and_date_created&quot;, map = &quot;function(doc) { if (doc.type === 'Client' &amp;&amp; doc.relationships) {for (var key in doc.relationships) { var entityid=doc.relationships[key][0]; emit([entityid, doc.dateCreated.substring(0,10)], null); }} }&quot;)
+    public List&lt;Client&gt; findByRelationshipIdAndDateCreated(String relationalId, String dateFrom,String dateTo) {
+<span class="nc" id="L97">        ComplexKey startKey = ComplexKey.of(relationalId, dateFrom);</span>
+<span class="nc" id="L98">        ComplexKey endKey = ComplexKey.of(relationalId, dateTo);</span>
+<span class="nc" id="L99">        List&lt;Client&gt; clients = db.queryView(createQuery(&quot;client_by_relationship_id_and_date_created&quot;).startKey(startKey).endKey(endKey).includeDocs(true), Client.class);</span>
+<span class="nc" id="L100">        return clients;</span>
+    }
+	
+//	@View(name = &quot;client_by_relationship&quot;, map = &quot;function(doc) {if (doc.type === 'Client') {for(var key in doc.relationships) {emit([key, doc.relationships[key]]);}}}&quot;)
+//	@View(name = &quot;client_by_relationship&quot;, map = &quot;function(doc) { if(doc.type == 'Client' &amp;&amp; doc.relationships.mother[0]) {emit(null, doc._id)} }&quot;)
+	@View(name = &quot;client_by_relationship&quot;, map = &quot;function(doc) { if(doc.type === 'Client' &amp;&amp; doc.relationships) { for (var key in doc.relationships) { var entityid = doc.relationships[key][0]; if (key === 'mother') {emit([key, entityid], doc);}}}}&quot;)
+	
+	public List&lt;Client&gt; findByRela3tionshipId(String relationshipType, String entityId) {
+<span class="nc" id="L108">		return db.queryView(createQuery(&quot;client_by_relationship&quot;).startKey(entityId).endKey(entityId).includeDocs(true), Client.class);</span>
+	}
+	
+//	@View(name = &quot;clients_by_relationship&quot;, map = &quot;function(doc) {if (doc.type === 'Client' &amp;&amp; doc.relationships.mother) {for(var key in doc.relationships) {emit(doc.relationships.mother[key]);}}}&quot;)
+//	public List&lt;Client&gt; findByRelationshipId(String identifier) {
+//		return db.queryView(createQuery(&quot;clients_by_relationship&quot;).key(identifier).includeDocs(true), Client.class);
+//	}
+	public List&lt;Client&gt; findByCriteria(String nameLike, String gender, DateTime birthdateFrom, DateTime birthdateTo, 
+			DateTime deathdateFrom, DateTime deathdateTo, String attributeType, String attributeValue, 
+			String addressType, String country, String stateProvince, String cityVillage, String countyDistrict, 
+			String  subDistrict, String town, String subTown, DateTime lastEditFrom, DateTime lastEditTo) {
+<span class="fc" id="L119">		return lcr.getByCriteria(nameLike, gender, birthdateFrom, birthdateTo, deathdateFrom, deathdateTo, attributeType, attributeValue, addressType, country, stateProvince, cityVillage, countyDistrict, subDistrict, town, subTown, lastEditFrom, lastEditTo,null);//db.queryView(q.includeDocs(true), Client.class);</span>
+	}
+	
+	public List&lt;Client&gt; findByDynamicQuery(String query) {
+<span class="nc" id="L123">		return lcr.getByCriteria(query);//db.queryView(q.includeDocs(true), Client.class);</span>
+	}
+	
+	public List&lt;Client&gt; findByCriteria(String nameLike, String gender, DateTime birthdateFrom, DateTime birthdateTo, 
+			DateTime deathdateFrom, DateTime deathdateTo, String attributeType, String attributeValue, DateTime lastEditFrom, DateTime lastEditTo){
+<span class="nc" id="L128">		return lcr.getByCriteria(nameLike, gender, birthdateFrom, birthdateTo, deathdateFrom, deathdateTo, attributeType, attributeValue, null, null, null, null, null, null, null, null, lastEditFrom, lastEditTo,null);</span>
+	}
+	
+	public List&lt;Client&gt; findByCriteria(String addressType, String country, String stateProvince, String cityVillage, String countyDistrict,
+			String  subDistrict, String town, String subTown, DateTime lastEditFrom, DateTime lastEditTo) {
+<span class="nc" id="L133">		return lcr.getByCriteria(null, null, null, null, null, null, null, null, addressType, country, stateProvince, cityVillage, countyDistrict, subDistrict, town, subTown, lastEditFrom, lastEditTo,null);</span>
+	}
+	
+	public List&lt;Client&gt; findByRelationShip(String motherIndentier) {
+<span class="nc" id="L137">		return lcr.getByClientByMother(&quot;mother&quot;,motherIndentier);</span>
+	}
+	
+	/**
+	 * Query view from the specified db
+	 * @param targetDb
+	 * @param viewName
+	 * @param key
+	 * @return
+	 */
+	public List&lt;Client&gt; queryView(CouchDbConnector targetDb,String viewName, String key) {
+<span class="nc" id="L148">		return targetDb.queryView(createQuery(viewName)</span>
+<span class="nc" id="L149">								.includeDocs(true)</span>
+<span class="nc" id="L150">								.key(key),</span>
+<span class="nc" id="L151">							Client.class);</span>
+	}
+	/**
+	 * Save client to the specified db
+	 * @param targetDb
+	 * @param client
+	 */
+	public void add(CouchDbConnector targetDb,Client client) {
+<span class="nc" id="L159">		Assert.isTrue(Documents.isNew(client), &quot;entity must be new&quot;);</span>
+<span class="nc" id="L160">		targetDb.create(client);</span>
+<span class="nc" id="L161">	}</span>
+	/**
+	 * Get all clients without a server version
+	 * 
+	 * @return
+	 */
+	@View(name = &quot;clients_by_empty_server_version&quot;, map = &quot;function(doc) { if ( doc.type == 'Client' &amp;&amp; !doc.serverVersion) { emit(doc._id, doc); } }&quot;)
+	public List&lt;Client&gt; findByEmptyServerVersion() {
+<span class="nc" id="L169">		return db.queryView(createQuery(&quot;clients_by_empty_server_version&quot;).limit(200).includeDocs(true), Client.class);</span>
+	}
+	@View(name = &quot;events_by_version&quot;, map = &quot;function(doc) { if (doc.type === 'Client') { emit([doc.serverVersion], null); } }&quot;)
+	public List&lt;Client&gt; findByServerVersion(long serverVersion) {
+<span class="nc" id="L173">		ComplexKey startKey = ComplexKey.of(serverVersion + 1);</span>
+<span class="nc" id="L174">		ComplexKey endKey = ComplexKey.of(System.currentTimeMillis());</span>
+<span class="nc" id="L175">		return db.queryView(createQuery(&quot;events_by_version&quot;).startKey(startKey).endKey(endKey).includeDocs(true),</span>
+<span class="nc" id="L176">		    Client.class);</span>
+	}
+	
+	public List&lt;Client&gt; findByFieldValue(String field, List&lt;String&gt; ids) {
+<span class="nc" id="L180">		return lcr.getByFieldValue(field, ids);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

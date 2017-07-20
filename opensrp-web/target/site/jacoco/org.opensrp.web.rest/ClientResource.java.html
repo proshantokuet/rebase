@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ClientResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">ClientResource.java</span></div><h1>ClientResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import static org.opensrp.common.AllConstants.BaseEntity.*;
+import static org.opensrp.common.AllConstants.Client.BIRTH_DATE;
+import static org.opensrp.common.AllConstants.Client.DEATH_DATE;
+import static org.opensrp.common.AllConstants.Client.FIRST_NAME;
+import static org.opensrp.common.AllConstants.Client.GENDER;
+import static org.opensrp.web.rest.RestUtils.*;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.joda.time.DateTime;
+import org.opensrp.domain.Client;
+import org.opensrp.service.ClientService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.mysql.jdbc.StringUtils;
+
+@Controller
+@RequestMapping(value = &quot;/rest/client&quot;)
+public class ClientResource extends RestResource&lt;Client&gt;{
+	private ClientService clientService;
+	
+	@Autowired
+<span class="fc" id="L31">	public ClientResource(ClientService clientService) {</span>
+<span class="fc" id="L32">		this.clientService = clientService;</span>
+<span class="fc" id="L33">	}</span>
+
+	@Override
+	public Client getByUniqueId(String uniqueId) {
+<span class="nc" id="L37">		return clientService.find(uniqueId);</span>
+	}
+	
+	@Override
+    public Client create(Client o) {
+<span class="nc" id="L42">		return clientService.addClient(o);</span>
+	}
+
+	@Override
+	public List&lt;String&gt; requiredProperties() {
+<span class="nc" id="L47">		List&lt;String&gt; p = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L48">		p.add(FIRST_NAME);</span>
+<span class="nc" id="L49">		p.add(BIRTH_DATE);</span>
+<span class="nc" id="L50">		p.add(GENDER);</span>
+<span class="nc" id="L51">		p.add(BASE_ENTITY_ID);</span>
+<span class="nc" id="L52">		return p;</span>
+	}
+
+	@Override
+	public Client update(Client entity) {//TODO check if send property and id matches
+<span class="nc" id="L57">		return clientService.mergeClient(entity);//TODO update should only be based on baseEntityId</span>
+	}
+	
+	@Override
+	public List&lt;Client&gt; search(HttpServletRequest request) throws ParseException {//TODO search should not call different url but only add params
+<span class="fc" id="L62">		String nameLike = getStringFilter(&quot;name&quot;, request);</span>
+<span class="fc" id="L63">		String gender = getStringFilter(GENDER, request);</span>
+<span class="fc" id="L64">		DateTime[] birthdate = getDateRangeFilter(BIRTH_DATE, request);//TODO add ranges like fhir do http://hl7.org/fhir/search.html</span>
+<span class="fc" id="L65">		DateTime[] deathdate = getDateRangeFilter(DEATH_DATE, request);</span>
+<span class="fc" id="L66">		String addressType = getStringFilter(ADDRESS_TYPE, request);</span>
+<span class="fc" id="L67">		String country = getStringFilter(COUNTRY, request);</span>
+<span class="fc" id="L68">		String stateProvince = getStringFilter(STATE_PROVINCE, request);</span>
+<span class="fc" id="L69">		String cityVillage = getStringFilter(CITY_VILLAGE, request);</span>
+<span class="fc" id="L70">		String countyDistrict = getStringFilter(COUNTY_DISTRICT, request);</span>
+<span class="fc" id="L71">		String subDistrict = getStringFilter(SUB_DISTRICT, request);</span>
+<span class="fc" id="L72">		String town = getStringFilter(TOWN, request);</span>
+<span class="fc" id="L73">		String subTown = getStringFilter(SUB_TOWN, request);</span>
+<span class="fc" id="L74">		DateTime[] lastEdit = getDateRangeFilter(LAST_UPDATE, request);//TODO client by provider id</span>
+		//TODO lookinto Swagger https://slack-files.com/files-pri-safe/T0EPSEJE9-F0TBD0N77/integratingswagger.pdf?c=1458211183-179d2bfd2e974585c5038fba15a86bf83097810a
+		
+<span class="fc" id="L77">		String attributes = getStringFilter(&quot;attribute&quot;, request);</span>
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		String attributeType = StringUtils.isEmptyOrWhitespaceOnly(attributes)?null:attributes.split(&quot;:&quot;,-1)[0];</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">		String attributeValue = StringUtils.isEmptyOrWhitespaceOnly(attributes)?null:attributes.split(&quot;:&quot;,-1)[1];</span>
+		
+<span class="pc bpc" id="L81" title="6 of 12 branches missed.">		return clientService.findByCriteria(nameLike, gender, </span>
+				birthdate==null?null:birthdate[0], birthdate==null?null:birthdate[1], 
+				deathdate == null?null:deathdate[0], deathdate == null?null:deathdate[1], attributeType, attributeValue,
+				addressType, country, stateProvince, cityVillage, countyDistrict, subDistrict, town, subTown,
+				lastEdit==null?null:lastEdit[0], lastEdit==null?null:lastEdit[1]);
+	}
+
+	@Override
+	public List&lt;Client&gt; filter(String query) {
+<span class="nc" id="L90">		return clientService.findByDynamicQuery(query);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

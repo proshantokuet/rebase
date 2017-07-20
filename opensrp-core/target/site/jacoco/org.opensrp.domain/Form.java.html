@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Form.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Form.java</span></div><h1>Form.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+
+
+import java.text.MessageFormat;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.codehaus.jackson.map.annotate.JsonSerialize;
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_DEFAULT)
+public class Form {
+    private String bind_type;
+
+    private String default_bind_path;
+
+    private List&lt;FormField&gt; fields;
+
+    private List&lt;SubFormDefinition&gt; sub_forms;
+
+   
+
+<span class="nc" id="L23">    public Form() {</span>
+<span class="nc" id="L24">    }</span>
+
+<span class="nc" id="L26">    public Form(String bind_type, String default_bind_path, List&lt;FormField&gt; fields, List&lt;SubFormDefinition&gt; sub_forms) {</span>
+<span class="nc" id="L27">        this.bind_type = bind_type;</span>
+<span class="nc" id="L28">        this.default_bind_path = default_bind_path;</span>
+<span class="nc" id="L29">        this.fields = fields;</span>
+<span class="nc" id="L30">        this.sub_forms = sub_forms;</span>
+<span class="nc" id="L31">    }</span>
+
+    public String getBind_type() {
+<span class="nc" id="L34">		return bind_type;</span>
+	}
+
+	public void setBind_type(String bind_type) {
+<span class="nc" id="L38">		this.bind_type = bind_type;</span>
+<span class="nc" id="L39">	}</span>
+
+	public String getDefault_bind_path() {
+<span class="nc" id="L42">		return default_bind_path;</span>
+	}
+
+	public void setDefault_bind_path(String default_bind_path) {
+<span class="nc" id="L46">		this.default_bind_path = default_bind_path;</span>
+<span class="nc" id="L47">	}</span>
+
+	public List&lt;FormField&gt; getFields() {
+<span class="nc" id="L50">		return fields;</span>
+	}
+
+	public void setFields(List&lt;FormField&gt; fields) {
+<span class="nc" id="L54">		this.fields = fields;</span>
+<span class="nc" id="L55">	}</span>
+
+	public List&lt;SubFormDefinition&gt; getSub_forms() {
+<span class="nc" id="L58">		return sub_forms;</span>
+	}
+
+	public void setSub_forms(List&lt;SubFormDefinition&gt; sub_forms) {
+<span class="nc" id="L62">		this.sub_forms = sub_forms;</span>
+<span class="nc" id="L63">	}</span>
+
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

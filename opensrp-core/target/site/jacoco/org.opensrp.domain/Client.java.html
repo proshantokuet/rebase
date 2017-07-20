@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Client.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Client.java</span></div><h1>Client.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+import org.joda.time.DateTime;
+import org.opensrp.common.Gender;
+
+@TypeDiscriminator(&quot;doc.type == 'Client'&quot;)
+public class Client extends BaseEntity {
+	@JsonProperty
+	private String firstName;
+	@JsonProperty
+	private String middleName;
+	@JsonProperty
+	private String lastName;
+	@JsonProperty
+	private DateTime birthdate;
+	@JsonProperty
+	private DateTime deathdate;
+	@JsonProperty
+	private Boolean birthdateApprox;
+	@JsonProperty
+	private Boolean deathdateApprox;
+	@JsonProperty
+	private String gender;
+	@JsonProperty
+	private Map&lt;String, List&lt;String&gt;&gt; relationships;
+
+<span class="fc" id="L39">	protected Client() {</span>
+		
+		
+<span class="fc" id="L42">	}</span>
+
+	public Client(String baseEntityId) {
+<span class="fc" id="L45">		super(baseEntityId);</span>
+<span class="fc" id="L46">	}</span>
+	
+	public Client(String baseEntityId, String firstName, String middleName, String lastName, DateTime birthdate, 
+			DateTime deathdate, Boolean birthdateApprox, Boolean deathdateApprox, String gender) {
+<span class="fc" id="L50">		super(baseEntityId);</span>
+<span class="fc" id="L51">		this.firstName = firstName;</span>
+<span class="fc" id="L52">		this.middleName = middleName;</span>
+<span class="fc" id="L53">		this.lastName = lastName;</span>
+<span class="fc" id="L54">		this.birthdate = birthdate;</span>
+<span class="fc" id="L55">		this.deathdate = deathdate;</span>
+<span class="fc" id="L56">		this.birthdateApprox = birthdateApprox;</span>
+<span class="fc" id="L57">		this.deathdateApprox = deathdateApprox;</span>
+<span class="fc" id="L58">		this.gender = gender;</span>
+<span class="fc" id="L59">	}</span>
+	
+	public Client(String baseEntityId, String firstName, String middleName, String lastName, DateTime birthdate, 
+			DateTime deathdate, Boolean birthdateApprox, Boolean deathdateApprox, String gender, 
+			String identifierType, String identifier) {
+<span class="nc" id="L64">		super(baseEntityId);</span>
+<span class="nc" id="L65">		this.firstName = firstName;</span>
+<span class="nc" id="L66">		this.middleName = middleName;</span>
+<span class="nc" id="L67">		this.lastName = lastName;</span>
+<span class="nc" id="L68">		this.birthdate = birthdate;</span>
+<span class="nc" id="L69">		this.deathdate = deathdate;</span>
+<span class="nc" id="L70">		this.birthdateApprox = birthdateApprox;</span>
+<span class="nc" id="L71">		this.deathdateApprox = deathdateApprox;</span>
+<span class="nc" id="L72">		this.gender = gender;</span>
+<span class="nc" id="L73">		addIdentifier(identifierType, identifier);</span>
+<span class="nc" id="L74">	}</span>
+	
+	public Client(String baseEntityId, String firstName, String middleName, String lastName, DateTime birthdate, DateTime deathdate, 
+			Boolean birthdateApprox, Boolean deathdateApprox, String gender, List&lt;Address&gt; addresses,
+			Map&lt;String, String&gt; identifiers, Map&lt;String, Object&gt; attributes) {
+<span class="fc" id="L79">		super(baseEntityId);</span>
+<span class="fc" id="L80">		this.firstName = firstName;</span>
+<span class="fc" id="L81">		this.middleName = middleName;</span>
+<span class="fc" id="L82">		this.lastName = lastName;</span>
+<span class="fc" id="L83">		this.birthdate = birthdate;</span>
+<span class="fc" id="L84">		this.deathdate = deathdate;</span>
+<span class="fc" id="L85">		this.birthdateApprox = birthdateApprox;</span>
+<span class="fc" id="L86">		this.deathdateApprox = deathdateApprox;</span>
+<span class="fc" id="L87">		this.gender = gender;</span>
+<span class="fc" id="L88">		setIdentifiers(identifiers);</span>
+<span class="fc" id="L89">		setAddresses(addresses);</span>
+<span class="fc" id="L90">		setAttributes(attributes);</span>
+<span class="fc" id="L91">	}</span>
+	
+	public String getFirstName() {
+<span class="fc" id="L94">		return firstName;</span>
+	}
+
+	public void setFirstName(String firstName) {
+<span class="fc" id="L98">		this.firstName = firstName;</span>
+<span class="fc" id="L99">	}</span>
+
+	public String getMiddleName() {
+<span class="fc" id="L102">		return middleName;</span>
+	}
+
+	public void setMiddleName(String middleName) {
+<span class="fc" id="L106">		this.middleName = middleName;</span>
+<span class="fc" id="L107">	}</span>
+
+	public String getLastName() {
+<span class="fc" id="L110">		return lastName;</span>
+	}
+
+	public void setLastName(String lastName) {
+<span class="fc" id="L114">		this.lastName = lastName;</span>
+<span class="fc" id="L115">	}</span>
+
+	public String fullName() {
+<span class="fc" id="L118">		String n = &quot;&quot;;</span>
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if(StringUtils.isNotBlank(firstName)){</span>
+<span class="fc" id="L120">			n += firstName;</span>
+		}
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		if(StringUtils.isNotBlank(middleName)){</span>
+<span class="nc" id="L123">			n += &quot; &quot;+ middleName;</span>
+		}
+<span class="pc bpc" id="L125" title="1 of 2 branches missed.">		if(StringUtils.isNotBlank(lastName)){</span>
+<span class="fc" id="L126">			n += &quot; &quot; + lastName;</span>
+		}
+<span class="fc" id="L128">		return n.trim();</span>
+	}
+	
+	public DateTime getBirthdate() {
+<span class="fc" id="L132">		return birthdate;</span>
+	}
+
+	public void setBirthdate(DateTime birthdate) {
+<span class="fc" id="L136">		this.birthdate = birthdate;</span>
+<span class="fc" id="L137">	}</span>
+
+	public DateTime getDeathdate() {
+<span class="fc" id="L140">		return deathdate;</span>
+	}
+
+	public void setDeathdate(DateTime deathdate) {
+<span class="fc" id="L144">		this.deathdate = deathdate;</span>
+<span class="fc" id="L145">	}</span>
+
+	public Boolean getBirthdateApprox() {
+<span class="fc" id="L148">		return birthdateApprox;</span>
+	}
+
+	public void setBirthdateApprox(Boolean birthdateApprox) {
+<span class="fc" id="L152">		this.birthdateApprox = birthdateApprox;</span>
+<span class="fc" id="L153">	}</span>
+
+	public Boolean getDeathdateApprox() {
+<span class="fc" id="L156">		return deathdateApprox;</span>
+	}
+
+	public void setDeathdateApprox(Boolean deathdateApprox) {
+<span class="fc" id="L160">		this.deathdateApprox = deathdateApprox;</span>
+<span class="fc" id="L161">	}</span>
+
+	public String getGender() {
+<span class="fc" id="L164">		return gender;</span>
+	}
+
+	public void setGender(String gender) {
+<span class="fc" id="L168">		this.gender = gender;</span>
+<span class="fc" id="L169">	}</span>
+
+	public Map&lt;String, List&lt;String&gt;&gt; getRelationships() {
+<span class="fc" id="L172">		return relationships;</span>
+	}
+
+	public void setRelationships(Map&lt;String, List&lt;String&gt;&gt; relationships) {
+<span class="nc" id="L176">		this.relationships = relationships;</span>
+<span class="nc" id="L177">	}</span>
+	
+	public Client withFirstName(String firstName) {
+<span class="fc" id="L180">		this.firstName = firstName;</span>
+<span class="fc" id="L181">		return this;</span>
+	}
+
+	public Client withMiddleName(String middleName) {
+<span class="fc" id="L185">		this.middleName = middleName;</span>
+<span class="fc" id="L186">		return this;</span>
+	}
+
+	public Client withLastName(String lastName) {
+<span class="fc" id="L190">		this.lastName = lastName;</span>
+<span class="fc" id="L191">		return this;</span>
+	}
+
+	public Client withName(String firstName, String middleName,
+			String lastName) {
+<span class="fc" id="L196">		this.firstName = firstName;</span>
+<span class="fc" id="L197">		this.middleName = middleName;</span>
+<span class="fc" id="L198">		this.lastName = lastName;</span>
+<span class="fc" id="L199">		return this;</span>
+	}
+
+	public Client withBirthdate(DateTime birthdate, Boolean isApproximate) {
+<span class="fc" id="L203">		this.birthdate = birthdate;</span>
+<span class="fc" id="L204">		this.birthdateApprox = isApproximate;</span>
+<span class="fc" id="L205">		return this;</span>
+	}
+
+	public Client withDeathdate(DateTime deathdate, Boolean isApproximate) {
+<span class="fc" id="L209">		this.deathdate = deathdate;</span>
+<span class="fc" id="L210">		this.deathdateApprox = isApproximate;</span>
+<span class="fc" id="L211">		return this;</span>
+	}
+
+	public Client withGender(String gender) {
+<span class="fc" id="L215">		this.gender = gender;</span>
+<span class="fc" id="L216">		return this;</span>
+	}
+
+	public Client withGender(Gender gender) {
+<span class="fc" id="L220">		this.gender = gender.name();</span>
+<span class="fc" id="L221">		return this;</span>
+	}
+
+	/**
+	 * Overrides the existing data
+	 */
+	public Client withRelationships(Map&lt;String, List&lt;String&gt;&gt; relationships) {
+<span class="nc" id="L228">		this.relationships = relationships;</span>
+<span class="nc" id="L229">		return this;</span>
+	}
+	
+	public List&lt;String&gt; findRelatives(String relationshipType) {
+<span class="nc bnc" id="L233" title="All 2 branches missed.">		if(relationships == null){</span>
+<span class="nc" id="L234">			relationships = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L237">		return relationships.get(relationshipType);</span>
+	}
+	
+	public void addRelationship(String relationType, String relativeEntityId) {
+<span class="nc bnc" id="L241" title="All 2 branches missed.">		if(relationships == null){</span>
+<span class="nc" id="L242">			relationships = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L245">		List&lt;String&gt; relatives = findRelatives(relationType);</span>
+<span class="nc bnc" id="L246" title="All 2 branches missed.">		if(relatives == null){</span>
+<span class="nc" id="L247">			relatives = new ArrayList&lt;&gt;();</span>
+		}
+<span class="nc" id="L249">		relatives.add(relativeEntityId);</span>
+<span class="nc" id="L250">		relationships.put(relationType, relatives);</span>
+<span class="nc" id="L251">	}</span>
+	
+	public List&lt;String&gt; getRelationships(String relativeEntityId) {
+<span class="nc" id="L254">		List&lt;String&gt; relations = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L255" title="All 2 branches missed.">		for (Entry&lt;String, List&lt;String&gt;&gt; rl : relationships.entrySet()) {</span>
+<span class="nc bnc" id="L256" title="All 2 branches missed.">			if(rl.getValue().toString().equalsIgnoreCase(relativeEntityId)){</span>
+<span class="nc" id="L257">				relations.add(rl.getKey());</span>
+			}
+<span class="nc" id="L259">		}</span>
+<span class="nc" id="L260">		return relations;</span>
+	}
+
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L265">		return EqualsBuilder.reflectionEquals(this, o, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L270">		return HashCodeBuilder.reflectionHashCode(this, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L275">		return ToStringBuilder.reflectionToString(this);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

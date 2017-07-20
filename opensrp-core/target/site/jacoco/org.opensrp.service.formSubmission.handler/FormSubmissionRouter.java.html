@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormSubmissionRouter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.handler</a> &gt; <span class="el_source">FormSubmissionRouter.java</span></div><h1>FormSubmissionRouter.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.handler;
+
+import static java.text.MessageFormat.format;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+
+import java.util.List;
+
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormSubmissionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+@Component
+public class FormSubmissionRouter {
+<span class="fc" id="L17">	private static Logger logger = LoggerFactory.getLogger(FormSubmissionRouter.class.toString());</span>
+	private FormSubmissionService formSubmissionService;
+	private HandlerMapper handlerMapper;
+
+	@Autowired
+<span class="fc" id="L22">	public FormSubmissionRouter(FormSubmissionService formSubmissionService, HandlerMapper handlerMapper) {</span>
+
+<span class="fc" id="L24">		this.formSubmissionService = formSubmissionService;</span>
+<span class="fc" id="L25">		this.handlerMapper = handlerMapper;</span>
+<span class="fc" id="L26">	}</span>
+	
+	public void formSubmissionProcessed(String client, List&lt;String&gt; dependents, FormSubmission formSubmission) {
+<span class="nc" id="L29">		FormSubmissionProcessedListener handler = handlerMapper.formSubmissionProcessedListenerMap().get(formSubmission.formName());</span>
+<span class="nc bnc" id="L30" title="All 2 branches missed.">		if(handler != null){</span>
+<span class="nc" id="L31">			logger.info(format(&quot;Found a post processor handler for form submission ( {0} ) with instance Id: {1} for entity: {2}&quot;,</span>
+<span class="nc" id="L32">					formSubmission.formName(), formSubmission.instanceId(), formSubmission.entityId()));</span>
+<span class="nc" id="L33">			handler.onFormSubmissionProcessed(client, dependents, formSubmission);</span>
+		}
+<span class="nc" id="L35">	}</span>
+
+	public void route(String instanceId) throws Exception {
+<span class="fc" id="L38">		FormSubmission submission = formSubmissionService.findByInstanceId(instanceId);</span>
+<span class="fc" id="L39">		route(submission);</span>
+<span class="fc" id="L40">	}</span>
+	
+	public void route(FormSubmission formSubmission) throws Exception {
+<span class="fc" id="L43">		CustomFormSubmissionHandler handler = handlerMapper.customFormSubmissionHandlerMap().get(formSubmission.formName());// handlerMap.get(submission.formName());</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">		if (handler == null) {</span>
+<span class="nc" id="L45">			logger.warn(format(&quot;Could not find a handler due to unknown form submission ( {0} ) with instance Id: {1} for entity: {2}&quot;,</span>
+<span class="nc" id="L46">				formSubmission.formName(), formSubmission.instanceId(), formSubmission.entityId()));</span>
+<span class="nc" id="L47">			return;</span>
+		}
+<span class="fc" id="L49">		logger.info(format(&quot;Handling {0} form submission with instance Id: {1} for entity: {2}&quot;,</span>
+<span class="fc" id="L50">				formSubmission.formName(), formSubmission.instanceId(), formSubmission.entityId()));</span>
+		try {
+<span class="fc" id="L52">			handler.handle(formSubmission);</span>
+<span class="nc" id="L53">		} catch (Exception e) {</span>
+<span class="nc" id="L54">			logger.error(format(&quot;Handling {0} form submission with instance Id: {1} for entity: {2} failed with exception : {3}&quot;,</span>
+<span class="nc" id="L55">					formSubmission.formName(), formSubmission.instanceId(), formSubmission.entityId(), getFullStackTrace(e)));</span>
+<span class="nc" id="L56">			throw e;</span>
+<span class="fc" id="L57">		}</span>
+<span class="fc" id="L58">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

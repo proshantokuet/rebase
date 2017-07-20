@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllAppStateTokens.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllAppStateTokens.java</span></div><h1>AllAppStateTokens.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.ektorp.UpdateConflictException;
+import org.ektorp.support.GenerateView;
+import org.ektorp.util.Assert;
+import org.ektorp.util.Documents;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.AppStateToken;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllAppStateTokens extends MotechBaseRepository&lt;AppStateToken&gt; {
+    @Autowired
+    protected AllAppStateTokens(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db) {
+<span class="fc" id="L21">        super(AppStateToken.class, db);</span>
+<span class="fc" id="L22">    }</span>
+    
+    @GenerateView
+	public List&lt;AppStateToken&gt; findByName(String name) {
+<span class="fc" id="L26">    	return queryView(&quot;by_name&quot;, name);</span>
+	}
+    @GenerateView
+	public List&lt;AppStateToken&gt; findByName(CouchDbConnector db,String name) {
+<span class="nc" id="L30">    	return db.queryView(createQuery(&quot;by_name&quot;)</span>
+<span class="nc" id="L31">				.includeDocs(true)</span>
+<span class="nc" id="L32">				.key(name),</span>
+<span class="nc" id="L33">				AppStateToken.class);</span>
+	}
+    /**
+	 * @throws UpdateConflictException if there was an update conflict.
+	 */
+	public void update(CouchDbConnector db,AppStateToken entity) {
+<span class="nc" id="L39">		Assert.notNull(entity, &quot;entity may not be null&quot;);</span>
+<span class="nc" id="L40">		db.update(entity);</span>
+<span class="nc" id="L41">	}</span>
+	/**
+	 * @throws UpdateConflictException if there was an update conflict.
+	 */
+	public void add(CouchDbConnector db,AppStateToken entity) {
+<span class="nc" id="L46">		Assert.notNull(entity, &quot;entity may not be null&quot;);</span>
+<span class="nc" id="L47">		Assert.isTrue(Documents.isNew(entity), &quot;entity must be new&quot;);</span>
+<span class="nc" id="L48">		db.create(entity);</span>
+<span class="nc" id="L49">	}</span>
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

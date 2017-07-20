@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FileCreator.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.util</a> &gt; <span class="el_source">FileCreator.java</span></div><h1>FileCreator.java</h1><pre class="source lang-java linenums">/**
+ * Contributors: muhammad.ahmed@ihsinformatics.com
+ */
+package org.opensrp.util;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
+import java.io.StringWriter;
+
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
+
+import org.apache.commons.lang3.StringUtils;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+
+<span class="fc" id="L27">public class FileCreator {</span>
+
+	// private static String directory=null;//= System.getProperty(&quot;user.home&quot;);
+
+	// public FileCreator() {
+	// directory = System.getProperty(&quot;user.home&quot;);
+	//
+	// }
+
+	public void createFile(String filename, String directory, byte[] content)
+			throws FileNotFoundException, IOException {
+
+<span class="nc" id="L39">		File f = new File(directory);</span>
+<span class="nc bnc" id="L40" title="All 2 branches missed.">		if(f.mkdirs()){</span>
+			
+		}
+		//System.out.println(s);
+<span class="nc" id="L44">		FileOutputStream fos2 = new FileOutputStream(f.getPath()+System.getProperty(&quot;file.separator&quot;)+filename);</span>
+<span class="nc" id="L45">		fos2.write(content);</span>
+<span class="nc" id="L46">		fos2.close();</span>
+
+<span class="nc" id="L48">	}</span>
+
+	public String createDirectory(String directory) {
+
+<span class="nc" id="L52">		File file = new File(osDirectorySet(directory) );</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">		if (!file.exists()) {</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">			if (file.mkdir()) {</span>
+<span class="nc" id="L55">				System.out.println(&quot;Directory is created!&quot;);</span>
+			} else {
+<span class="nc" id="L57">				System.out.println(&quot;Failed to create directory!&quot;);</span>
+			}
+		}
+
+<span class="nc" id="L61">		return file.getAbsolutePath();</span>
+	}
+
+	public boolean createFormFiles(String directory, String formId,
+			byte[] form, byte[] model, byte[] formjson) {
+	
+		try {
+		//	System.out.println(&quot;before creating files &quot;+directory);
+<span class="nc" id="L69">			createFile(&quot;form.xml&quot;, directory, form);</span>
+<span class="nc" id="L70">			createFile(&quot;model.xml&quot;, directory, model);</span>
+<span class="nc" id="L71">			createFile(&quot;form.json&quot;, directory, formjson);</span>
+		//	System.out.println(&quot;before creating files &quot;+directory);
+<span class="nc" id="L73">			return true;</span>
+<span class="nc" id="L74">		} catch (Exception e) {</span>
+<span class="nc" id="L75">			e.printStackTrace();</span>
+		}
+<span class="nc" id="L77">		return false;</span>
+	}
+
+	public boolean createTextFile(String directory, byte[] context,
+			String formId) {
+		try {
+<span class="nc" id="L83">			directory = createDirectory(directory);</span>
+<span class="nc" id="L84">			createFile(formId + &quot;.txt&quot;, directory, context);</span>
+
+<span class="nc" id="L86">			return true;</span>
+<span class="nc" id="L87">		} catch (Exception e) {</span>
+<span class="nc" id="L88">			e.printStackTrace();</span>
+		}
+<span class="nc" id="L90">		return false;</span>
+	}
+
+	public boolean createModelFile(String directory, String formId,
+			byte[] context) {
+		try {
+<span class="nc" id="L96">			directory = createDirectory(directory);</span>
+<span class="nc" id="L97">			createFile(&quot;model.xml&quot;, directory, context);</span>
+
+<span class="nc" id="L99">			return true;</span>
+<span class="nc" id="L100">		} catch (Exception e) {</span>
+<span class="nc" id="L101">			e.printStackTrace();</span>
+		}
+<span class="nc" id="L103">		return false;</span>
+
+	}
+
+	public boolean createFormFile(String directory, String formId,
+			byte[] context) {
+		try {
+<span class="nc" id="L110">			directory = createDirectory(directory);</span>
+<span class="nc" id="L111">			createFile(&quot;form.xml&quot;, directory, context);</span>
+
+<span class="nc" id="L113">			return true;</span>
+<span class="nc" id="L114">		} catch (Exception e) {</span>
+<span class="nc" id="L115">			e.printStackTrace();</span>
+		}
+<span class="nc" id="L117">		return false;</span>
+	}
+
+	public boolean createFormJsonFile(String directory, String formId,
+			byte[] context) {
+		try {
+<span class="nc" id="L123">			directory = createDirectory(directory);</span>
+<span class="nc" id="L124">			createFile(&quot;form.json&quot;, directory, context);</span>
+
+<span class="nc" id="L126">			return true;</span>
+<span class="nc" id="L127">		} catch (Exception e) {</span>
+<span class="nc" id="L128">			e.printStackTrace();</span>
+		}
+<span class="nc" id="L130">		return false;</span>
+	}
+
+	public String osDirectorySet(String name) {
+
+<span class="nc bnc" id="L135" title="All 2 branches missed.">		if (name.startsWith(&quot;/&quot;)) {</span>
+<span class="nc" id="L136">			name += &quot;/&quot;;</span>
+			// directory += &quot;/&quot;+name+&quot;/&quot;;
+		} else {
+			// directory += &quot;\\&quot;+name+&quot;\\&quot;;
+<span class="nc" id="L140">			name += &quot;\\&quot;;</span>
+		}
+<span class="nc" id="L142">		return name;</span>
+	}
+	
+	private  String prettyFormat(String input, int indent) {
+		try {
+//			Source xmlInput = new StreamSource(new StringReader(input));
+//			StringWriter stringWriter = new StringWriter();
+//			StreamResult xmlOutput = new StreamResult(new OutputStreamWriter(System.out));
+//			
+<span class="nc" id="L151">			final InputSource src = new InputSource(new StringReader(input));</span>
+<span class="nc" id="L152">            final Node document = DocumentBuilderFactory.newInstance()</span>
+<span class="nc" id="L153">                    .newDocumentBuilder().parse(src).getDocumentElement();</span>
+            
+<span class="nc" id="L155">			Transformer transformer = TransformerFactory.newInstance().newTransformer();</span>
+<span class="nc" id="L156">			transformer.setOutputProperty(OutputKeys.INDENT, &quot;yes&quot;);</span>
+<span class="nc" id="L157">			transformer.setOutputProperty(&quot;{http://xml.apache.org/xslt}indent-amount&quot;, &quot;2&quot;);</span>
+			//initialize StreamResult with File object to save to file
+<span class="nc" id="L159">			StreamResult result = new StreamResult(new StringWriter());</span>
+<span class="nc" id="L160">			DOMSource source = new DOMSource(document);</span>
+<span class="nc" id="L161">			transformer.transform(source, result);</span>
+<span class="nc" id="L162">			String xmlString = result.getWriter().toString();</span>
+<span class="nc" id="L163">			System.out.println(xmlString);</span>
+			
+<span class="nc" id="L165">			return xmlString;</span>
+<span class="nc" id="L166">		} catch (Throwable e) {</span>
+<span class="nc" id="L167">			e.printStackTrace();</span>
+			// You'll come here if you are using JDK 1.5
+			// you are getting an the following exeption
+			// java.lang.IllegalArgumentException: Not supported: indent-number
+			// Use this code (Set the output property in transformer.
+			try {
+<span class="nc" id="L173">				Source xmlInput = new StreamSource(new StringReader(input));</span>
+<span class="nc" id="L174">				StringWriter stringWriter = new StringWriter();</span>
+<span class="nc" id="L175">				StreamResult xmlOutput = new StreamResult(stringWriter);</span>
+				TransformerFactory transformerFactory = TransformerFactory
+<span class="nc" id="L177">						.newInstance();</span>
+<span class="nc" id="L178">				Transformer transformer = transformerFactory.newTransformer();</span>
+<span class="nc" id="L179">				transformer.setOutputProperty(OutputKeys.INDENT, &quot;yes&quot;);</span>
+<span class="nc" id="L180">				transformer.setOutputProperty(</span>
+						&quot;{http://xml.apache.org/xslt}indent-amount&quot;,
+<span class="nc" id="L182">						String.valueOf(indent));</span>
+<span class="nc" id="L183">				transformer.transform(xmlInput, xmlOutput);</span>
+<span class="nc" id="L184">				return xmlOutput.getWriter().toString();</span>
+<span class="nc" id="L185">			} catch (Throwable t) {</span>
+<span class="nc" id="L186">				return input;</span>
+			}
+		}
+	}
+
+	public  String prettyFormat(String input) {
+<span class="nc" id="L192">		return prettyFormat(input, 2);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

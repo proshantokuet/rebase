@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>StockResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">StockResource.java</span></div><h1>StockResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import static java.text.MessageFormat.format;
+import static org.opensrp.common.AllConstants.Stock.DATE_CREATED;
+import static org.opensrp.common.AllConstants.Stock.DATE_UPDATED;
+import static org.opensrp.common.AllConstants.Stock.IDENTIFIER;
+import static org.opensrp.common.AllConstants.Stock.PROVIDERID;
+import static org.opensrp.common.AllConstants.Stock.TO_FROM;
+import static org.opensrp.common.AllConstants.Stock.TRANSACTION_TYPE;
+import static org.opensrp.common.AllConstants.Stock.VACCINE_TYPE_ID;
+import static org.opensrp.common.AllConstants.Stock.VALUE;
+import static org.opensrp.common.AllConstants.Stock.TIMESTAMP;
+import static org.opensrp.web.rest.RestUtils.getIntegerFilter;
+import static org.opensrp.web.rest.RestUtils.getStringFilter;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.joda.time.DateTime;
+import org.json.JSONObject;
+import org.opensrp.common.AllConstants.BaseEntity;
+import org.opensrp.domain.Stock;
+import org.opensrp.service.StockService;
+import org.opensrp.util.DateTimeTypeConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.reflect.TypeToken;
+import com.mysql.jdbc.StringUtils;
+
+@Controller
+@RequestMapping(value = &quot;/rest/stockresource/&quot;)
+public class StockResource extends RestResource&lt;Stock&gt; {
+	
+<span class="fc" id="L55">	private static Logger logger = LoggerFactory.getLogger(StockResource.class.toString());</span>
+	
+	private StockService stockService;
+	
+<span class="fc" id="L59">	Gson gson = new GsonBuilder().setDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss.SSSZ&quot;)</span>
+<span class="fc" id="L60">	        .registerTypeAdapter(DateTime.class, new DateTimeTypeConverter()).create();</span>
+	
+	@Autowired
+<span class="fc" id="L63">	public StockResource(StockService stockService) {</span>
+<span class="fc" id="L64">		this.stockService = stockService;</span>
+<span class="fc" id="L65">	}</span>
+	
+	@Override
+	public Stock getByUniqueId(String uniqueId) {
+<span class="nc" id="L69">		return stockService.find(uniqueId);</span>
+	}
+	
+	/**
+	 * Fetch all the stocks
+	 * 
+	 * @param none
+	 * @return a map response with stocks, and optionally msg when an error occurs
+	 */
+	
+	@RequestMapping(value = &quot;/getall&quot;, method = RequestMethod.GET)
+	@ResponseBody
+	protected ResponseEntity&lt;String&gt; getAll() {
+<span class="nc" id="L82">		Map&lt;String, Object&gt; response = new HashMap&lt;String, Object&gt;();</span>
+		try {
+<span class="nc" id="L84">			List&lt;Stock&gt; stocks = new ArrayList&lt;Stock&gt;();</span>
+<span class="nc" id="L85">			stocks = stockService.findAllStocks();</span>
+<span class="nc" id="L86">			JsonArray stocksArray = (JsonArray) gson.toJsonTree(stocks, new TypeToken&lt;List&lt;Stock&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L87">			response.put(&quot;stocks&quot;, stocksArray);</span>
+<span class="nc" id="L88">			return new ResponseEntity&lt;&gt;(gson.toJson(response), HttpStatus.OK);</span>
+		}
+<span class="nc" id="L90">		catch (Exception e) {</span>
+<span class="nc" id="L91">			response.put(&quot;msg&quot;, &quot;Error occurred&quot;);</span>
+<span class="nc" id="L92">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L93">			return new ResponseEntity&lt;&gt;(new Gson().toJson(response), HttpStatus.INTERNAL_SERVER_ERROR);</span>
+		}
+	}
+	
+	/**
+	 * Fetch stocks ordered by serverVersion ascending order
+	 * 
+	 * @param request
+	 * @return a map response with events, clients and optionally msg when an error occurs
+	 */
+	@RequestMapping(value = &quot;/sync&quot;, method = RequestMethod.GET)
+	@ResponseBody
+	protected ResponseEntity&lt;String&gt; sync(HttpServletRequest request) {
+<span class="nc" id="L106">		Map&lt;String, Object&gt; response = new HashMap&lt;String, Object&gt;();</span>
+		
+		try {
+<span class="nc" id="L109">			String identifier = getStringFilter(IDENTIFIER, request);</span>
+<span class="nc" id="L110">			String vaccine_type_id = getStringFilter(VACCINE_TYPE_ID, request);</span>
+<span class="nc" id="L111">			String transaction_type = getStringFilter(TRANSACTION_TYPE, request);</span>
+<span class="nc" id="L112">			String providerId = getStringFilter(PROVIDERID, request);</span>
+<span class="nc" id="L113">			String value = getStringFilter(VALUE, request);</span>
+<span class="nc" id="L114">			String date_created = getStringFilter(DATE_CREATED, request);</span>
+<span class="nc" id="L115">			String to_from = getStringFilter(TO_FROM, request);</span>
+<span class="nc" id="L116">			String date_updated = getStringFilter(DATE_UPDATED, request);</span>
+<span class="nc" id="L117">			String serverVersion = getStringFilter(BaseEntity.SERVER_VERSIOIN, request);</span>
+<span class="nc" id="L118">			String timeStamp = getStringFilter(TIMESTAMP, request);</span>
+<span class="nc" id="L119">			String lastSyncedServerVersion = null;</span>
+<span class="nc bnc" id="L120" title="All 2 branches missed.">			if (serverVersion != null) {</span>
+<span class="nc" id="L121">				lastSyncedServerVersion = String.valueOf((serverVersion) + 1);</span>
+			}
+<span class="nc" id="L123">			Integer limit = getIntegerFilter(&quot;limit&quot;, request);</span>
+<span class="nc bnc" id="L124" title="All 4 branches missed.">			if (limit == null || limit.intValue() == 0) {</span>
+<span class="nc" id="L125">				limit = 25;</span>
+			}
+			
+<span class="nc" id="L128">			List&lt;Stock&gt; stocks = new ArrayList&lt;Stock&gt;();</span>
+<span class="nc" id="L129">			stocks = stockService.findStocks(identifier, vaccine_type_id, transaction_type, providerId, value, date_created,</span>
+<span class="nc" id="L130">			    to_from, date_updated, lastSyncedServerVersion, &quot;serverVersion&quot;, &quot;asc&quot;, limit);</span>
+<span class="nc" id="L131">			JsonArray stocksArray = (JsonArray) gson.toJsonTree(stocks, new TypeToken&lt;List&lt;Stock&gt;&gt;() {}.getType());</span>
+			
+<span class="nc" id="L133">			response.put(&quot;stocks&quot;, stocksArray);</span>
+			
+<span class="nc" id="L135">			return new ResponseEntity&lt;&gt;(gson.toJson(response), HttpStatus.OK);</span>
+			
+		}
+<span class="nc" id="L138">		catch (Exception e) {</span>
+<span class="nc" id="L139">			response.put(&quot;msg&quot;, &quot;Error occurred&quot;);</span>
+<span class="nc" id="L140">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L141">			return new ResponseEntity&lt;&gt;(new Gson().toJson(response), HttpStatus.INTERNAL_SERVER_ERROR);</span>
+		}
+	}
+	
+	@SuppressWarnings(&quot;unchecked&quot;)
+	@RequestMapping(headers = { &quot;Accept=application/json&quot; }, method = POST, value = &quot;/add&quot;)
+	public ResponseEntity&lt;HttpStatus&gt; save(@RequestBody String data) {
+		try {
+<span class="nc" id="L149">			JSONObject syncData = new JSONObject(data);</span>
+<span class="nc bnc" id="L150" title="All 2 branches missed.">			if (!syncData.has(&quot;stocks&quot;)) {</span>
+<span class="nc" id="L151">				return new ResponseEntity&lt;&gt;(BAD_REQUEST);</span>
+			}
+<span class="nc" id="L153">			ArrayList&lt;Stock&gt; stocks = (ArrayList&lt;Stock&gt;) gson.fromJson(syncData.getString(&quot;stocks&quot;),</span>
+<span class="nc" id="L154">			    new TypeToken&lt;ArrayList&lt;Stock&gt;&gt;() {}.getType());</span>
+<span class="nc bnc" id="L155" title="All 2 branches missed.">			for (Stock stock : stocks) {</span>
+				try {
+<span class="nc" id="L157">					stockService.addorUpdateStock(stock);</span>
+				}
+<span class="nc" id="L159">				catch (Exception e) {</span>
+<span class="nc" id="L160">					logger.error(&quot;Stock&quot; + stock.getId() + &quot; failed to sync&quot;, e);</span>
+<span class="nc" id="L161">				}</span>
+<span class="nc" id="L162">			}</span>
+		}
+<span class="nc" id="L164">		catch (Exception e) {</span>
+<span class="nc" id="L165">			logger.error(format(&quot;Sync data processing failed with exception {0}.- &quot;, e));</span>
+<span class="nc" id="L166">			return new ResponseEntity&lt;&gt;(INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L167">		}</span>
+<span class="nc" id="L168">		return new ResponseEntity&lt;&gt;(CREATED);</span>
+	}
+	
+	@Override
+	public Stock create(Stock stock) {
+<span class="nc" id="L173">		return stockService.addStock(stock);</span>
+	}
+	
+	@Override
+	public List&lt;String&gt; requiredProperties() {
+<span class="nc" id="L178">		List&lt;String&gt; p = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L179">		p.add(PROVIDERID);</span>
+<span class="nc" id="L180">		p.add(TIMESTAMP);</span>
+<span class="nc" id="L181">		return p;</span>
+	}
+	
+	@Override
+	public Stock update(Stock stock) {
+<span class="nc" id="L186">		return stockService.mergeStock(stock);</span>
+	}
+	
+	@Override
+	public List&lt;Stock&gt; search(HttpServletRequest request) throws ParseException {
+<span class="nc" id="L191">		String stockId = getStringFilter(&quot;identifier&quot;, request);</span>
+<span class="nc" id="L192">		String vaccine_type_id = getStringFilter(VACCINE_TYPE_ID, request);</span>
+<span class="nc" id="L193">		String transaction_type = getStringFilter(TRANSACTION_TYPE, request);</span>
+<span class="nc" id="L194">		String providerId = getStringFilter(PROVIDERID, request);</span>
+<span class="nc" id="L195">		String value = getStringFilter(VALUE, request);</span>
+<span class="nc" id="L196">		String date_created = getStringFilter(DATE_CREATED, request);</span>
+<span class="nc" id="L197">		String to_from = getStringFilter(TO_FROM, request);</span>
+<span class="nc" id="L198">		String date_updated = getStringFilter(DATE_UPDATED, request);</span>
+<span class="nc" id="L199">		String serverVersion = getStringFilter(TIMESTAMP, request);</span>
+		
+<span class="nc bnc" id="L201" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(stockId)) {</span>
+<span class="nc" id="L202">			Stock stock = stockService.find(stockId);</span>
+<span class="nc bnc" id="L203" title="All 2 branches missed.">			if (stock == null) {</span>
+<span class="nc" id="L204">				return new ArrayList&lt;&gt;();</span>
+			}
+		}
+<span class="nc" id="L207">		return stockService.findStocks(stockId, vaccine_type_id, transaction_type, providerId, value, date_created, to_from,</span>
+		    date_updated, serverVersion);
+	}
+	
+	@Override
+	public List&lt;Stock&gt; filter(String query) {
+<span class="nc" id="L213">		return stockService.findAllStocks();</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

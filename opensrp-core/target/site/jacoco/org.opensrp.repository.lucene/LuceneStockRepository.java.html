@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LuceneStockRepository.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">LuceneStockRepository.java</span></div><h1>LuceneStockRepository.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import static org.opensrp.common.AllConstants.Stock.PROVIDERID;
+import static org.opensrp.common.AllConstants.Stock.DATE_CREATED;
+import static org.opensrp.common.AllConstants.Stock.DATE_UPDATED;
+import static org.opensrp.common.AllConstants.Stock.IDENTIFIER;
+import static org.opensrp.common.AllConstants.Stock.TO_FROM;
+import static org.opensrp.common.AllConstants.Stock.TRANSACTION_TYPE;
+import static org.opensrp.common.AllConstants.Stock.VACCINE_TYPE_ID;
+import static org.opensrp.common.AllConstants.Stock.VALUE;
+import static org.opensrp.common.AllConstants.Stock.TIMESTAMP;
+
+import java.io.IOException;
+import java.util.List;
+
+import org.opensrp.domain.Stock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.github.ldriscoll.ektorplucene.CouchDbRepositorySupportWithLucene;
+import com.github.ldriscoll.ektorplucene.LuceneQuery;
+import com.github.ldriscoll.ektorplucene.LuceneResult;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.FullText;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.Index;
+import com.mysql.jdbc.StringUtils;
+
+@FullText({
+        @Index(name = &quot;by_all_criteria&quot;, analyzer = &quot;perfield:{identifier:\&quot;keyword\&quot;,providerid:\&quot;keyword\&quot;}&quot;, index = &quot;function(doc) { if (doc.type !== 'Stock') return null; var arr1 = ['identifier', 'vaccine_type_id', 'transaction_type', 'providerid', 'value', 'to_from', 'sync_status', 'timeStamp']; var ret = new Document(); var serverVersion = doc.serverVersion; ret.add(serverVersion, { 'field': 'serverVersion' }); for (var i in arr1) { ret.add(doc[arr1[i]], { 'field': arr1[i] }); } if (doc.date_created) { var dc = doc.date_updated; ret.add(dc, { 'field': 'dateCreated' }); } if (doc.date_updated) { var da = doc.date_updated; ret.add(da, { 'field': 'dateUpdated' }); } return ret; }&quot;),
+        @Index(name = &quot;by _all_criteria_v2&quot;, analyzer = &quot;perfield:{baseEntityId:\&quot;keyword\&quot;,locationId:\&quot;keyword\&quot;}&quot;, index = &quot;function(doc) { if (doc.type !== 'Stock') return null; var arr1 = ['identifier', 'vaccine_type_id', 'transaction_type', 'providerid', 'value', 'to_from', 'sync_status', 'serverVersion']; var ret = new Document(); var serverVersion = doc.serverVersion; ret.add(serverVersion, { 'field': 'serverVersion' }); for (var i in arr1) { ret.add(doc[arr1[i]], { 'field': arr1[i] }); } if (doc.date_created) { var dc = doc.date_updated; ret.add(dc, { 'field': 'dateCreated' }); } if (doc.date_updated) { var da = doc.date_updated; ret.add(da, { 'field': 'dateUpdated' }); } return ret; }&quot;) })
+@Component
+public class LuceneStockRepository extends CouchDbRepositorySupportWithLucene&lt;Stock&gt; {
+	private LuceneDbConnector ldb;
+	
+	@Autowired
+	protected LuceneStockRepository(LuceneDbConnector db) {
+<span class="fc" id="L36">		super(Stock.class, db);</span>
+<span class="fc" id="L37">		this.ldb = db;</span>
+<span class="fc" id="L38">		initStandardDesignDocument();</span>
+<span class="fc" id="L39">	}</span>
+	
+	public List&lt;Stock&gt; getByCriteria(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String date_updated,String timeStamp, String sortBy,
+            String sortOrder, int limit) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L45">		LuceneQuery query = new LuceneQuery(&quot;Stock&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L47">		Query qf = new Query(FilterType.AND);</span>
+<span class="nc bnc" id="L48" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(identifier)) {</span>
+<span class="nc" id="L49">			qf.eq(IDENTIFIER, identifier);</span>
+		}
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(vaccine_type_id)) {</span>
+<span class="nc" id="L52">			qf.eq(VACCINE_TYPE_ID, vaccine_type_id);</span>
+		}
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(transaction_type)) {</span>
+<span class="nc" id="L55">			qf.eq(TRANSACTION_TYPE, transaction_type);</span>
+		}
+<span class="nc bnc" id="L57" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(providerid)) {</span>
+<span class="nc" id="L58">			qf.eq(PROVIDERID, providerid);</span>
+		}
+<span class="nc bnc" id="L60" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(value)) {</span>
+<span class="nc" id="L61">			qf.eq(VALUE, value);</span>
+		}
+<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(date_created)) {</span>
+<span class="nc" id="L64">			qf.eq(DATE_CREATED, date_created);</span>
+		}
+<span class="nc bnc" id="L66" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(to_from)) {</span>
+<span class="nc" id="L67">			qf.eq(TO_FROM, to_from);</span>
+		}
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(date_updated)) {</span>
+<span class="nc" id="L70">			qf.eq(DATE_UPDATED, date_updated);</span>
+		}
+<span class="nc bnc" id="L72" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(timeStamp)) {</span>
+<span class="nc" id="L73">			qf.eq(TIMESTAMP, timeStamp);</span>
+		}
+		
+<span class="nc bnc" id="L76" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L77">			throw new RuntimeException(&quot;Atleast one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L79">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L81">		query.setStaleOk(false);</span>
+<span class="nc" id="L82">		query.setLimit(limit);</span>
+<span class="nc" id="L83">		query.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L86">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L87">			return ldb.asList(result, Stock.class);</span>
+		}
+<span class="nc" id="L89">		catch (IOException e) {</span>
+<span class="nc" id="L90">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+
+	public List&lt;Stock&gt; getByCriteria(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String date_updated,String serverVersion) {
+<span class="nc" id="L97">		LuceneQuery query = new LuceneQuery(&quot;Stock&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L99">		Query qf = new Query(FilterType.AND);</span>
+<span class="nc bnc" id="L100" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(identifier)) {</span>
+<span class="nc" id="L101">			qf.eq(IDENTIFIER, identifier);</span>
+		}
+<span class="nc bnc" id="L103" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(vaccine_type_id)) {</span>
+<span class="nc" id="L104">			qf.eq(VACCINE_TYPE_ID, vaccine_type_id);</span>
+		}
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(transaction_type)) {</span>
+<span class="nc" id="L107">			qf.eq(TRANSACTION_TYPE, transaction_type);</span>
+		}
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(providerid)) {</span>
+<span class="nc" id="L110">			qf.eq(PROVIDERID, providerid); </span>
+		}
+<span class="nc bnc" id="L112" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(value)) {</span>
+<span class="nc" id="L113">			qf.eq(VALUE, value);</span>
+		}
+<span class="nc bnc" id="L115" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(date_created)) {</span>
+<span class="nc" id="L116">			qf.eq(DATE_CREATED, date_created);</span>
+		}
+<span class="nc bnc" id="L118" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(to_from)) {</span>
+<span class="nc" id="L119">			qf.eq(TO_FROM, to_from);</span>
+		}
+<span class="nc bnc" id="L121" title="All 2 branches missed.">		if (!StringUtils.isEmptyOrWhitespaceOnly(date_updated)) {</span>
+<span class="nc" id="L122">			qf.eq(DATE_UPDATED, date_updated);</span>
+		}
+		
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L126">			throw new RuntimeException(&quot;Atleast one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L128">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L130">		query.setStaleOk(false);</span>
+<span class="nc" id="L131">		query.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L134">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L135">			return ldb.asList(result, Stock.class);</span>
+		}
+<span class="nc" id="L137">		catch (IOException e) {</span>
+<span class="nc" id="L138">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	public List&lt;Stock&gt; getByCriteria(String query) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L144">		LuceneQuery q = new LuceneQuery(&quot;Stock&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L146">		q.setQuery(query);</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L148">		q.setStaleOk(false);</span>
+<span class="nc" id="L149">		q.setIncludeDocs(true);</span>
+		
+		try {
+<span class="nc" id="L152">			LuceneResult result = db.queryLucene(q);</span>
+<span class="nc" id="L153">			return ldb.asList(result, Stock.class);</span>
+		}
+<span class="nc" id="L155">		catch (IOException e) {</span>
+<span class="nc" id="L156">			throw new RuntimeException(e);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

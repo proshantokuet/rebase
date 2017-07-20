@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>XlsFormDownloaderController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">XlsFormDownloaderController.java</span></div><h1>XlsFormDownloaderController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import static org.springframework.web.bind.annotation.RequestMethod.GET;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.opensrp.service.XlsFormDownloaderService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.ModelAndView;
+
+
+@Controller
+@RequestMapping(&quot;/xlsform&quot;)
+public class XlsFormDownloaderController {
+	
+	
+	private XlsFormDownloaderService xlsService;
+	@Autowired
+<span class="fc" id="L28">	public XlsFormDownloaderController(XlsFormDownloaderService xlsService) {</span>
+<span class="fc" id="L29">		this.xlsService=xlsService;</span>
+<span class="fc" id="L30">	}</span>
+	
+	@RequestMapping(method = GET, value = &quot;/index&quot;)
+	public ModelAndView showPage(HttpServletRequest request) throws UnsupportedEncodingException {
+	
+		//String path=request.getContextPath();
+		//System.out.println(&quot; path to files&quot;+getPath() );
+<span class="nc" id="L37">		Map&lt;String, Object&gt; model = new HashMap&lt;String, Object&gt;();</span>
+		
+		
+<span class="nc" id="L40">		return new ModelAndView(&quot;xlsformdownloader&quot;, model);</span>
+
+	}
+	@RequestMapping(method=POST , value=&quot;/addfiles&quot;)
+	public ModelAndView addFiles(HttpServletRequest request) throws UnsupportedEncodingException{
+<span class="nc" id="L45">		Map&lt;String, Object&gt; model = new HashMap&lt;String, Object&gt;();</span>
+<span class="nc" id="L46">		String userName=request.getParameter(&quot;userName&quot;).trim();</span>
+<span class="nc" id="L47">		String formId=request.getParameter(&quot;formId&quot;).trim();</span>
+<span class="nc" id="L48">		String formName=request.getParameter(&quot;formName&quot;).trim();</span>
+<span class="nc" id="L49">		String formPk=request.getParameter(&quot;formPk&quot;).trim();</span>
+<span class="nc" id="L50">		String password=request.getParameter(&quot;password&quot;).trim();</span>
+		
+//		System.out.println(userName+&quot;   &quot;+formId);
+		//String username=request.getParameter(&quot;username&quot;);
+		//String path=request.getContextPath();
+		//System.out.println(&quot; path to files&quot;+getPath() );
+<span class="nc" id="L56">	String formDefinition=&quot;&quot; ;</span>
+<span class="nc" id="L57">		boolean check=false;</span>
+		try {
+<span class="nc" id="L59">		check=	xlsService.downloadFormFiles(getPath().trim()+&quot;form&quot;, userName, formPk, password,formName, formId);</span>
+<span class="nc" id="L60">		formDefinition=xlsService.getFormDefinition();</span>
+		
+		//Gson gson = new Gson();
+
+		
+
+		//	BufferedReader br = new BufferedReader(
+		//		new FileReader(getPath().trim()+&quot;form/&quot;+formName+&quot;form.json&quot;));
+
+			//convert the json string back to object
+			//FormSubmission obj = gson.fromJson(br, FormSubmission.class);
+
+			//System.out.println(obj);
+
+		 
+
+	//	model.put(&quot;success&quot;, msg);
+<span class="nc" id="L77">		} catch (IOException e) {</span>
+<span class="nc" id="L78">			check=false;</span>
+			// TODO Auto-generated catch block
+<span class="nc" id="L80">			e.printStackTrace();</span>
+<span class="nc" id="L81">		}</span>
+<span class="nc bnc" id="L82" title="All 2 branches missed.">		String msg=check==true?&quot;Files downloaded in directory&quot;:&quot;files not downloaded  !&quot;;</span>
+<span class="nc" id="L83">		model.put(&quot;msg&quot;, msg);</span>
+<span class="nc" id="L84">		model.put(&quot;definition&quot;, formDefinition);</span>
+<span class="nc" id="L85">		model.put(&quot;check&quot;, check);</span>
+		
+<span class="nc" id="L87">		return new ModelAndView(&quot;xlsformdownloader&quot;, model);</span>
+	}
+	
+	public String getPath() throws UnsupportedEncodingException {
+
+<span class="nc" id="L92">		String path = this.getClass().getClassLoader().getResource(&quot;&quot;).getPath();</span>
+
+<span class="nc" id="L94">		String fullPath = URLDecoder.decode(path, &quot;UTF-8&quot;);</span>
+
+		//String pathArr[] = fullPath.split(&quot;/WEB-INF/classes/&quot;);
+
+	//	System.out.println(fullPath);
+
+		//System.out.println(pathArr[0]);
+
+	//	fullPath = pathArr[0];
+
+		
+
+	//	String reponsePath = &quot;&quot;;
+
+// to read a file from webcontent
+
+	//	reponsePath = new File(fullPath).getPath() + File.separatorChar + &quot;newfile.txt&quot;;
+
+<span class="nc" id="L112">		return fullPath;</span>
+
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

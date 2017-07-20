@@ -1,0 +1,2 @@
+[REPORT] 20072017 18:05:24,291 INFO  [main] [TestContextManager] @TestExecutionListeners is not present for class [class org.opensrp.web.it.DrishtiSchedulesIntegrationTest]: using defaults.
+

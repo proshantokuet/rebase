@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>LuceneActionRepository.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository.lucene</a> &gt; <span class="el_source">LuceneActionRepository.java</span></div><h1>LuceneActionRepository.java</h1><pre class="source lang-java linenums">package org.opensrp.repository.lucene;
+
+import static org.opensrp.common.AllConstants.Event.PROVIDER_ID;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
+import org.opensrp.scheduler.Action;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.github.ldriscoll.ektorplucene.CouchDbRepositorySupportWithLucene;
+import com.github.ldriscoll.ektorplucene.LuceneQuery;
+import com.github.ldriscoll.ektorplucene.LuceneResult;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.FullText;
+import com.github.ldriscoll.ektorplucene.designdocument.annotation.Index;
+import com.mysql.jdbc.StringUtils;
+
+@FullText({
+        @Index(name = &quot;by_all_criteria&quot;, analyzer = &quot;perfield:{baseEntityId:\&quot;keyword\&quot;}&quot;, index = &quot;function(doc) {&quot;+
+    &quot;if (doc.type !== 'Action') return null;&quot;+
+    &quot;var arr1 = ['baseEntityId','providerId','actionTarget','actionType', 'isActionActive','timeStamp','version'];&quot;+
+    &quot;var ret = new Document();&quot;+
+    &quot;for (var i in arr1) {&quot;+
+        &quot;ret.add(doc[arr1[i]], {&quot;+
+            &quot;'field': arr1[i]&quot;+
+       &quot; });}&quot;
+       + &quot;return ret;}&quot;
+            ) })
+@Component
+public class LuceneActionRepository extends CouchDbRepositorySupportWithLucene&lt;Action&gt; {
+	
+	private LuceneDbConnector ldb;
+	
+	@Autowired
+	protected LuceneActionRepository(LuceneDbConnector db) {
+<span class="fc" id="L39">		super(Action.class, db);</span>
+<span class="fc" id="L40">		this.ldb = db;</span>
+<span class="fc" id="L41">		initStandardDesignDocument();</span>
+<span class="fc" id="L42">	}</span>
+	
+
+	
+	/**
+	 * @param providerId- health worker id
+	 * @param timeStamp
+	 * @param sortBy Prefix with / for ascending order and \ for descending order (ascending is the
+	 *            default if not specified).
+	 * @param sortOrder either descending or ascending
+	 * @param limit
+	 * @param team this is a comma separated string of team members id
+	 * @return
+	 */
+	public List&lt;Action&gt; getByCriteria(String team, String providerId,  Long timeStamp, String sortBy,
+	                                 String sortOrder, int limit) {
+		// create a simple query against the view/search function that we've created
+<span class="nc" id="L59">		LuceneQuery query = new LuceneQuery(&quot;Action&quot;, &quot;by_all_criteria&quot;);</span>
+		
+<span class="nc" id="L61">		Query qf = new Query(FilterType.AND);</span>
+		
+<span class="nc bnc" id="L63" title="All 2 branches missed.">		if (timeStamp != null) {</span>
+<span class="nc" id="L64">			qf.between(org.opensrp.common.AllConstants.Action.TIMESTAMP, timeStamp, Long.MAX_VALUE);</span>
+		}
+		
+<span class="nc bnc" id="L67" title="All 4 branches missed.">		if (team != null &amp;&amp; !team.isEmpty()) {</span>
+			//convert team string to list
+<span class="nc" id="L69">			String[] idsArray = org.apache.commons.lang.StringUtils.split(team, &quot;,&quot;);</span>
+<span class="nc" id="L70">			List&lt;String&gt; ids = new ArrayList&lt;String&gt;(Arrays.asList(idsArray));</span>
+			//include providerId records also
+<span class="nc bnc" id="L72" title="All 4 branches missed.">			if (providerId != null &amp;&amp; !ids.contains(providerId)) {</span>
+<span class="nc" id="L73">				ids.add(providerId);</span>
+			}
+<span class="nc" id="L75">			qf.inList(PROVIDER_ID, ids);</span>
+<span class="nc bnc" id="L76" title="All 4 branches missed.">		} else if ((providerId != null &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(providerId))) {</span>
+<span class="nc" id="L77">			qf.eq(PROVIDER_ID, providerId);</span>
+		}
+		
+<span class="nc bnc" id="L80" title="All 2 branches missed.">		if (StringUtils.isEmptyOrWhitespaceOnly(qf.query())) {</span>
+<span class="nc" id="L81">			throw new RuntimeException(&quot;At least one search filter must be specified&quot;);</span>
+		}
+<span class="nc" id="L83">		query.setQuery(qf.query());</span>
+		// stale must not be ok, as we've only just loaded the docs
+<span class="nc" id="L85">		query.setStaleOk(false);</span>
+<span class="nc" id="L86">		query.setIncludeDocs(true);</span>
+<span class="nc" id="L87">		query.setLimit(limit);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		query.setSort((sortOrder.toLowerCase().contains(&quot;desc&quot;) ? &quot;\\&quot; : &quot;/&quot;) + sortBy);</span>
+		
+		try {
+<span class="nc" id="L91">			LuceneResult result = db.queryLucene(query);</span>
+<span class="nc" id="L92">			return ldb.asList(result, Action.class);</span>
+		}
+<span class="nc" id="L94">		catch (IOException e) {</span>
+<span class="nc" id="L95">			throw new RuntimeException(e);</span>
+		}
+	}
+	
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

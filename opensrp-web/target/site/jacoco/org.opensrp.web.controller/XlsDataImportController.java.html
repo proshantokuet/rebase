@@ -1,0 +1,795 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>XlsDataImportController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">XlsDataImportController.java</span></div><h1>XlsDataImportController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+import org.opensrp.domain.Address;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.Event;
+import org.opensrp.domain.Obs;
+import org.opensrp.service.ClientService;
+import org.opensrp.service.EventService;
+import org.opensrp.service.OpenmrsIDService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+
+import com.google.gson.Gson;
+
+@Controller
+@RequestMapping(&quot;/import&quot;)
+public class XlsDataImportController {
+	
+	public static final String LOCATION = &quot;Location&quot;;
+	public static final String M_ZEIR_ID = &quot;M_ZEIR_ID&quot;;
+	public static final String MOTHER_NRC_NUMBER = &quot;NRC_Number&quot;;
+	public static final String HOME_FACILITY = &quot;Home_Facility&quot;;
+	public static final String CHW_NAME = &quot;CHW_Name&quot;;
+	public static final String PMTCT_STATUS = &quot;PMTCT_Status&quot;;
+	public static final String CHILD_REGISTER_CARD_NUMBER = &quot;Child_Register_Card_Number&quot;;
+	public static final String CHW_PHONE_NUMBER = &quot;CHW_Phone_Number&quot;;
+	public static final String CHILD_BIRTH_CERTIFICATE = &quot;Child_Birth_Certificate&quot;;
+	public static final String FATHER_NRC_NUMBER = &quot;Father_NRC_Number&quot;;
+	public static final String ADDRESS_TYPE = &quot;usual_residence&quot;;
+	public static final String BCG_VACCINE = &quot;bcg&quot;;
+	public static final String OPV_VACCINE = &quot;opv&quot;;
+	public static final String PCV_VACCINE = &quot;pcv&quot;;
+	public static final String PENTA_VACCINE = &quot;penta&quot;;
+	public static final String ROTA_VACCINE = &quot;rota&quot;;
+	public static final String MR_VACCINE = &quot;mr&quot;;
+	public static final String MEASLES_VACCINE = &quot;measles&quot;;
+	private static final String DATE_FORMAT = &quot;yyyy-MM-dd&quot;;
+	private static final String DATE_TIME_FORMAT = &quot;yyyy-MM-dd HH:mm:ss&quot;;
+	
+	private ClientService clientService;
+	private EventService eventService;
+	private OpenmrsIDService openmrsIDService;
+	 
+<span class="fc" id="L68">	private DateTimeFormatter parseDate = DateTimeFormat.forPattern(DATE_FORMAT);</span>
+	
+	@Autowired
+<span class="fc" id="L71">	public XlsDataImportController(ClientService clientService, EventService eventService, OpenmrsIDService openmrsIDService) {</span>
+<span class="fc" id="L72">		this.clientService = clientService;</span>
+<span class="fc" id="L73">		this.eventService = eventService;</span>
+<span class="fc" id="L74">		this.openmrsIDService = openmrsIDService;</span>
+<span class="fc" id="L75">	}</span>
+	
+	@RequestMapping(headers = { &quot;Accept=multipart/form-data&quot; }, method = POST, value = &quot;/file&quot;)
+	public ResponseEntity&lt;String&gt; importXlsData(@RequestParam(&quot;file&quot;) MultipartFile file) throws SQLException {
+<span class="fc" id="L79">		Map&lt;String, Object&gt; stats = new HashMap&lt;&gt;();</span>
+
+
+<span class="fc" id="L82">		int eventCount = 0;</span>
+<span class="fc" id="L83">		int clientCount = 0;</span>
+		CSVParser parser;
+		try {
+<span class="fc" id="L86">			Reader reader = new InputStreamReader(file.getInputStream());</span>
+<span class="fc" id="L87">			parser = new CSVParser(reader, CSVFormat.EXCEL.withHeader());</span>
+<span class="fc" id="L88">			List&lt;CSVRecord&gt; records = parser.getRecords();</span>
+<span class="fc" id="L89">			int recordCount = records.size();</span>
+<span class="fc" id="L90">			List&lt;String&gt; openmrsIds = this.openmrsIDService.downloadOpenmrsIds(recordCount);</span>
+			
+<span class="fc" id="L92">			int counter = 0;</span>
+
+<span class="fc bfc" id="L94" title="All 2 branches covered.">			for (CSVRecord record : records) {</span>
+<span class="fc" id="L95">				int eventCounter = 0;</span>
+<span class="fc" id="L96">			    Address address = this.buildAddress(record);</span>
+<span class="fc" id="L97">			    ArrayList&lt;Address&gt; addressList = new ArrayList&lt;Address&gt;();</span>
+<span class="fc" id="L98">			    addressList.add(address);</span>
+
+			    // Create child record
+<span class="fc" id="L101">			    Client childClient = this.createChildClient(record, addressList);</span>
+			    
+<span class="pc bpc" id="L103" title="1 of 2 branches missed.">			    if(!openmrsIDService.checkIfClientExists(childClient)) {</span>
+			    	// Assign zeir and m_zeir ids
+<span class="fc" id="L105">				    String zeirId = openmrsIds.get(counter);</span>
+<span class="fc" id="L106">				    String motherZeirId = zeirId + &quot;_mother&quot;;</span>
+
+				    // Create mother record
+<span class="fc" id="L109">				    Client motherClient = this.createMotherClient(record, addressList);</span>
+<span class="fc" id="L110">				    motherClient.addIdentifier(M_ZEIR_ID, motherZeirId);</span>
+
+<span class="fc" id="L112">				    openmrsIDService.assignOpenmrsIdToClient(zeirId, childClient);</span>
+
+				    // Create mother relationship
+<span class="fc" id="L115">				    childClient.addRelationship(&quot;mother&quot;, motherClient.getBaseEntityId());</span>
+
+				    // Create common observations to all events
+				    // 2017-03-20T12:40:02.000+02:00
+<span class="fc" id="L119">				    DateTimeFormatter parseDate = DateTimeFormat.forPattern(&quot;yyyy-MM-dd'T'HH:mm:ss.SSSZ&quot;);</span>
+				    
+					// start
+<span class="fc" id="L122">					String start = record.get(&quot;start&quot;);</span>
+<span class="fc" id="L123">					DateTime startDate = parseDate.parseDateTime(start);</span>
+					
+<span class="fc" id="L125">					Obs startObs = buildObservation(&quot;concept&quot;, &quot;start&quot;, &quot;163137AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, startDate.toString(DATE_TIME_FORMAT), &quot;start&quot;);</span>
+
+					// end
+<span class="fc" id="L128">					String end = record.get(&quot;end&quot;);</span>
+<span class="fc" id="L129">					DateTime endDate = parseDate.parseDateTime(end);</span>
+<span class="fc" id="L130">					Obs endObs = buildObservation(&quot;concept&quot;, &quot;end&quot;, &quot;163138AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, endDate.toString(DATE_TIME_FORMAT), &quot;end&quot;);</span>
+
+					// deviceid
+<span class="fc" id="L133">					String deviceid = record.get(&quot;deviceid&quot;);</span>
+<span class="fc" id="L134">					Obs deviceIdObs = buildObservation(&quot;concept&quot;, &quot;deviceid&quot;, &quot;163149AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, deviceid, &quot;deviceid&quot;);</span>
+
+<span class="fc" id="L136">					List&lt;Obs&gt; defaultObs = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L137">					defaultObs.add(startObs);</span>
+<span class="fc" id="L138">					defaultObs.add(endObs);</span>
+<span class="fc" id="L139">					defaultObs.add(deviceIdObs);</span>
+				    
+				    // Create Birth Registration Event
+<span class="fc" id="L142">				    Event birthRegistrationEvent = this.buildBirthRegistrationEvent(record, childClient);</span>
+<span class="fc" id="L143">				    this.addMultipleObs(birthRegistrationEvent, defaultObs);</span>
+
+<span class="fc" id="L145">				    eventService.addEvent(birthRegistrationEvent);</span>
+<span class="fc" id="L146">				    eventCounter++;</span>
+
+				    // Create New Woman Registration Event
+<span class="fc" id="L149">				    Event womanRegistrationEvent = this.buildNewWomanRegistrationEvent(record, motherClient);</span>
+<span class="fc" id="L150">				    this.addMultipleObs(womanRegistrationEvent, defaultObs);</span>
+
+<span class="fc" id="L152">				    eventService.addEvent(womanRegistrationEvent);</span>
+<span class="fc" id="L153">				    eventCounter++;</span>
+
+				    // Create vaccination events
+<span class="fc bfc" id="L156" title="All 2 branches covered.">				    for(Event e: this.buildVaccinationEvents(record, childClient)) {</span>
+<span class="fc" id="L157">						this.addMultipleObs(e, defaultObs);</span>
+<span class="fc" id="L158">				    	eventService.addEvent(e);</span>
+<span class="fc" id="L159">				    	eventCounter++;</span>
+<span class="fc" id="L160">				    }</span>
+				    
+				    //Create growth monitoring events
+<span class="fc bfc" id="L163" title="All 2 branches covered.">				    for(Event e: this.buildGrowthMonitoringEvents(record, childClient)) {</span>
+<span class="fc" id="L164">				    	this.addMultipleObs(e, defaultObs);</span>
+<span class="fc" id="L165">				    	eventService.addEvent(e);</span>
+<span class="fc" id="L166">				    	eventCounter++;</span>
+<span class="fc" id="L167">				    }</span>
+
+<span class="fc" id="L169">				    clientService.addorUpdate(motherClient);</span>
+<span class="fc" id="L170">				    clientService.addorUpdate(childClient);</span>
+<span class="fc" id="L171">				    eventCount += eventCounter;</span>
+<span class="fc" id="L172">				    clientCount +=2;</span>
+<span class="fc" id="L173">				    counter++;</span>
+			    }
+<span class="fc" id="L175">			}</span>
+<span class="fc" id="L176">			parser.close();</span>
+<span class="nc" id="L177">		} catch (IOException e) {</span>
+			// TODO Auto-generated catch block
+<span class="nc" id="L179">			e.printStackTrace();</span>
+<span class="fc" id="L180">		}</span>
+		// Retrieve xls file details
+		// Read xls file to retrieve birth registration data
+		// loop through all the records creating a client and entity information for each patient
+		// respond with success response and summary statistics of data imported
+		
+<span class="fc" id="L186">		stats.put(&quot;summary_client_count&quot;, clientCount);</span>
+<span class="fc" id="L187">		stats.put(&quot;summary_event_count&quot;, eventCount);</span>
+
+<span class="fc" id="L189">		return new ResponseEntity&lt;&gt;(new Gson().toJson(stats), HttpStatus.OK);</span>
+	}
+
+	private Address buildAddress(CSVRecord record) {
+		// Address data
+<span class="fc" id="L194">	    String startDate = record.get(&quot;today&quot;);</span>
+<span class="fc" id="L195">	    String endDate = record.get(&quot;today&quot;);</span>
+<span class="fc" id="L196">	    String homeFacility = record.get(&quot;Childs_Particulars/Home_Facility&quot;);</span>
+<span class="fc" id="L197">	    String residentialArea = this.validateValue(record.get(&quot;Childs_Particulars/Residential_Area&quot;));</span>
+<span class="fc" id="L198">	    String residentialAreaOther = this.validateValue(record.get(&quot;Childs_Particulars/Residential_Area_Other&quot;));</span>
+<span class="fc" id="L199">	    String residentialAddress = this.validateValue(record.get(&quot;Childs_Particulars/Residential_Address&quot;));</span>
+<span class="fc" id="L200">	    String physicalLandmark = this.validateValue(record.get(&quot;Childs_Particulars/Physical_Landmark&quot;));</span>
+	    
+	    // Build address object
+<span class="fc" id="L203">	    DateTime addressStartDate = this.parseDate.parseDateTime(startDate);</span>
+<span class="fc" id="L204">	    DateTime addressEndDate = this.parseDate.parseDateTime(endDate);</span>
+	    
+<span class="fc" id="L206">	    String homeFacilityUUID = this.getLocationUUID(homeFacility);</span>
+<span class="fc" id="L207">	    String residentialAreaUUID = this.getResidentialAreaUUID(residentialArea);</span>
+
+<span class="fc" id="L209">	    Map&lt;String, String&gt; addressFields = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L210">	    addressFields.put(&quot;address5&quot;, residentialAreaOther);</span>
+<span class="fc" id="L211">	    addressFields.put(&quot;address4&quot;, homeFacilityUUID);</span>
+<span class="fc" id="L212">	    addressFields.put(&quot;address3&quot;, residentialAreaUUID);</span>
+<span class="fc" id="L213">	    addressFields.put(&quot;address2&quot;, residentialAddress);</span>
+<span class="fc" id="L214">	    addressFields.put(&quot;address1&quot;, physicalLandmark);</span>
+	    
+<span class="fc" id="L216">	    Address address = new Address(ADDRESS_TYPE, addressStartDate, addressEndDate, addressFields, null, null, null, null, null);</span>
+	    
+<span class="fc" id="L218">	    return address;</span>
+	}
+	
+	private Client createMotherClient(CSVRecord record, ArrayList&lt;Address&gt; addressList) {
+		// Mother data
+<span class="fc" id="L223">	    String motherFirstName = this.validateValue(record.get(&quot;Childs_Particulars/Mother_Guardian_First_Name&quot;));</span>
+<span class="fc" id="L224">	    String motherLastName = this.validateValue(record.get(&quot;Childs_Particulars/Mother_Guardian_Last_Name&quot;));</span>
+<span class="fc" id="L225">	    String motherNRC = this.validateValue(record.get(&quot;Childs_Particulars/Mother_Guardian_NRC&quot;));</span>
+<span class="fc" id="L226">	    String homeFacility = this.validateValue(record.get(&quot;Childs_Particulars/Home_Facility&quot;));</span>
+<span class="fc" id="L227">	    String homeFacilityUUID = this.getLocationUUID(homeFacility);</span>
+<span class="fc" id="L228">	    String motherId = UUID.randomUUID().toString();</span>
+	    
+<span class="fc" id="L230">	    DateTime dateOfBirth = new DateTime(1960, 01, 01, 12, 0,  DateTimeZone.forOffsetHours(2));</span>
+<span class="fc" id="L231">	    Client motherClient = new Client(motherId, motherFirstName, &quot;&quot;, motherLastName, dateOfBirth, null, false, false, &quot;Female&quot;, addressList, null, null);</span>
+<span class="fc" id="L232">	    motherClient.addAttribute(MOTHER_NRC_NUMBER, motherNRC);</span>
+<span class="fc" id="L233">	    motherClient.addAttribute(HOME_FACILITY, homeFacilityUUID);</span>
+<span class="fc" id="L234">	    motherClient.addAttribute(LOCATION, homeFacilityUUID);</span>
+	    
+<span class="fc" id="L236">	    return motherClient;</span>
+	}
+	
+	private Client createChildClient(CSVRecord record, ArrayList&lt;Address&gt; addressList) {
+		// Child data
+<span class="fc" id="L241">	    String firstName = this.validateValue(record.get(&quot;Childs_Particulars/First_Name&quot;));</span>
+<span class="fc" id="L242">	    String lastName = this.validateValue(record.get(&quot;Childs_Particulars/Last_Name&quot;));</span>
+<span class="fc" id="L243">	    String gender = this.validateValue(record.get(&quot;Childs_Particulars/Sex&quot;));</span>
+<span class="fc" id="L244">	    String birthDate = this.validateValue(record.get(&quot;Childs_Particulars/Date_Birth&quot;));</span>
+	    
+	    // Child attributes
+<span class="fc" id="L247">	    String childCardNumber = this.validateValue(record.get(&quot;Childs_Particulars/Child_Register_Card_Number&quot;));</span>
+<span class="fc" id="L248">	    String chwPhoneNumber = this.validateValue(record.get(&quot;Childs_Particulars/CHW_Phone_Number&quot;));</span>
+<span class="fc" id="L249">	    String fatherNRCNumber = this.validateValue(record.get(&quot;Childs_Particulars/Father_Guardian_NRC&quot;));</span>
+<span class="fc" id="L250">	    String chwName = this.validateValue(record.get(&quot;Childs_Particulars/CHW_Name&quot;));</span>
+<span class="fc" id="L251">	    String homeFacility = this.validateValue(record.get(&quot;Childs_Particulars/Home_Facility&quot;));</span>
+<span class="fc" id="L252">	    String homeFacilityUUID = this.getLocationUUID(homeFacility);</span>
+	    
+<span class="fc" id="L254">	    String childId = UUID.randomUUID().toString();</span>
+
+<span class="fc" id="L256">	    DateTime dateOfBirth = this.parseDate.parseDateTime(birthDate);</span>
+	    
+	    // validate names
+<span class="fc" id="L259">	    firstName = this.validateValue(firstName);</span>
+
+<span class="fc" id="L261">	    Client childClient = new Client(childId, firstName, &quot;&quot;, lastName, dateOfBirth, null, false, false, gender, addressList, null, null);</span>
+<span class="fc" id="L262">	    childClient.addAttribute(CHILD_REGISTER_CARD_NUMBER, childCardNumber);</span>
+<span class="fc" id="L263">	    childClient.addAttribute(CHW_PHONE_NUMBER, chwPhoneNumber);</span>
+<span class="fc" id="L264">	    childClient.addAttribute(FATHER_NRC_NUMBER, fatherNRCNumber);</span>
+<span class="fc" id="L265">	    childClient.addAttribute(CHW_NAME, chwName);</span>
+<span class="fc" id="L266">	    childClient.addAttribute(HOME_FACILITY, homeFacilityUUID);</span>
+<span class="fc" id="L267">	    childClient.addAttribute(LOCATION, homeFacilityUUID);</span>
+	    
+<span class="fc" id="L269">	    return childClient;</span>
+	}
+	
+	private String validateValue(String value) {
+<span class="fc bfc" id="L273" title="All 2 branches covered.">		return value.equalsIgnoreCase(&quot;n/a&quot;) ? &quot;&quot; : value;</span>
+	}
+	
+	private Event buildBirthRegistrationEvent(CSVRecord record, Client client) {
+<span class="fc" id="L277">		String eventType = &quot;Birth Registration&quot;;</span>
+<span class="fc" id="L278">        String entityType = &quot;child&quot;;</span>
+<span class="fc" id="L279">		String locationName = record.get(&quot;Childs_Particulars/Home_Facility&quot;);</span>
+<span class="fc" id="L280">		String dateOfFacilityVisit = this.validateValue(record.get(&quot;Childs_Particulars/First_Health_Facility_Contact&quot;));</span>
+		
+<span class="fc" id="L282">		List&lt;Obs&gt; birthRegistrationObs = this.buildBirthRegistrationObs(record);</span>
+		
+		
+<span class="fc" id="L285">		DateTime date = parseDate.parseDateTime(dateOfFacilityVisit);</span>
+<span class="fc" id="L286">		Event birthRegistrationEvent = this.createEvent(client, birthRegistrationObs, eventType, entityType, date, locationName);</span>
+		
+<span class="fc" id="L288">		return birthRegistrationEvent;</span>
+	}
+	
+	private Event buildNewWomanRegistrationEvent(CSVRecord record, Client client) {
+<span class="fc" id="L292">		String locationName = record.get(&quot;Childs_Particulars/Home_Facility&quot;);</span>
+<span class="fc" id="L293">		String firstHealthFacilityContact = record.get(&quot;Childs_Particulars/First_Health_Facility_Contact&quot;);</span>
+<span class="fc" id="L294">		DateTime eventDate = parseDate.parseDateTime(firstHealthFacilityContact);</span>
+<span class="fc" id="L295">		Event newWomanRegistration = this.createEvent(client, null, &quot;New Woman Registration&quot;, &quot;mother&quot;, eventDate, locationName);</span>
+
+<span class="fc" id="L297">		return newWomanRegistration;</span>
+	}
+
+	private List&lt;Event&gt; buildVaccinationEvents(CSVRecord record, Client client) {
+<span class="fc" id="L301">		String eventType = &quot;Vaccination&quot;;</span>
+<span class="fc" id="L302">        String entityType = &quot;vaccination&quot;;</span>
+<span class="fc" id="L303">		List&lt;Event&gt; vaccinationEvents = new ArrayList&lt;Event&gt;();</span>
+<span class="fc" id="L304">		String bcg1Value = record.get(&quot;Immunisation_Record/bcg&quot;);</span>
+<span class="fc" id="L305">		String bcg2Value = record.get(&quot;Immunisation_Record/bcg2&quot;);</span>
+<span class="fc" id="L306">		String opv0Value = record.get(&quot;Immunisation_Record/opv0&quot;);</span>
+<span class="fc" id="L307">		String opv1Penta1Pcv1Rota1Value = record.get(&quot;Immunisation_Record/opv1_penta1_pcv1_rota1&quot;);</span>
+<span class="pc bpc" id="L308" title="1 of 2 branches missed.">		String opv1Value = opv1Penta1Pcv1Rota1Value != &quot;n/a&quot; ? opv1Penta1Pcv1Rota1Value : record.get(&quot;Immunisation_Record/opv1&quot;);</span>
+<span class="pc bpc" id="L309" title="1 of 2 branches missed.">		String penta1Value = opv1Penta1Pcv1Rota1Value != &quot;n/a&quot; ? opv1Penta1Pcv1Rota1Value : record.get(&quot;Immunisation_Record/penta1&quot;);</span>
+<span class="pc bpc" id="L310" title="1 of 2 branches missed.">		String pcv1Value = opv1Penta1Pcv1Rota1Value != &quot;n/a&quot; ? opv1Penta1Pcv1Rota1Value : record.get(&quot;Immunisation_Record/pcv1&quot;);</span>
+<span class="pc bpc" id="L311" title="1 of 2 branches missed.">		String rota1Value = opv1Penta1Pcv1Rota1Value != &quot;n/a&quot; ? opv1Penta1Pcv1Rota1Value : record.get(&quot;Immunisation_Record/rota1&quot;);</span>
+<span class="fc" id="L312">		String opv2Penta2Pcv2Rota2Value = record.get(&quot;Immunisation_Record/opv2_penta2_pcv2_rota2&quot;);</span>
+<span class="pc bpc" id="L313" title="1 of 2 branches missed.">		String opv2Value = opv2Penta2Pcv2Rota2Value != &quot;n/a&quot; ? opv2Penta2Pcv2Rota2Value : record.get(&quot;Immunisation_Record/opv2&quot;);</span>
+<span class="pc bpc" id="L314" title="1 of 2 branches missed.">		String penta2Value = opv2Penta2Pcv2Rota2Value != &quot;n/a&quot; ? opv2Penta2Pcv2Rota2Value : record.get(&quot;Immunisation_Record/penta2&quot;);</span>
+<span class="pc bpc" id="L315" title="1 of 2 branches missed.">		String pcv2Value = opv2Penta2Pcv2Rota2Value != &quot;n/a&quot; ? opv2Penta2Pcv2Rota2Value : record.get(&quot;Immunisation_Record/pcv2&quot;);</span>
+<span class="pc bpc" id="L316" title="1 of 2 branches missed.">		String rota2Value = opv2Penta2Pcv2Rota2Value != &quot;n/a&quot; ? opv2Penta2Pcv2Rota2Value : record.get(&quot;Immunisation_Record/rota2&quot;);</span>
+<span class="fc" id="L317">		String opv3Penta3Pcv3Value = record.get(&quot;Immunisation_Record/opv3_penta3_pcv3&quot;);</span>
+<span class="pc bpc" id="L318" title="1 of 2 branches missed.">		String opv3Value = opv3Penta3Pcv3Value != &quot;n/a&quot; ? opv3Penta3Pcv3Value : record.get(&quot;Immunisation_Record/opv3&quot;);</span>
+<span class="pc bpc" id="L319" title="1 of 2 branches missed.">		String penta3Value = opv3Penta3Pcv3Value != &quot;n/a&quot; ? opv3Penta3Pcv3Value : record.get(&quot;Immunisation_Record/penta3&quot;);</span>
+<span class="pc bpc" id="L320" title="1 of 2 branches missed.">		String pcv3Value = opv3Penta3Pcv3Value != &quot;n/a&quot; ? opv3Penta3Pcv3Value : record.get(&quot;Immunisation_Record/pcv3&quot;);</span>
+<span class="fc" id="L321">		String opv4Value = record.get(&quot;Immunisation_Record/opv4&quot;);</span>
+<span class="fc" id="L322">		String measles1Value = record.get(&quot;Immunisation_Record/measles1&quot;);</span>
+<span class="fc" id="L323">		String measles2Value = record.get(&quot;Immunisation_Record/measles2&quot;);</span>
+<span class="fc" id="L324">		String mr1Value = record.get(&quot;Immunisation_Record/mr1&quot;);</span>
+<span class="fc" id="L325">		String mr2Value = record.get(&quot;Immunisation_Record/mr2&quot;);</span>
+<span class="fc" id="L326">		String locationName = record.get(&quot;Childs_Particulars/Home_Facility&quot;);</span>
+		
+<span class="pc bpc" id="L328" title="1 of 2 branches missed.">		if(!bcg1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L329">			List&lt;Obs&gt; bcg1Obs = this.buildBCGVaccineObservation(bcg1Value);</span>
+<span class="fc" id="L330">			DateTime date = parseDate.parseDateTime(bcg1Value);</span>
+<span class="fc" id="L331">			Event bcg1Event = this.createEvent(client, bcg1Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L332">			vaccinationEvents.add(bcg1Event);</span>
+		}
+		
+<span class="pc bpc" id="L335" title="1 of 2 branches missed.">		if(!bcg2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L336">			List&lt;Obs&gt; bcg2Obs = this.buildVaccineObservation(BCG_VACCINE, &quot;2&quot;, bcg2Value);</span>
+<span class="nc" id="L337">			DateTime date = parseDate.parseDateTime(bcg2Value);</span>
+<span class="nc" id="L338">			Event bcg2Event = this.createEvent(client, bcg2Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L339">			vaccinationEvents.add(bcg2Event);</span>
+		}
+		
+<span class="pc bpc" id="L342" title="1 of 2 branches missed.">		if(!opv0Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L343">			List&lt;Obs&gt; opv0Obs = this.buildVaccineObservation(OPV_VACCINE, &quot;0&quot;, opv0Value);</span>
+<span class="fc" id="L344">			DateTime date = parseDate.parseDateTime(opv0Value);</span>
+<span class="fc" id="L345">			Event opv0Event = this.createEvent(client, opv0Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L346">			vaccinationEvents.add(opv0Event);</span>
+		}
+		
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">		if(!opv1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L350">			List&lt;Obs&gt; opv1Obs = this.buildVaccineObservation(OPV_VACCINE, &quot;1&quot;, opv1Value);</span>
+<span class="fc" id="L351">			DateTime date = parseDate.parseDateTime(opv1Value);</span>
+<span class="fc" id="L352">			Event opv1Event = this.createEvent(client, opv1Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L353">			vaccinationEvents.add(opv1Event);</span>
+		}
+		
+<span class="fc bfc" id="L356" title="All 2 branches covered.">		if(!opv2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L357">			List&lt;Obs&gt; opv2Obs = this.buildVaccineObservation(OPV_VACCINE, &quot;2&quot;, opv2Value);</span>
+<span class="fc" id="L358">			DateTime date = parseDate.parseDateTime(opv2Value);</span>
+<span class="fc" id="L359">			Event opv2Event = this.createEvent(client, opv2Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L360">			vaccinationEvents.add(opv2Event);</span>
+		}
+		
+<span class="fc bfc" id="L363" title="All 2 branches covered.">		if(!opv3Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L364">			List&lt;Obs&gt; opv3Obs = this.buildVaccineObservation(OPV_VACCINE, &quot;3&quot;, opv3Value);</span>
+<span class="fc" id="L365">			DateTime date = parseDate.parseDateTime(opv3Value);</span>
+<span class="fc" id="L366">			Event opv3Event = this.createEvent(client, opv3Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L367">			vaccinationEvents.add(opv3Event);</span>
+		}
+		
+<span class="pc bpc" id="L370" title="1 of 2 branches missed.">		if(!penta1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L371">			List&lt;Obs&gt; penta1Obs = this.buildVaccineObservation(PENTA_VACCINE, &quot;1&quot;, penta1Value);</span>
+<span class="fc" id="L372">			DateTime date = parseDate.parseDateTime(penta1Value);</span>
+<span class="fc" id="L373">			Event penta1Event = this.createEvent(client, penta1Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L374">			vaccinationEvents.add(penta1Event);</span>
+		}
+		
+<span class="fc bfc" id="L377" title="All 2 branches covered.">		if(!penta2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L378">			List&lt;Obs&gt; penta2Obs = this.buildVaccineObservation(PENTA_VACCINE, &quot;2&quot;, penta2Value);</span>
+<span class="fc" id="L379">			DateTime date = parseDate.parseDateTime(penta2Value);</span>
+<span class="fc" id="L380">			Event penta2Event = this.createEvent(client, penta2Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L381">			vaccinationEvents.add(penta2Event);</span>
+		}
+		
+<span class="fc bfc" id="L384" title="All 2 branches covered.">		if(!penta3Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L385">			List&lt;Obs&gt; penta3Obs = this.buildVaccineObservation(PENTA_VACCINE, &quot;3&quot;, penta3Value);</span>
+<span class="fc" id="L386">			DateTime date = parseDate.parseDateTime(penta3Value);</span>
+<span class="fc" id="L387">			Event penta3Event = this.createEvent(client, penta3Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L388">			vaccinationEvents.add(penta3Event);</span>
+		}
+		
+<span class="pc bpc" id="L391" title="1 of 2 branches missed.">		if(!pcv1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L392">			List&lt;Obs&gt; pcv1Obs = this.buildVaccineObservation(PCV_VACCINE, &quot;1&quot;, pcv1Value);</span>
+<span class="fc" id="L393">			DateTime date = parseDate.parseDateTime(pcv1Value);</span>
+<span class="fc" id="L394">			Event pcv1Event = this.createEvent(client, pcv1Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L395">			vaccinationEvents.add(pcv1Event);</span>
+		}
+		
+<span class="fc bfc" id="L398" title="All 2 branches covered.">		if(!pcv2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L399">			List&lt;Obs&gt; pcv2Obs = this.buildVaccineObservation(PCV_VACCINE, &quot;2&quot;, pcv2Value);</span>
+<span class="fc" id="L400">			DateTime date = parseDate.parseDateTime(penta2Value);</span>
+<span class="fc" id="L401">			Event pcv2Event = this.createEvent(client, pcv2Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L402">			vaccinationEvents.add(pcv2Event);</span>
+		}
+		
+<span class="fc bfc" id="L405" title="All 2 branches covered.">		if(!pcv3Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L406">			List&lt;Obs&gt; pcv3Obs = this.buildVaccineObservation(PCV_VACCINE, &quot;3&quot;, pcv3Value);</span>
+<span class="fc" id="L407">			DateTime date = parseDate.parseDateTime(penta3Value);</span>
+<span class="fc" id="L408">			Event pcv3Event = this.createEvent(client, pcv3Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L409">			vaccinationEvents.add(pcv3Event);</span>
+		}
+		
+<span class="pc bpc" id="L412" title="1 of 2 branches missed.">		if(!rota1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L413">			List&lt;Obs&gt; rota1Obs = this.buildVaccineObservation(ROTA_VACCINE, &quot;1&quot;, rota1Value);</span>
+<span class="fc" id="L414">			DateTime date = parseDate.parseDateTime(rota1Value);</span>
+<span class="fc" id="L415">			Event rota1Event = this.createEvent(client, rota1Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L416">			vaccinationEvents.add(rota1Event);</span>
+		}
+
+<span class="fc bfc" id="L419" title="All 2 branches covered.">		if(!rota2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L420">			List&lt;Obs&gt; rota2Obs = this.buildVaccineObservation(ROTA_VACCINE, &quot;2&quot;, rota2Value);</span>
+<span class="fc" id="L421">			DateTime date = parseDate.parseDateTime(rota2Value);</span>
+<span class="fc" id="L422">			Event rota2Event = this.createEvent(client, rota2Obs, eventType, entityType, date, locationName);</span>
+<span class="fc" id="L423">			vaccinationEvents.add(rota2Event);</span>
+		}		
+		
+<span class="pc bpc" id="L426" title="1 of 2 branches missed.">		if(!opv4Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L427">			List&lt;Obs&gt; opv4Obs = this.buildVaccineObservation(OPV_VACCINE, &quot;4&quot;, opv4Value);</span>
+<span class="nc" id="L428">			DateTime date = parseDate.parseDateTime(opv4Value);</span>
+<span class="nc" id="L429">			Event opv4Event = this.createEvent(client, opv4Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L430">			vaccinationEvents.add(opv4Event);</span>
+		}
+		
+<span class="pc bpc" id="L433" title="1 of 2 branches missed.">		if(!measles1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L434">			List&lt;Obs&gt; measles1Obs = this.buildVaccineObservation(MEASLES_VACCINE, &quot;1&quot;, measles1Value);</span>
+<span class="nc" id="L435">			DateTime date = parseDate.parseDateTime(measles1Value);</span>
+<span class="nc" id="L436">			Event measles1Event = this.createEvent(client, measles1Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L437">			vaccinationEvents.add(measles1Event);</span>
+		}
+		
+<span class="pc bpc" id="L440" title="1 of 2 branches missed.">		if(!measles2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L441">			List&lt;Obs&gt; measles2Obs = this.buildVaccineObservation(MEASLES_VACCINE, &quot;2&quot;, measles2Value);</span>
+<span class="nc" id="L442">			DateTime date = parseDate.parseDateTime(measles2Value);</span>
+<span class="nc" id="L443">			Event measles2Event = this.createEvent(client, measles2Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L444">			vaccinationEvents.add(measles2Event);</span>
+		}
+		
+<span class="pc bpc" id="L447" title="1 of 2 branches missed.">		if(!mr1Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L448">			List&lt;Obs&gt; mr1Obs = this.buildVaccineObservation(MR_VACCINE, &quot;1&quot;, mr1Value);</span>
+<span class="nc" id="L449">			DateTime date = parseDate.parseDateTime(mr1Value);</span>
+<span class="nc" id="L450">			Event mr1Event = this.createEvent(client, mr1Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L451">			vaccinationEvents.add(mr1Event);</span>
+		}
+		
+<span class="pc bpc" id="L454" title="1 of 2 branches missed.">		if(!mr2Value.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="nc" id="L455">			List&lt;Obs&gt; mr2Obs = this.buildVaccineObservation(MR_VACCINE, &quot;2&quot;, mr2Value);</span>
+<span class="nc" id="L456">			DateTime date = parseDate.parseDateTime(mr2Value);</span>
+<span class="nc" id="L457">			Event mr2Event = this.createEvent(client, mr2Obs, eventType, entityType, date, locationName);</span>
+<span class="nc" id="L458">			vaccinationEvents.add(mr2Event);</span>
+		}
+		
+<span class="fc" id="L461">		return vaccinationEvents;</span>
+	}
+	
+	private List&lt;Event&gt; buildGrowthMonitoringEvents(CSVRecord record, Client client) {
+<span class="fc" id="L465">		List&lt;Event&gt; growthMonitoringEvents = new ArrayList&lt;Event&gt;();</span>
+<span class="fc" id="L466">		String eventType = &quot;Growth Monitoring&quot;;</span>
+<span class="fc" id="L467">        String entityType = &quot;weight&quot;;</span>
+<span class="fc" id="L468">		String weight1 = record.get(&quot;Growth_Chart/weight1&quot;);</span>
+<span class="fc" id="L469">		String weight1Date = record.get(&quot;Growth_Chart/weight1_date&quot;);</span>
+<span class="fc" id="L470">		String weight2 = record.get(&quot;Growth_Chart/weight2&quot;);</span>
+<span class="fc" id="L471">		String weight2Date = record.get(&quot;Growth_Chart/weight2_date&quot;);</span>
+<span class="fc" id="L472">		String weight3 = record.get(&quot;Growth_Chart/weight3&quot;);</span>
+<span class="fc" id="L473">		String weight3Date = record.get(&quot;Growth_Chart/weight3_date&quot;);</span>
+<span class="fc" id="L474">		String locationName = record.get(&quot;Childs_Particulars/Home_Facility&quot;);</span>
+
+<span class="pc bpc" id="L476" title="1 of 4 branches missed.">		if(!weight1.equalsIgnoreCase(&quot;n/a&quot;) &amp;&amp; !weight1Date.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L477">			List&lt;Obs&gt; obsList = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L478">			Obs weight1Obs = this.buildGrowthMonitoringObservation(weight1);</span>
+<span class="fc" id="L479">			DateTime eventDate = this.parseDate.parseDateTime(weight1Date);</span>
+<span class="fc" id="L480">			obsList.add(weight1Obs);</span>
+<span class="fc" id="L481">			Event gmEvent = this.createEvent(client, obsList, eventType, entityType, eventDate, locationName);</span>
+<span class="fc" id="L482">			growthMonitoringEvents.add(gmEvent);</span>
+		}
+
+<span class="pc bpc" id="L485" title="2 of 4 branches missed.">		if(!weight2.equalsIgnoreCase(&quot;n/a&quot;) &amp;&amp; !weight2Date.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L486">			List&lt;Obs&gt; obsList = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L487">			Obs weight2Obs = this.buildGrowthMonitoringObservation(weight2);</span>
+<span class="fc" id="L488">			DateTime eventDate = this.parseDate.parseDateTime(weight2Date);</span>
+<span class="fc" id="L489">			obsList.add(weight2Obs);</span>
+<span class="fc" id="L490">			Event gm2Event = this.createEvent(client, obsList, eventType, entityType, eventDate, locationName);</span>
+<span class="fc" id="L491">			growthMonitoringEvents.add(gm2Event);</span>
+		}
+
+<span class="pc bpc" id="L494" title="2 of 4 branches missed.">		if(!weight3.equalsIgnoreCase(&quot;n/a&quot;) &amp;&amp; !weight3Date.equalsIgnoreCase(&quot;n/a&quot;)) {</span>
+<span class="fc" id="L495">			List&lt;Obs&gt; obsList = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L496">			Obs weight3Obs = this.buildGrowthMonitoringObservation(weight3);</span>
+<span class="fc" id="L497">			DateTime eventDate = this.parseDate.parseDateTime(weight3Date);</span>
+<span class="fc" id="L498">			obsList.add(weight3Obs);</span>
+<span class="fc" id="L499">			Event gm3Event = this.createEvent(client, obsList, eventType, entityType, eventDate, locationName);</span>
+<span class="fc" id="L500">			growthMonitoringEvents.add(gm3Event);</span>
+		}
+
+<span class="fc" id="L503">		return growthMonitoringEvents;</span>
+	}
+
+	private Event createEvent(Client client, List&lt;Obs&gt; obs, String eventType, String entityType, DateTime eventDate, String locationName) {
+<span class="pc bpc" id="L507" title="1 of 2 branches missed.">        eventDate = eventDate == null ? new DateTime() : eventDate;</span>
+<span class="fc" id="L508">        String formSubmissionId = UUID.randomUUID().toString();</span>
+<span class="fc" id="L509">        String providerId = getProviderId(locationName);</span>
+<span class="fc" id="L510">        String locationId = getLocationUUID(locationName);</span>
+        
+<span class="fc" id="L512">        Event event = new Event(client.getBaseEntityId(), eventType, eventDate, entityType, providerId, locationId, formSubmissionId);</span>
+<span class="fc" id="L513">        event = this.addMultipleObs(event, obs);</span>
+        
+<span class="fc" id="L515">        return event;</span>
+	}
+	
+	private Event addMultipleObs(Event event, List&lt;Obs&gt; multipleObs) {
+<span class="fc bfc" id="L519" title="All 2 branches covered.">		if(multipleObs != null) {</span>
+<span class="fc bfc" id="L520" title="All 2 branches covered.">			for(Obs obs: multipleObs) {</span>
+<span class="fc" id="L521">				event.addObs(obs);</span>
+<span class="fc" id="L522">			}</span>
+		}
+
+<span class="fc" id="L525">		return event;</span>
+	}
+	
+	private String getLocationUUID(String location) {
+<span class="pc bpc" id="L529" title="23 of 26 branches missed.">		switch(location) {</span>
+			case &quot;Mahatma_Gandhi&quot;:
+<span class="fc" id="L531">	            return &quot;5bf3b4ca-9482-4e85-ab7a-0c44e4edb329&quot;;</span>
+	        case &quot;Libuyu&quot;:
+<span class="nc" id="L533">	            return &quot;e0d37af3-50b7-424d-a6b0-94b1035271b3&quot;;</span>
+	        case &quot;Linda&quot;:
+<span class="nc" id="L535">	            return &quot;9e4fc064-d8e7-4fcb-942e-cbcf6524fb24&quot;;</span>
+	        case &quot;Dambwa_North_Clinic&quot;:
+<span class="nc" id="L537">	            return &quot;29414e77-c0dc-4834-b92a-10cd6c2a8d93&quot;;</span>
+	        case &quot;Victoria_Falls_Clinic&quot;:
+<span class="nc" id="L539">	        	return &quot;7567285c-0929-4723-9cf8-faee530adb70&quot;;</span>
+	        case &quot;Airport_Clininc&quot;:
+<span class="nc" id="L541">	        	return &quot;39d0a527-d4dc-4946-ad8f-7cb045cc0bb8&quot;;</span>
+	        default:
+<span class="nc" id="L543">	        	return &quot;&quot;;</span>
+		}
+	}
+
+	private String getProviderId(String location) {
+<span class="pc bpc" id="L548" title="23 of 26 branches missed.">		switch(location) {</span>
+			case &quot;Mahatma_Gandhi&quot;:
+<span class="fc" id="L550">	            return &quot;DLucia&quot;;</span>
+	        case &quot;Libuyu&quot;:
+<span class="nc" id="L552">	            return &quot;pmufwinda&quot;;</span>
+	        case &quot;Linda&quot;:
+<span class="nc" id="L554">	            return &quot;Lmusonda&quot;;</span>
+	        case &quot;Dambwa_North_Clinic&quot;:
+<span class="nc" id="L556">	            return &quot;vmutila&quot;;</span>
+	        case &quot;Victoria_Falls_Clinic&quot;:
+<span class="nc" id="L558">	        	return &quot;vshowa&quot;;</span>
+	        case &quot;Airport_Clininc&quot;:
+<span class="nc" id="L560">	        	return &quot;cmalindi&quot;;</span>
+	        default:
+<span class="nc" id="L562">	        	return &quot;&quot;;</span>
+		}
+	}
+	
+	private String getResidentialAreaUUID(String residentialArea) {
+<span class="pc bpc" id="L567" title="144 of 146 branches missed.">		switch(residentialArea) {</span>
+			case &quot;Airport&quot;:
+<span class="nc" id="L569">				return &quot;658728c1-1c02-4813-a8b5-1727c6936702&quot;;</span>
+			case &quot;Cold_Storage&quot;:
+<span class="nc" id="L571">				return &quot;16e0d178-4aab-48f7-8b71-3197d8eb11c2&quot;;</span>
+			case &quot;Dambwa_Site_Service_Extension&quot;:
+<span class="nc" id="L573">				return &quot;e5939466-2017-4bb6-9c15-985238906d60&quot;;</span>
+			case &quot;Dambwa_Central&quot;:
+<span class="nc" id="L575">				return &quot;b99f0e6f-1d82-459d-8f34-45687d56a272&quot;;</span>
+			case &quot;Dambwa_North_A&quot;:
+<span class="nc" id="L577">				return &quot;a82916f8-c907-4252-9af7-a32291ea1147&quot;;</span>
+			case &quot;Dambwa_North_B&quot;:
+<span class="nc" id="L579">				return &quot;33fbc3a5-cea7-4acb-a674-f3dde2fbba43&quot;;</span>
+			case &quot;Dambwa_North_C&quot;:
+<span class="nc" id="L581">				return &quot;4a3f39e0-7fda-46b5-ba59-3aba0cd5d35f&quot;;</span>
+			case &quot;Dambwa_North_A_Zone2&quot;:
+<span class="nc" id="L583">				return &quot;f4c6496c-4423-4e01-8595-5aa40ac3e493&quot;;</span>
+			case &quot;Dambwa_North_Ex&quot;:
+<span class="nc" id="L585">				return &quot;1f7adf3d-9a2c-45ca-811b-d4f37c2de684&quot;;</span>
+			case &quot;Dambwa_North_Ex_Zone2&quot;:
+<span class="nc" id="L587">				return &quot;32e90dcf-ddc3-4e48-802d-398292089082&quot;;</span>
+			case &quot;Dambwa_North_N&quot;:
+<span class="nc" id="L589">				return &quot;9e60f6e8-dfcc-4a47-8023-c57d01dc9424&quot;;</span>
+			case &quot;Dambwa_North_V&quot;:
+<span class="nc" id="L591">				return &quot;9ea4663c-ad83-4a28-9d79-56e6ae49604c&quot;;</span>
+			case &quot;Dambwa_Site_Village&quot;:
+<span class="nc" id="L593">				return &quot;70c60496-814a-42b5-a62e-173289ba360f&quot;;</span>
+			case &quot;Dambwa_Site&quot;:
+<span class="nc" id="L595">				return &quot;d8120774-20c8-437b-9167-b82797cffe45&quot;;</span>
+			case &quot;Libuyu_A&quot;:
+<span class="nc" id="L597">				return &quot;f8619a84-0da9-4eac-8e49-a7e3687fcd5c&quot;;</span>
+			case &quot;Libuyu_B&quot;:
+<span class="nc" id="L599">				return &quot;27a27354-99fd-4f9f-bc7c-e3c866f6d9a6&quot;;</span>
+			case &quot;Libuyu_C&quot;:
+<span class="nc" id="L601">				return &quot;9d978b8b-4efd-4f76-973b-a53d3d9edc26&quot;;</span>
+			case &quot;Libuyu_D&quot;:
+<span class="nc" id="L603">				return &quot;90ae79e0-47fd-47c4-afdb-876bfa8efb40&quot;;</span>
+			case &quot;Libuyu_EA&quot;:
+<span class="nc" id="L605">				return &quot;ebe19d2a-dca5-4014-bfa8-bd0b013d8a7c&quot;;</span>
+			case &quot;Linda_A&quot;:
+<span class="nc" id="L607">				return &quot;6f88ef86-89fe-49f3-b533-76aabb593e2b&quot;;</span>
+			case &quot;Linda_B&quot;:
+<span class="nc" id="L609">				return &quot;2572ada2-9694-480d-9e68-f9b832f074f9&quot;;</span>
+			case &quot;Linda_C&quot;:
+<span class="nc" id="L611">				return &quot;3c21c93a-094f-42a2-8c8b-efe3ca9b0238&quot;;</span>
+			case &quot;Linda_D&quot;:
+<span class="nc" id="L613">				return &quot;a67526bd-b879-491d-aaef-f5fbcc3bd6ca&quot;;</span>
+			case &quot;Linda_E&quot;:
+<span class="nc" id="L615">				return &quot;f1a70659-368d-4395-8d20-1d68453925f9&quot;;</span>
+			case &quot;Linda_F&quot;:
+<span class="nc" id="L617">				return &quot;19e01239-d56d-4152-a960-de4c0733ed57&quot;;</span>
+			case &quot;Linda_G&quot;:
+<span class="nc" id="L619">				return &quot;052830fe-07c9-4964-9140-883ad207a300&quot;;</span>
+			case &quot;Linda_H&quot;:
+<span class="nc" id="L621">				return &quot;0bc72122-00b2-47cd-9c71-fb7cc716c4c3&quot;;</span>
+			case &quot;Linda_N&quot;:
+<span class="nc" id="L623">				return &quot;b06960c8-7911-4f9b-bf3f-ec3abc86ab4d&quot;;</span>
+			case &quot;Maunga&quot;:
+<span class="nc" id="L625">				return &quot;123105c1-b9aa-499b-a0d3-7ac2d311f4e1&quot;;</span>
+			case &quot;Mulala_Village&quot;:
+<span class="nc" id="L627">				return &quot;e510de83-e077-401b-bf26-53d2f311fea0&quot;;</span>
+			case &quot;Mwandi&quot;:
+<span class="nc" id="L629">				return &quot;edd22709-b77c-445f-aa33-ef478ae625d1&quot;;</span>
+			case &quot;Nearby_Farms&quot;:
+<span class="nc" id="L631">				return &quot;c9a180f2-5488-4955-8521-fdb904e6e8b4&quot;;</span>
+			case &quot;Sakubita&quot;:
+<span class="nc" id="L633">				return &quot;b9dc7838-079b-4601-baac-7df6519ba84b&quot;;</span>
+			case &quot;Sawmills&quot;:
+<span class="nc" id="L635">				return &quot;7809d8ac-7bec-473c-8a20-a3edffff225c&quot;;</span>
+			case &quot;Zesco&quot;:
+<span class="nc" id="L637">				return &quot;f28994f4-91ec-4ef2-a9e5-6d17346be649&quot;;</span>
+			case &quot;Zawa&quot;:
+<span class="nc" id="L639">				return &quot;389e4d39-8587-4bf4-b2f1-247d9aabcffe&quot;;</span>
+			default:
+<span class="fc" id="L641">				return &quot;&quot;;</span>
+		}
+	}
+
+	private String getVaccineParentCode(String vaccine) {
+<span class="pc bpc" id="L646" title="15 of 30 branches missed.">		switch(vaccine) {</span>
+			case BCG_VACCINE:
+<span class="fc" id="L648">	            return &quot;886AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case OPV_VACCINE:
+<span class="fc" id="L650">	            return &quot;783AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case PCV_VACCINE:
+<span class="fc" id="L652">	            return &quot;162342AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case PENTA_VACCINE:
+<span class="fc" id="L654">	            return &quot;1685AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case ROTA_VACCINE:
+<span class="fc" id="L656">	            return &quot;159698AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case MEASLES_VACCINE:
+<span class="nc" id="L658">	            return &quot;36AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        case MR_VACCINE:
+<span class="nc" id="L660">	            return &quot;162586AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+	        default:
+<span class="nc" id="L662">	        	return &quot;&quot;;</span>
+		}
+	}
+	
+	private String getPMTCTConcept(String pmtctStatus) {
+<span class="pc bpc" id="L667" title="11 of 14 branches missed.">		switch(pmtctStatus) {</span>
+			case &quot;CE&quot;:
+<span class="nc" id="L669">				return &quot;703AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+			case &quot;MSU&quot;:
+<span class="nc" id="L671">				return &quot;1067AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+			case &quot;CNE&quot;:
+<span class="fc" id="L673">				return &quot;664AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+			default:
+<span class="nc" id="L675">				return &quot;&quot;;</span>
+		}
+	}
+
+	private List&lt;Obs&gt; buildBCGVaccineObservation(String date) {
+<span class="fc" id="L680">		String fieldType = &quot;concept&quot;;</span>
+<span class="fc" id="L681">		String dateFieldDataType = &quot;date&quot;;</span>
+<span class="fc" id="L682">		String dateFieldCode = &quot;1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+<span class="fc" id="L683">		String parentCode = this.getVaccineParentCode(BCG_VACCINE);</span>
+<span class="fc" id="L684">		String formSubmissionField = &quot;bcg&quot;;</span>
+<span class="fc" id="L685">		List&lt;Object&gt; values1 = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L686">		values1.add(date);</span>
+
+<span class="fc" id="L688">		Obs bcgDateObs = new Obs(fieldType, dateFieldDataType, dateFieldCode, parentCode, values1, null, formSubmissionField);</span>
+
+<span class="fc" id="L690">		List&lt;Obs&gt; bcgObs = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L691">		bcgObs.add(bcgDateObs);</span>
+
+<span class="fc" id="L693">		return bcgObs;</span>
+	}
+
+	private List&lt;Obs&gt; buildVaccineObservation(String vaccine, String dose, String value) {
+<span class="fc" id="L697">		String fieldType = &quot;concept&quot;;</span>
+<span class="fc" id="L698">		String dateFieldDataType = &quot;date&quot;;</span>
+<span class="fc" id="L699">		String calculateFieldDataType = &quot;calculate&quot;;</span>
+<span class="fc" id="L700">		String dateFieldCode = &quot;1410AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+<span class="fc" id="L701">		String calculateFieldCode = &quot;1418AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+<span class="fc" id="L702">		String parentCode = this.getVaccineParentCode(vaccine);</span>
+<span class="fc" id="L703">		String formSubmissionField1 = vaccine + &quot;_&quot; + dose;</span>
+<span class="fc" id="L704">		String formSubmissionField2 = vaccine + &quot;_&quot; + dose + &quot;_dose&quot;;</span>
+<span class="fc" id="L705">		List&lt;Object&gt; values1 = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L706">		values1.add(value);</span>
+<span class="fc" id="L707">		List&lt;Object&gt; values2 = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L708">		values2.add(dose);</span>
+		
+<span class="fc" id="L710">		Obs bcgDateObs = new Obs(fieldType, dateFieldDataType, dateFieldCode, parentCode, values1, null, formSubmissionField1);</span>
+<span class="fc" id="L711">		Obs bcgCalculateObs = new Obs(fieldType, calculateFieldDataType, calculateFieldCode, parentCode, values2, null, formSubmissionField2);</span>
+		
+<span class="fc" id="L713">		List&lt;Obs&gt; bcgObs = new ArrayList&lt;Obs&gt;();</span>
+<span class="fc" id="L714">		bcgObs.add(bcgDateObs);</span>
+<span class="fc" id="L715">		bcgObs.add(bcgCalculateObs);</span>
+		
+<span class="fc" id="L717">		return bcgObs;</span>
+	}
+	
+	private List&lt;Obs&gt; buildBirthRegistrationObs(CSVRecord record) {
+<span class="fc" id="L721">		String value = &quot;&quot;;</span>
+<span class="fc" id="L722">		List&lt;Obs&gt; birthRegistrationObs = new ArrayList&lt;Obs&gt;();</span>
+		// First_Health_Facility_Contact
+<span class="fc" id="L724">		String firstHealthFacilityContact = this.validateValue(record.get(&quot;Childs_Particulars/First_Health_Facility_Contact&quot;));</span>
+<span class="fc" id="L725">		birthRegistrationObs.add(buildObservation(&quot;concept&quot;, &quot;text&quot;, &quot;163260AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, firstHealthFacilityContact, &quot;First_Health_Facility_Contact&quot;));</span>
+		
+		// Birth_Weight
+<span class="fc" id="L728">		String birthWeight = this.validateValue(record.get(&quot;Childs_Particulars/Birth_Weight&quot;));</span>
+<span class="fc" id="L729">		birthRegistrationObs.add(buildObservation(&quot;concept&quot;, &quot;text&quot;, &quot;5916AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, birthWeight, &quot;Birth_Weight&quot;));</span>
+
+		// Father_Guardian_Name
+<span class="fc" id="L732">		String fatherGuardianName = this.validateValue(record.get(&quot;Childs_Particulars/Father_Guardian_Name&quot;));</span>
+<span class="fc" id="L733">		birthRegistrationObs.add(buildObservation(&quot;concept&quot;, &quot;text&quot;, &quot;1594AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, fatherGuardianName, &quot;Father_Guardian_Name&quot;));</span>
+		
+		// Place_Birth
+<span class="fc" id="L736">		String placeBirth = this.validateValue(record.get(&quot;Childs_Particulars/Place_Birth&quot;));</span>
+<span class="pc bpc" id="L737" title="1 of 2 branches missed.">		value = placeBirth.equals(&quot;Health_Facility&quot;) ? &quot;1588AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot; : &quot;1536AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+
+<span class="pc bpc" id="L739" title="1 of 2 branches missed.">		String humanReadableValue = placeBirth.equals(&quot;Health_Facility&quot;) ? &quot;Health facility&quot; : placeBirth;</span>
+<span class="fc" id="L740">		birthRegistrationObs.add(buildObservationWithHumanReadableValues(&quot;concept&quot;, &quot;select one&quot;, &quot;1572AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, value, &quot;Place_Birth&quot;, humanReadableValue));</span>
+		
+		// Birth_Facility_Name
+<span class="fc" id="L743">		String birthFacilityName = record.get(&quot;Childs_Particulars/Birth_Facility_Name&quot;);</span>
+<span class="fc" id="L744">		String birthFacilityNameOther = record.get(&quot;Childs_Particulars/Birth_Facility_Name_Other&quot;);</span>
+		
+<span class="pc bpc" id="L746" title="1 of 2 branches missed.">		if(birthFacilityName != &quot;n/a&quot;) {</span>
+<span class="pc bpc" id="L747" title="1 of 2 branches missed.">			value = this.getLocationUUID(birthFacilityName) != &quot;&quot; ? this.getLocationUUID(birthFacilityName) : birthFacilityNameOther;</span>
+<span class="fc" id="L748">			birthRegistrationObs.add(buildObservation(&quot;concept&quot;, &quot;text&quot;, &quot;163531AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, value, &quot;Birth_Facility_Name&quot;));</span>
+		}
+		// PMTCT_Status
+		
+<span class="fc" id="L752">		String pmtctStatus = this.validateValue(record.get(&quot;PMTCT/PMTCT_Status&quot;));</span>
+<span class="fc" id="L753">		birthRegistrationObs.add(buildObservation(&quot;concept&quot;, &quot;text&quot;, &quot;1396AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;, this.getPMTCTConcept(pmtctStatus), &quot;PMTCT_Status&quot;));</span>
+		
+<span class="fc" id="L755">		return birthRegistrationObs;</span>
+	}
+	
+	private Obs buildObservation(String fieldType, String fieldDataType, String fieldCode, String value, String formSubmissionField) {
+<span class="fc" id="L759">		List&lt;Object&gt; values = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L760">		values.add(value);</span>
+		
+<span class="fc" id="L762">		Obs obs = new Obs(fieldType, fieldDataType, fieldCode, &quot;&quot;, value, &quot;&quot;, formSubmissionField);</span>
+		
+<span class="fc" id="L764">		return obs;</span>
+	}
+	
+	private Obs buildObservationWithHumanReadableValues(String fieldType, String fieldDataType, String fieldCode, String value, String formSubmissionField, String humanReadableValue) {
+<span class="fc" id="L768">		List&lt;Object&gt; values = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L769">		values.add(value);</span>
+
+<span class="fc" id="L771">		List&lt;Object&gt; humanReadableValues = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L772">		humanReadableValues.add(humanReadableValue);</span>
+
+<span class="fc" id="L774">		Obs obs = new Obs(fieldType, fieldDataType, fieldCode, &quot;&quot;, value, &quot;&quot;, formSubmissionField);</span>
+<span class="fc" id="L775">		obs.setHumanReadableValues(humanReadableValues);</span>
+
+<span class="fc" id="L777">		return obs;</span>
+	}
+
+	private Obs buildGrowthMonitoringObservation(String weight) {
+<span class="fc" id="L781">		String fieldType = &quot;concept&quot;;</span>
+<span class="fc" id="L782">		String fieldDataType = &quot;decimal&quot;;</span>
+<span class="fc" id="L783">		String fieldCode = &quot;5089AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA&quot;;</span>
+<span class="fc" id="L784">		List&lt;Object&gt; values = new ArrayList&lt;Object&gt;();</span>
+<span class="fc" id="L785">		values.add(weight);</span>
+
+<span class="fc" id="L787">		String formSubmissionField = &quot;Weight_Kgs&quot;;</span>
+
+<span class="fc" id="L789">		Obs growthMonitoringObs = new Obs(fieldType, fieldDataType, fieldCode, &quot;&quot;, weight, &quot;&quot;, formSubmissionField);</span>
+<span class="fc" id="L790">		growthMonitoringObs.setValues(values);</span>
+
+<span class="fc" id="L792">		return growthMonitoringObs;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

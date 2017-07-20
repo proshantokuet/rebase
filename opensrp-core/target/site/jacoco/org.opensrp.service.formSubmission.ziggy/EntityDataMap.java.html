@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EntityDataMap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.ziggy</a> &gt; <span class="el_source">EntityDataMap.java</span></div><h1>EntityDataMap.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.ziggy;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.opensrp.util.Utils;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class EntityDataMap {
+	public static final String ID = &quot;id&quot;;
+	public static final String DETAILS = &quot;details&quot;;
+	public static final String DOCUMENT_TYPE = &quot;type&quot;;
+<span class="fc" id="L15">	public static final String[] ID_FIELD_ON_ENTITY = new String[]{&quot;caseId&quot;, &quot;baseEntityId&quot;, &quot;entityId&quot;};</span>
+	private Map&lt;String, Class&lt;?&gt;&gt; classMap;
+	
+<span class="fc" id="L18">	public EntityDataMap() {</span>
+<span class="fc" id="L19">		classMap = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L20">	}</span>
+	
+	public void addEntity(String entityType, Class&lt;?&gt; cls) {
+<span class="fc" id="L23">		classMap.put(entityType, cls);</span>
+<span class="fc" id="L24">	}</span>
+	
+	public List&lt;String&gt; getFieldsList(String entityType) {
+<span class="nc" id="L27">		return Utils.getFieldsAsList(classMap.get(entityType));</span>
+	}
+	public String getIdField(String entityType) {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">		for (String idf : ID_FIELD_ON_ENTITY) {</span>
+			try {
+<span class="nc bnc" id="L32" title="All 2 branches missed.">				if(classMap.get(entityType).getDeclaredField(idf) != null){</span>
+<span class="nc" id="L33">					return idf;</span>
+				}
+<span class="fc" id="L35">			} catch (NoSuchFieldException | SecurityException e) {</span>
+				// do nothing as method finds field name is null and returns null
+<span class="nc" id="L37">			}</span>
+		}
+<span class="fc" id="L39">		return null;</span>
+	}
+	
+	public String getIdViewName(String entityType) {
+<span class="fc" id="L43">		return &quot;by_&quot;+getIdField(entityType);</span>
+	}
+	
+	public String getDocEntityType(String entityType) {
+<span class="fc" id="L47">		return classMap.get(entityType).getSimpleName();</span>
+	}
+	
+	public boolean hasEntityMap(String entityMap) {
+<span class="fc" id="L51">		return classMap.containsKey(entityMap);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

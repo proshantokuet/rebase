@@ -1,0 +1,24 @@
+[REPORT] 20072017 11:20:06,329 INFO  [main] [TestContextManager] @TestExecutionListeners is not present for class [class org.opensrp.repository.it.AllClientsIntegrationTest]: using defaults.
+Removing all data
+Removed
+Removing all data
+Removed
+Removing all data
+Removed
+Removing all data
+Removed
+[REPORT] 20072017 11:20:28,946 INFO  [main] [FileLogger] 10K entries complete at 2017-07-20T11:20:28.946+06:00 in 20 sec
+[REPORT] 20072017 11:20:28,946 INFO  [main] [FileLogger] Going for First search by Couch
+[REPORT] 20072017 11:20:29,006 INFO  [main] [FileLogger] Completed First search by Couch
+[REPORT] 20072017 11:20:29,006 INFO  [main] [FileLogger] Going for 2nd search by Couch
+[REPORT] 20072017 11:20:29,050 INFO  [main] [FileLogger] Completed 2nd search by Couch
+[REPORT] 20072017 11:20:29,050 INFO  [main] [FileLogger] Going for First search by Lucene
+_design/Client by_all_criteria
+[REPORT] 20072017 11:20:29,184 INFO  [main] [FileLogger] Completed First search of size 0 by Lucene
+[REPORT] 20072017 11:20:29,184 INFO  [main] [FileLogger] Going for 2nd search by Lucene
+_design/Client by_all_criteria
+[REPORT] 20072017 11:20:29,199 INFO  [main] [FileLogger] Completed 2nd search of size 0 by Lucene
+Removing all data
+Removed
+_design/Client by_all_criteria
+

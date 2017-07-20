@@ -1,0 +1,2 @@
+[REPORT] 20072017 11:20:05,118 INFO  [main] [TestContextManager] @TestExecutionListeners is not present for class [class org.opensrp.repository.it.AllErrorTraceIntegrationTest]: using defaults.
+

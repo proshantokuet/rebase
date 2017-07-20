@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>DrishtiAuthenticationProvider.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.security</a> &gt; <span class="el_source">DrishtiAuthenticationProvider.java</span></div><h1>DrishtiAuthenticationProvider.java</h1><pre class="source lang-java linenums">package org.opensrp.web.security;
+
+import static java.text.MessageFormat.format;
+
+import java.util.List;
+
+import org.json.JSONException;
+import org.opensrp.api.domain.User;
+import org.opensrp.connector.openmrs.service.OpenmrsUserService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.authentication.encoding.PasswordEncoder;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.stereotype.Component;
+
+import ch.lambdaj.Lambda;
+import ch.lambdaj.function.convert.Converter;
+
+@Component
+public class DrishtiAuthenticationProvider implements AuthenticationProvider {
+<span class="fc" id="L28">    private static Logger logger = LoggerFactory.getLogger(DrishtiAuthenticationProvider.class.toString());</span>
+    public static final String USER_NOT_FOUND = &quot;The username or password you entered is incorrect. Please enter the correct credentials.&quot;;
+    public static final String USER_NOT_ACTIVATED = &quot;The user has been registered but not activated. Please contact your local administrator.&quot;;
+    public static final String INTERNAL_ERROR = &quot;Failed to authenticate user due to internal server error.&quot;;
+
+    //private AllOpenSRPUsers allOpenSRPUsers;
+    private PasswordEncoder passwordEncoder;
+    private OpenmrsUserService openmrsUserService;
+
+
+    @Autowired
+<span class="fc" id="L39">    public DrishtiAuthenticationProvider(OpenmrsUserService openmrsUserService, @Qualifier(&quot;shaPasswordEncoder&quot;) PasswordEncoder passwordEncoder) {</span>
+<span class="fc" id="L40">        this.openmrsUserService = openmrsUserService;</span>
+<span class="fc" id="L41">        this.passwordEncoder = passwordEncoder;</span>
+<span class="fc" id="L42">    }</span>
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+<span class="nc" id="L46">    	User user = getDrishtiUser(authentication, authentication.getName());</span>
+    	// get user after authentication
+<span class="nc bnc" id="L48" title="All 2 branches missed.">        if (user == null) {</span>
+<span class="nc" id="L49">            throw new BadCredentialsException(USER_NOT_FOUND);</span>
+        }
+
+<span class="nc bnc" id="L52" title="All 4 branches missed.">        if (user.getVoided() != null &amp;&amp; user.getVoided()) {</span>
+<span class="nc" id="L53">            throw new BadCredentialsException(USER_NOT_ACTIVATED);</span>
+        }
+        
+<span class="nc" id="L56">        return new UsernamePasswordAuthenticationToken(authentication.getName(), authentication.getCredentials(), getRolesAsAuthorities(user));</span>
+    }
+
+    @Override
+    public boolean supports(Class&lt;?&gt; authentication) {
+<span class="nc bnc" id="L61" title="All 2 branches missed.">        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication)</span>
+<span class="nc bnc" id="L62" title="All 2 branches missed.">                &amp;&amp; authentication.equals(UsernamePasswordAuthenticationToken.class);</span>
+    }
+
+    private List&lt;SimpleGrantedAuthority&gt; getRolesAsAuthorities(User user) {
+<span class="nc" id="L66">        return Lambda.convert(user.getRoles(), new Converter&lt;String, SimpleGrantedAuthority&gt;() {</span>
+            @Override
+            public SimpleGrantedAuthority convert(String role) {
+<span class="nc" id="L69">                return new SimpleGrantedAuthority(&quot;ROLE_OPENMRS&quot;);</span>
+            }
+        });
+    }
+
+    
+    
+    public User getDrishtiUser(Authentication authentication, String username) {
+<span class="fc" id="L77">        User user = null;</span>
+        try {
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        	if(openmrsUserService.authenticate(authentication.getName(), authentication.getCredentials().toString())){</span>
+<span class="fc" id="L80">                boolean response = openmrsUserService.deleteSession(authentication.getName(),authentication.getCredentials().toString());</span>
+<span class="fc" id="L81">			    user = openmrsUserService.getUser(username);</span>
+<span class="pc bpc" id="L82" title="1 of 2 branches missed.">			    if(!response){</span>
+<span class="fc" id="L83">		            logger.error(format(&quot;{0}. Exception: {1}&quot;, INTERNAL_ERROR, &quot;Unable to clear session&quot;));</span>
+
+			    }
+			}
+<span class="nc" id="L87">        } catch (Exception e) {</span>
+<span class="nc" id="L88">            logger.error(format(&quot;{0}. Exception: {1}&quot;, INTERNAL_ERROR, e));</span>
+<span class="nc" id="L89">        	e.printStackTrace();</span>
+<span class="nc" id="L90">            throw new BadCredentialsException(INTERNAL_ERROR);</span>
+<span class="fc" id="L91">        }</span>
+<span class="fc" id="L92">        return user;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

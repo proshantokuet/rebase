@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllActions.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler.repository</a> &gt; <span class="el_source">AllActions.java</span></div><h1>AllActions.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler.repository;
+
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.ektorp.BulkDeleteDocument;
+import org.ektorp.ComplexKey;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.GenerateView;
+import org.ektorp.support.View;
+import org.joda.time.DateTime;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.repository.lucene.LuceneActionRepository;
+import org.opensrp.scheduler.Action;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllActions extends MotechBaseRepository&lt;Action&gt; {
+<span class="fc" id="L25">    private static Logger logger = LoggerFactory.getLogger(AllActions.class.toString());</span>
+    LuceneActionRepository luceneActionRepo;
+    @Autowired
+    protected AllActions(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, LuceneActionRepository _luceneActionRepo) {
+<span class="fc" id="L29">        super(Action.class, db);</span>
+<span class="fc" id="L30">        luceneActionRepo=_luceneActionRepo;</span>
+<span class="fc" id="L31">    }</span>
+
+    @View(name = &quot;action_by_provider_and_time&quot;, map = &quot;function(doc) { if (doc.type === 'Action') { emit([doc.providerId, doc.timeStamp], null); } }&quot;)
+    public List&lt;Action&gt; findByProviderIdAndTimeStamp(String providerId, long timeStamp) {
+<span class="fc" id="L35">        ComplexKey startKey = ComplexKey.of(providerId, timeStamp + 1);</span>
+<span class="fc" id="L36">        ComplexKey endKey = ComplexKey.of(providerId, Long.MAX_VALUE);</span>
+<span class="fc" id="L37">        return db.queryView(createQuery(&quot;action_by_provider_and_time&quot;).startKey(startKey).endKey(endKey).includeDocs(true), Action.class);</span>
+    }
+
+    @View(name = &quot;action_by_provider_entityId_scheduleName&quot;,
+            map = &quot;function(doc) { &quot; +
+                    &quot;if(doc.type === 'Action' &amp;&amp; doc.actionTarget === 'alert' &amp;&amp; doc.providerId &amp;&amp; doc.baseEntityId &amp;&amp; doc.data &amp;&amp; doc.data.scheduleName) {&quot; +
+                    &quot;emit([doc.providerId, doc.baseEntityId, doc.data.scheduleName], null)} &quot; +
+                    &quot;}&quot;)
+    public List&lt;Action&gt; findAlertByANMIdEntityIdScheduleName(String providerId, String baseEntityId, String scheduleName) {
+<span class="fc" id="L46">        ComplexKey key = ComplexKey.of(providerId, baseEntityId, scheduleName);</span>
+<span class="fc" id="L47">        return db.queryView(createQuery(&quot;action_by_provider_entityId_scheduleName&quot;).key(key).includeDocs(true), Action.class);</span>
+    }
+
+    @View(name = &quot;action_by_baseEntityId_and_schedule_and_time&quot;, map = &quot;function(doc) { if (doc.type === 'Action') { emit([doc.baseEntityId, doc.data.scheduleName, doc.timeStamp], null); } }&quot;)
+    public List&lt;Action&gt; findByCaseIdScheduleAndTimeStamp(String baseEntityId, String schedule, DateTime start, DateTime end) {
+<span class="nc" id="L52">        ComplexKey startKey = ComplexKey.of(baseEntityId, schedule, start.getMillis());</span>
+<span class="nc" id="L53">        ComplexKey endKey = ComplexKey.of(baseEntityId, schedule, end.getMillis() + 1);</span>
+<span class="nc" id="L54">        return db.queryView(createQuery(&quot;action_by_baseEntityId_and_schedule_and_time&quot;).startKey(startKey).endKey(endKey).includeDocs(true), Action.class);</span>
+    }
+    
+    @View(name = &quot;action_by_baseEntityId_and_time&quot;, map = &quot;function(doc) { if (doc.type === 'Action') { emit([doc.baseEntityId,doc.timeStamp], null); } }&quot;)
+    public List&lt;Action&gt; findByCaseIdAndTimeStamp(String baseEntityId, long timeStamp) {
+<span class="nc" id="L59">        ComplexKey startKey = ComplexKey.of(baseEntityId,  timeStamp);</span>
+<span class="nc" id="L60">        ComplexKey endKey = ComplexKey.of(baseEntityId, Long.MAX_VALUE);</span>
+<span class="nc" id="L61">        return db.queryView(createQuery(&quot;action_by_baseEntityId_and_time&quot;).startKey(startKey).endKey(endKey).includeDocs(true), Action.class);</span>
+    }
+   
+    public void deleteAllByTarget(String target) {
+<span class="fc" id="L65">        deleteAll(findByActionTarget(target));</span>
+<span class="fc" id="L66">    }</span>
+
+    public void markAllAsInActiveFor(String baseEntityId) {
+<span class="fc" id="L69">        List&lt;Action&gt; actions = findByBaseEntityId(baseEntityId);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        for (Action action : actions) {</span>
+<span class="fc" id="L71">            action.markAsInActive();</span>
+        }
+<span class="fc" id="L73">        db.executeBulk(actions);</span>
+<span class="fc" id="L74">    }</span>
+
+    @GenerateView
+    private List&lt;Action&gt; findByActionTarget(String target) {
+<span class="fc" id="L78">        return queryView(&quot;by_actionTarget&quot;, target);</span>
+    }
+
+    @GenerateView
+    private List&lt;Action&gt; findByBaseEntityId(String baseEntityId) {
+<span class="fc" id="L83">        return queryView(&quot;by_baseEntityId&quot;, baseEntityId);</span>
+    }
+
+    private void deleteAll(List&lt;Action&gt; actions) {
+<span class="fc" id="L87">        ArrayList&lt;BulkDeleteDocument&gt; deleteDocuments = new ArrayList&lt;&gt;();</span>
+<span class="pc bpc" id="L88" title="1 of 2 branches missed.">        for (Action action : actions) {</span>
+<span class="nc" id="L89">            deleteDocuments.add(BulkDeleteDocument.of(action));</span>
+        }
+<span class="fc" id="L91">        db.executeBulk(deleteDocuments);</span>
+<span class="fc" id="L92">    }</span>
+
+    public void addOrUpdateAlert(Action alertAction) {
+<span class="fc" id="L95">        List&lt;Action&gt; existingAlerts = findAlertByANMIdEntityIdScheduleName(alertAction.providerId(), alertAction.baseEntityId(), alertAction.data().get(&quot;scheduleName&quot;));</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (existingAlerts.size() &gt; 1) {</span>
+<span class="nc" id="L97">            logger.warn(MessageFormat.format(&quot;Found more than one alert for the combination of providerId: {0}, entityId: {1} and scheduleName : {2}. Alerts : {3}&quot;,</span>
+<span class="nc" id="L98">                    alertAction.providerId(), alertAction.baseEntityId(), alertAction.data().get(&quot;scheduleName&quot;), existingAlerts));</span>
+        }
+<span class="fc bfc" id="L100" title="All 2 branches covered.">        for (Action existingAlert : existingAlerts) {</span>
+<span class="fc" id="L101">            safeRemove(existingAlert);</span>
+        }
+<span class="fc" id="L103">        add(alertAction);</span>
+<span class="fc" id="L104">    }</span>
+
+    public void markAlertAsInactiveFor(String providerId, String baseEntityId, String scheduleName) {
+<span class="fc" id="L107">        List&lt;Action&gt; existingAlerts = findAlertByANMIdEntityIdScheduleName(providerId, baseEntityId, scheduleName);</span>
+<span class="pc bpc" id="L108" title="1 of 2 branches missed.">        if (existingAlerts.size() &gt; 1) {</span>
+<span class="nc" id="L109">            logger.warn(MessageFormat.format(&quot;Found more than one alert for the combination of providerId: {0}, entityId: {1} and scheduleName : {2}. Alerts : {3}&quot;,</span>
+<span class="nc" id="L110">                    providerId, baseEntityId, scheduleName, existingAlerts));</span>
+        }
+<span class="fc bfc" id="L112" title="All 2 branches covered.">        for (Action existingAlert : existingAlerts) {</span>
+<span class="fc" id="L113">            existingAlert.markAsInActive();</span>
+        }
+<span class="fc" id="L115">        db.executeBulk(existingAlerts);</span>
+<span class="fc" id="L116">    }</span>
+    
+    public List&lt;Action&gt; findByCriteria(String team,String providerId,long timeStamp,String sortBy,String sortOrder,int limit) {
+<span class="nc" id="L119">                           		return luceneActionRepo.getByCriteria(team,providerId, timeStamp, sortBy, sortOrder, limit);</span>
+                           	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

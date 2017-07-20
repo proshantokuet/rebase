@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ReportService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">ReportService.java</span></div><h1>ReportService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.util.List;
+import org.joda.time.DateTime;
+import org.opensrp.domain.Report;
+import org.opensrp.repository.AllReports;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class ReportService {
+	
+	private final AllReports allReports;
+	
+<span class="fc" id="L17">	private static Logger logger = LoggerFactory.getLogger(ReportService.class.toString());</span>
+	
+	@Autowired
+<span class="fc" id="L20">	public ReportService(AllReports allReports) {</span>
+<span class="fc" id="L21">		this.allReports = allReports;</span>
+<span class="fc" id="L22">	}</span>
+	
+	public List&lt;Report&gt; findAllByIdentifier(String identifier) {
+<span class="nc" id="L25">		return allReports.findAllByIdentifier(identifier);</span>
+	}
+	
+	public List&lt;Report&gt; findByServerVersion(long serverVersion) {
+<span class="nc" id="L29">		return allReports.findByServerVersion(serverVersion);</span>
+	}
+	
+	public Report getById(String id) {
+<span class="nc" id="L33">		return allReports.findById(id);</span>
+	}
+	
+	public List&lt;Report&gt; getAll() {
+<span class="nc" id="L37">		return allReports.getAll();</span>
+	}
+	
+	public Report find(String uniqueId) {
+<span class="nc" id="L41">		List&lt;Report&gt; reportList = allReports.findAllByIdentifier(uniqueId);</span>
+<span class="nc bnc" id="L42" title="All 2 branches missed.">		if (reportList.size() &gt; 1) {</span>
+<span class="nc" id="L43">			throw new IllegalArgumentException(&quot;Multiple reports with identifier &quot; + uniqueId + &quot; exist.&quot;);</span>
+<span class="nc bnc" id="L44" title="All 2 branches missed.">		} else if (reportList.size() != 0) {</span>
+<span class="nc" id="L45">			return reportList.get(0);</span>
+		}
+<span class="nc" id="L47">		return null;</span>
+	}
+	
+	public Report find(Report report) {
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		for (String idt : report.getIdentifiers().keySet()) {</span>
+<span class="nc" id="L52">			List&lt;Report&gt; reportList = allReports.findAllByIdentifier(report.getIdentifier(idt));</span>
+<span class="nc bnc" id="L53" title="All 2 branches missed.">			if (reportList.size() &gt; 1) {</span>
+<span class="nc" id="L54">				throw new IllegalArgumentException(</span>
+<span class="nc" id="L55">				        &quot;Multiple reports with identifier type &quot; + idt + &quot; and ID &quot; + report.getIdentifier(idt) + &quot; exist.&quot;);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">			} else if (reportList.size() != 0) {</span>
+<span class="nc" id="L57">				return reportList.get(0);</span>
+			}
+<span class="nc" id="L59">		}</span>
+<span class="nc" id="L60">		return null;</span>
+	}
+	
+	public Report findById(String reportId) {
+		try {
+<span class="nc bnc" id="L65" title="All 4 branches missed.">			if (reportId == null || reportId.isEmpty()) {</span>
+<span class="nc" id="L66">				return null;</span>
+			}
+<span class="nc" id="L68">			return allReports.findById(reportId);</span>
+		}
+<span class="nc" id="L70">		catch (Exception e) {</span>
+<span class="nc" id="L71">			logger.error(&quot;&quot;, e);</span>
+		}
+<span class="nc" id="L73">		return null;</span>
+	}
+	
+	public synchronized Report addReport(Report report) {
+<span class="nc" id="L77">		Report existingReport = find(report);</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">		if (existingReport != null) {</span>
+<span class="nc" id="L79">			throw new IllegalArgumentException(</span>
+			        &quot;An report already exists with given list of identifiers. Consider updating data.[&quot; + existingReport
+			                + &quot;]&quot;);
+		}
+		
+<span class="nc bnc" id="L84" title="All 2 branches missed.">		if (report.getFormSubmissionId() != null</span>
+<span class="nc bnc" id="L85" title="All 2 branches missed.">		        &amp;&amp; getByBaseEntityAndFormSubmissionId(report.getBaseEntityId(), report.getFormSubmissionId()) != null) {</span>
+<span class="nc" id="L86">			throw new IllegalArgumentException(</span>
+			        &quot;An report already exists with given baseEntity and formSubmission combination. Consider updating&quot;);
+		}
+		
+<span class="nc" id="L90">		report.setDateCreated(DateTime.now());</span>
+<span class="nc" id="L91">		allReports.add(report);</span>
+<span class="nc" id="L92">		return report;</span>
+	}
+	
+	public void updateReport(Report updatedReport) {
+		// If update is on original entity
+<span class="nc bnc" id="L97" title="All 2 branches missed.">		if (updatedReport.isNew()) {</span>
+<span class="nc" id="L98">			throw new IllegalArgumentException(</span>
+			        &quot;Report to be updated is not an existing and persisting domain object. Update database object instead of new pojo&quot;);
+		}
+		
+<span class="nc" id="L102">		updatedReport.setDateEdited(DateTime.now());</span>
+		
+<span class="nc" id="L104">		allReports.update(updatedReport);</span>
+<span class="nc" id="L105">	}</span>
+	
+	public synchronized Report addorUpdateReport(Report report) {
+<span class="nc" id="L108">		Report existingReport = findById(report.getId());</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		if (existingReport != null) {</span>
+<span class="nc" id="L110">			report.setDateEdited(DateTime.now());</span>
+<span class="nc" id="L111">			report.setServerVersion(null);</span>
+<span class="nc" id="L112">			report.setRevision(existingReport.getRevision());</span>
+<span class="nc" id="L113">			allReports.update(report);</span>
+			
+		} else {
+<span class="nc" id="L116">			allReports.add(report);</span>
+			
+		}
+		
+<span class="nc" id="L120">		return report;</span>
+	}
+	
+	public Report getByBaseEntityAndFormSubmissionId(String baseEntityId, String formSubmissionId) {
+<span class="nc" id="L124">		List&lt;Report&gt; reportList = allReports.findByBaseEntityAndFormSubmissionId(baseEntityId, formSubmissionId);</span>
+<span class="nc bnc" id="L125" title="All 2 branches missed.">		if (reportList.size() &gt; 1) {</span>
+<span class="nc" id="L126">			throw new IllegalStateException(&quot;Multiple reports for baseEntityId and formSubmissionId combination (&quot;</span>
+			        + baseEntityId + &quot;,&quot; + formSubmissionId + &quot;)&quot;);
+		}
+<span class="nc bnc" id="L129" title="All 2 branches missed.">		if (reportList.size() == 0) {</span>
+<span class="nc" id="L130">			return null;</span>
+		}
+<span class="nc" id="L132">		return reportList.get(0);</span>
+	}
+	
+	public List&lt;Report&gt; findByBaseEntityId(String baseEntityId) {
+<span class="nc" id="L136">		return allReports.findByBaseEntityId(baseEntityId);</span>
+	}
+	
+	public List&lt;Report&gt; findReports(String team, String providerId, String locationId, Long serverVersion, String sortBy,
+	                                String sortOrder, int limit) {
+<span class="nc" id="L141">		return allReports.findReports(team, providerId, locationId, null, serverVersion, sortBy, sortOrder, limit);</span>
+	}
+	
+	public List&lt;Report&gt; findReports(String team, String providerId, String locationId, String baseEntityId,
+	                                Long serverVersion, String sortBy, String sortOrder, int limit) {
+<span class="nc" id="L146">		return allReports.findReports(team, providerId, locationId, baseEntityId, serverVersion, sortBy, sortOrder, limit);</span>
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

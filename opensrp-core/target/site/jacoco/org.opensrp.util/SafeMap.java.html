@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>SafeMap.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.util</a> &gt; <span class="el_source">SafeMap.java</span></div><h1>SafeMap.java</h1><pre class="source lang-java linenums">package org.opensrp.util;
+
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang.builder.ToStringBuilder;
+
+import java.util.HashMap;
+import java.util.Map;
+
+public class SafeMap {
+    private Map&lt;String, String&gt; data;
+
+    public SafeMap() {
+<span class="nc" id="L14">        this(new HashMap&lt;String, String&gt;());</span>
+<span class="nc" id="L15">    }</span>
+
+<span class="nc" id="L17">    public SafeMap(Map&lt;String, String&gt; data) {</span>
+<span class="nc" id="L18">        this.data = data;</span>
+<span class="nc" id="L19">    }</span>
+
+    public SafeMap putAll(SafeMap formFieldsMap) {
+<span class="nc bnc" id="L22" title="All 2 branches missed.">        for (String key : formFieldsMap.data.keySet()) {</span>
+<span class="nc" id="L23">            put(key, formFieldsMap.get(key));</span>
+<span class="nc" id="L24">        }</span>
+<span class="nc" id="L25">        return this;</span>
+    }
+
+    public String get(String key) {
+<span class="nc bnc" id="L29" title="All 2 branches missed.">        if (!data.containsKey(key)) {</span>
+<span class="nc" id="L30">            throw new RuntimeException(&quot;Key: &quot; + key + &quot; does not exist in: &quot; + this);</span>
+        }
+<span class="nc" id="L32">        return data.get(key);</span>
+    }
+
+    public SafeMap put(String key, String value) {
+<span class="nc" id="L36">        data.put(key, value);</span>
+<span class="nc" id="L37">        return this;</span>
+    }
+
+    public boolean isEmpty() {
+<span class="nc" id="L41">        return data.isEmpty();</span>
+    }
+
+    public boolean has(String key) {
+<span class="nc" id="L45">        return data.containsKey(key);</span>
+    }
+
+    @Override
+    public String toString() {
+<span class="nc" id="L50">        return ToStringBuilder.reflectionToString(this);</span>
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+<span class="nc" id="L55">        return EqualsBuilder.reflectionEquals(this, obj);</span>
+    }
+
+    @Override
+    public int hashCode() {
+<span class="nc" id="L60">        return HashCodeBuilder.reflectionHashCode(this);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

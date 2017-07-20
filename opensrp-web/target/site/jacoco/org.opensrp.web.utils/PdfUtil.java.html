@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>PdfUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.utils</a> &gt; <span class="el_source">PdfUtil.java</span></div><h1>PdfUtil.java</h1><pre class="source lang-java linenums">/*
+Copyright(C) 2016 Interactive Health Solutions, Pvt. Ltd.
+
+This program is free software; you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation; either version 3 of the License (GPLv3), or any later version.
+This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+You should have received a copy of the GNU General Public License along with this program; if not, write to the Interactive Health Solutions, info@ihsinformatics.com
+You can also access the license on the internet at the address: http://www.gnu.org/licenses/gpl-3.0.html
+Interactive Health Solutions, hereby disclaims all copyright interest in this program written by the contributors. */
+package org.opensrp.web.utils;
+
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.Toolkit;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.util.Hashtable;
+import java.util.List;
+
+import com.google.zxing.BarcodeFormat;
+import com.google.zxing.EncodeHintType;
+import com.google.zxing.common.BitMatrix;
+import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.Rectangle;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+
+/**
+ * @author Haris Asif - haris.asif@ihsinformatics.com
+ */
+<span class="nc" id="L37">public class PdfUtil {</span>
+	
+<span class="nc" id="L39">	private static final float[] MARGINS = { 90f, 0, 30f, 30f };</span>
+	
+	private static final float TABLE_WIDTH = 100f;
+	
+	public static ByteArrayOutputStream generatePdf(List&lt;String&gt; data, int width, int height, int copiesImage,
+	                                                int columnLimit) {
+		try {
+<span class="nc" id="L46">			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();</span>
+<span class="nc" id="L47">			Document document = new Document();</span>
+<span class="nc" id="L48">			document.setMargins(MARGINS[0], MARGINS[1], MARGINS[2], MARGINS[3]);</span>
+			
+<span class="nc" id="L50">			PdfWriter.getInstance(document, byteArrayOutputStream);</span>
+<span class="nc" id="L51">			document.open();</span>
+			
+<span class="nc" id="L53">			PdfPTable table = new PdfPTable(columnLimit);</span>
+<span class="nc" id="L54">			table.setTotalWidth(TABLE_WIDTH);</span>
+<span class="nc" id="L55">			table.setHorizontalAlignment(Element.ALIGN_LEFT);</span>
+			
+<span class="nc" id="L57">			int length = 0;</span>
+<span class="nc" id="L58">			int count = 0;</span>
+			
+<span class="nc bnc" id="L60" title="All 2 branches missed.">			for (String str : data) {</span>
+<span class="nc bnc" id="L61" title="All 4 branches missed.">				if (str.length() &gt; 0 &amp;&amp; str.length() &lt;= 5) {</span>
+<span class="nc" id="L62">					length = 54;</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				} else if (str.length() &gt;= 6 &amp;&amp; str.length() &lt;= 9) {</span>
+<span class="nc" id="L64">					length = 44;</span>
+<span class="nc bnc" id="L65" title="All 4 branches missed.">				} else if (str.length() &gt;= 10 &amp;&amp; str.length() &lt;= 11) {</span>
+<span class="nc" id="L66">					length = 36;</span>
+<span class="nc bnc" id="L67" title="All 4 branches missed.">				} else if (str.length() &gt;= 12 &amp;&amp; str.length() &lt;= 14) {</span>
+<span class="nc" id="L68">					length = 27;</span>
+<span class="nc bnc" id="L69" title="All 4 branches missed.">				} else if (str.length() &gt;= 15 &amp;&amp; str.length() &lt;= 17) {</span>
+<span class="nc" id="L70">					length = 22;</span>
+				} else {
+<span class="nc" id="L72">					length = 15;</span>
+				}
+<span class="nc" id="L74">				Hashtable&lt;EncodeHintType, ErrorCorrectionLevel&gt; hintMap = new Hashtable&lt;EncodeHintType, ErrorCorrectionLevel&gt;();</span>
+<span class="nc" id="L75">				hintMap.put(EncodeHintType.ERROR_CORRECTION, ErrorCorrectionLevel.L);</span>
+				
+<span class="nc" id="L77">				QRCodeWriter qrCodeWriter = new QRCodeWriter();</span>
+<span class="nc" id="L78">				BitMatrix byteMatrix = null;</span>
+				
+<span class="nc" id="L80">				byteMatrix = qrCodeWriter.encode(str, BarcodeFormat.QR_CODE, width, height, hintMap);</span>
+				
+<span class="nc" id="L82">				int matrixWidth = byteMatrix.getWidth();</span>
+<span class="nc" id="L83">				int matrixHeight = byteMatrix.getHeight();</span>
+<span class="nc" id="L84">				BufferedImage image = new BufferedImage(matrixWidth, matrixHeight, BufferedImage.TYPE_INT_RGB);</span>
+<span class="nc" id="L85">				image.createGraphics();</span>
+<span class="nc" id="L86">				Graphics2D graphics = (Graphics2D) image.getGraphics();</span>
+<span class="nc" id="L87">				graphics.setColor(Color.WHITE);</span>
+<span class="nc" id="L88">				graphics.fillRect(0, 0, matrixWidth + 5, matrixHeight + 5);</span>
+<span class="nc" id="L89">				graphics.setFont(graphics.getFont().deriveFont(13f));</span>
+<span class="nc" id="L90">				graphics.setColor(Color.BLACK);</span>
+<span class="nc" id="L91">				graphics.drawString(str, length, height - 10);</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">				for (int i = 0; i &lt; matrixHeight; i++) {</span>
+<span class="nc bnc" id="L93" title="All 2 branches missed.">					for (int j = 0; j &lt; matrixHeight; j++) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">						if (byteMatrix.get(i, j)) {</span>
+<span class="nc" id="L95">							graphics.fillRect((i), j, 1, 1);</span>
+						}
+					}
+				}
+<span class="nc" id="L99">				Image itextImage = null;</span>
+<span class="nc" id="L100">				itextImage = Image.getInstance(Toolkit.getDefaultToolkit().createImage(image.getSource()), null);</span>
+				
+<span class="nc bnc" id="L102" title="All 2 branches missed.">				for (int i = 0; i &lt; copiesImage; i++) {</span>
+<span class="nc" id="L103">					PdfPCell cell = new PdfPCell(itextImage);</span>
+<span class="nc" id="L104">					cell.setBorder(Rectangle.NO_BORDER);</span>
+<span class="nc" id="L105">					count++;</span>
+<span class="nc" id="L106">					table.addCell(cell);</span>
+				}
+<span class="nc" id="L108">			}</span>
+<span class="nc bnc" id="L109" title="All 2 branches missed.">			for (int i = 0; i &lt; 6; i++) {</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">				if (count % columnLimit != 0) {</span>
+<span class="nc" id="L111">					PdfPCell cell = new PdfPCell(new Phrase());</span>
+<span class="nc" id="L112">					cell.setBorder(Rectangle.NO_BORDER);</span>
+<span class="nc" id="L113">					table.addCell(cell);</span>
+<span class="nc" id="L114">					count++;</span>
+				}
+			}
+<span class="nc" id="L117">			document.add(table);</span>
+<span class="nc" id="L118">			document.close();</span>
+			
+<span class="nc" id="L120">			return byteArrayOutputStream;</span>
+		}
+<span class="nc" id="L122">		catch (Exception e) {</span>
+<span class="nc" id="L123">			return null;</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

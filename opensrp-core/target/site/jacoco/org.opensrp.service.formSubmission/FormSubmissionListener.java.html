@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormSubmissionListener.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission</a> &gt; <span class="el_source">FormSubmissionListener.java</span></div><h1>FormSubmissionListener.java</h1><pre class="source lang-java linenums"><span class="fc" id="L1">package org.opensrp.service.formSubmission;</span>
+
+import static java.text.MessageFormat.format;
+import static java.util.Collections.sort;
+import static org.apache.commons.lang.exception.ExceptionUtils.getFullStackTrace;
+
+import java.text.MessageFormat;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.joda.time.DateTime;
+import org.motechproject.scheduler.domain.MotechEvent;
+import org.motechproject.server.event.annotations.MotechListener;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.AppStateToken;
+import org.opensrp.domain.ErrorTrace;
+import org.opensrp.dto.form.FormSubmissionDTO;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormSubmissionService;
+import org.opensrp.service.ConfigService;
+import org.opensrp.service.ErrorTraceService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+@Component
+public class FormSubmissionListener {
+<span class="fc" id="L34">    private static Logger logger = LoggerFactory.getLogger(FormSubmissionListener.class.toString());</span>
+<span class="fc" id="L35">    private static final ReentrantLock lock = new ReentrantLock();</span>
+    private FormSubmissionService formSubmissionService;
+    private ConfigService configService;
+    private FormSubmissionProcessor fsp;
+    private ErrorTraceService errorTraceService;
+
+    @Autowired
+<span class="fc" id="L42">    public FormSubmissionListener(FormSubmissionService formSubmissionService, FormSubmissionProcessor fsp,</span>
+    		ConfigService configService, ErrorTraceService errorTraceService) {
+<span class="fc" id="L44">        this.formSubmissionService = formSubmissionService;</span>
+<span class="fc" id="L45">        this.configService = configService;</span>
+<span class="fc" id="L46">        this.errorTraceService = errorTraceService;</span>
+<span class="fc" id="L47">        this.fsp = fsp;</span>
+<span class="fc" id="L48">		this.configService.registerAppStateToken(AllConstants.Config.FORM_ENTITY_PARSER_LAST_SYNCED_FORM_SUBMISSION, </span>
+<span class="fc" id="L49">			0, &quot;Token to keep track of forms processed for client n event parsing and schedule handling&quot;, true);</span>
+<span class="fc" id="L50">    }</span>
+
+    @MotechListener(subjects = AllConstants.OpenSRPEvent.FORM_SUBMISSION)
+    public void submitForms(MotechEvent event) {
+<span class="fc" id="L54">        List&lt;FormSubmissionDTO&gt; formSubmissions = new Gson().fromJson((String) event.getParameters().get(&quot;data&quot;), new TypeToken&lt;List&lt;FormSubmissionDTO&gt;&gt;() {</span>
+<span class="fc" id="L55">        }.getType());</span>
+<span class="fc" id="L56">        formSubmissionService.submit(formSubmissions);</span>
+<span class="fc" id="L57">    }</span>
+
+    @MotechListener(subjects = AllConstants.FORM_SCHEDULE_SUBJECT)
+    public void parseForms(MotechEvent event) {
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">        if (!lock.tryLock()) {</span>
+<span class="nc" id="L62">            logger.warn(&quot;Not fetching forms from Message Queue. It is already in progress.&quot;);</span>
+<span class="nc" id="L63">            return;</span>
+        }
+        try {
+<span class="fc" id="L66">            logger.info(&quot;Fetching Forms&quot;);</span>
+<span class="fc" id="L67">            long version = getVersion();</span>
+
+<span class="fc" id="L69">            List&lt;FormSubmission&gt; formSubmissions = formSubmissionService.getAllSubmissions(version, null);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (formSubmissions.isEmpty()) {</span>
+<span class="fc" id="L71">                logger.info(&quot;No new forms found. Export token: &quot; + version);</span>
+<span class="fc" id="L72">                return;</span>
+            }
+
+<span class="fc" id="L75">            logger.info(format(&quot;Fetched {0} new forms found. Export token: {1}&quot;, formSubmissions.size(), version));</span>
+            
+<span class="fc" id="L77">            sort(formSubmissions, serverVersionComparator());</span>
+
+<span class="fc bfc" id="L79" title="All 2 branches covered.">            for (FormSubmission submission : formSubmissions) {</span>
+            	try{
+<span class="fc" id="L81">	            	logger.info(format(&quot;Invoking save for form with instance Id: {0} and for entity Id: {1}&quot;, submission.instanceId(), submission.entityId()));</span>
+	
+<span class="pc bpc" id="L83" title="3 of 4 branches missed.">	            	if(submission.getField(&quot;no_client_event&quot;) == null || submission.getField(&quot;no_client_event&quot;).contains(&quot;false&quot;)){</span>
+<span class="fc" id="L84">		            	fsp.processFormSubmission(submission);</span>
+	            	}
+	            	
+<span class="fc" id="L87">	            	configService.updateAppStateToken(AllConstants.Config.FORM_ENTITY_PARSER_LAST_SYNCED_FORM_SUBMISSION, submission.serverVersion());</span>
+<span class="fc" id="L88">            	}</span>
+<span class="nc" id="L89">            	catch(Exception e){</span>
+<span class="nc" id="L90">            		e.printStackTrace();</span>
+<span class="nc" id="L91">            		errorTraceService.addError(new ErrorTrace(DateTime.now(), &quot;FormSubmissionProcessor&quot;, this.getClass().getName(), e.getStackTrace().toString(), &quot;unsolved&quot;, FormSubmission.class.getName()));</span>
+            	}
+            }
+<span class="pc" id="L94">        } catch (Exception e) {</span>
+<span class="nc" id="L95">            logger.error(MessageFormat.format(&quot;{0} occurred while trying to fetch forms. Message: {1} with stack trace {2}&quot;,</span>
+<span class="nc" id="L96">                    e.toString(), e.getMessage(), getFullStackTrace(e)));</span>
+<span class="nc" id="L97">        } finally {</span>
+<span class="pc" id="L98">            lock.unlock();</span>
+<span class="nc" id="L99">        }</span>
+<span class="fc" id="L100">    }</span>
+
+    private long getVersion() {
+<span class="fc" id="L103">        AppStateToken token = configService.getAppStateTokenByName(AllConstants.Config.FORM_ENTITY_PARSER_LAST_SYNCED_FORM_SUBMISSION);</span>
+<span class="pc bpc" id="L104" title="1 of 2 branches missed.">        return token==null?0L:token.longValue();</span>
+    }
+    
+    private Comparator&lt;FormSubmission&gt; serverVersionComparator() {
+<span class="fc" id="L108">        return new Comparator&lt;FormSubmission&gt;() {</span>
+            public int compare(FormSubmission firstSubmission, FormSubmission secondSubmission) {
+<span class="fc" id="L110">                long firstTimestamp = firstSubmission.serverVersion();</span>
+<span class="fc" id="L111">                long secondTimestamp = secondSubmission.serverVersion();</span>
+<span class="pc bpc" id="L112" title="3 of 4 branches missed.">                return firstTimestamp == secondTimestamp ? 0 : firstTimestamp &lt; secondTimestamp ? -1 : 1;</span>
+            }
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

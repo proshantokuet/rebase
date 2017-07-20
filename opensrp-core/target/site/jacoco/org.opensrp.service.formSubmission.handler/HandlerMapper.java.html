@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>HandlerMapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.handler</a> &gt; <span class="el_source">HandlerMapper.java</span></div><h1>HandlerMapper.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.handler;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.stereotype.Repository;
+
+@Repository
+<span class="fc" id="L10">public class HandlerMapper {</span>
+
+<span class="fc" id="L12">	private static final Map&lt;String, CustomFormSubmissionHandler&gt; customFormSubmissionHandlerMap = new HashMap&lt;String, CustomFormSubmissionHandler&gt;();</span>
+<span class="fc" id="L13">	private static final Map&lt;String, FormSubmissionProcessedListener&gt; onFormSubmissionProcessedListenerMap = new HashMap&lt;&gt;();</span>
+	
+	public Map&lt;String, CustomFormSubmissionHandler&gt; customFormSubmissionHandlerMap() {
+<span class="fc" id="L16">		return Collections.unmodifiableMap(customFormSubmissionHandlerMap);</span>
+	}
+
+	public Map&lt;String, FormSubmissionProcessedListener&gt; formSubmissionProcessedListenerMap() {
+<span class="nc" id="L20">		return Collections.unmodifiableMap(onFormSubmissionProcessedListenerMap);</span>
+	}
+	
+	public HandlerMapper addFormSubmissionProcessedListener(String formName, FormSubmissionProcessedListener listener) {
+<span class="nc" id="L24">		onFormSubmissionProcessedListenerMap.put(formName, listener);</span>
+<span class="nc" id="L25">		return this;</span>
+	}
+	
+	public HandlerMapper addCustomFormSubmissionHandler(String formName, CustomFormSubmissionHandler handler) {
+<span class="fc" id="L29">		customFormSubmissionHandlerMap.put(formName, handler);</span>
+<span class="fc" id="L30">		return this;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

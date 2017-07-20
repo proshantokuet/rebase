@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ResponseUtil.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">ResponseUtil.java</span></div><h1>ResponseUtil.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import java.util.ArrayList;
+
+import org.springframework.beans.BeanUtils;
+
+<span class="nc" id="L7">public class ResponseUtil {</span>
+
+	public static &lt;T&gt; ArrayList&lt;T&gt; prepareDataResponse(ArrayList&lt;T&gt; list, String[] fieldsToIgnore) throws InstantiationException, IllegalAccessException{
+<span class="nc" id="L10">		ArrayList&lt;T&gt; list2 = new ArrayList&lt;T&gt;();</span>
+<span class="nc bnc" id="L11" title="All 2 branches missed.">		for (T object : list) {</span>
+			@SuppressWarnings(&quot;unchecked&quot;)
+<span class="nc" id="L13">			T targeto = (T) object.getClass().newInstance();</span>
+<span class="nc" id="L14">			BeanUtils.copyProperties(object, targeto, fieldsToIgnore);</span>
+<span class="nc" id="L15">			list2.add(targeto);</span>
+<span class="nc" id="L16">		}</span>
+		
+<span class="nc" id="L18">		return list2;</span>
+	}
+	
+	@SuppressWarnings(&quot;unchecked&quot;)
+	public static &lt;T&gt; T prepareDataResponse(T object, String[] fieldsToIgnore) throws InstantiationException, IllegalAccessException{
+<span class="nc" id="L23">		T targeto = (T) object.getClass().newInstance();</span>
+<span class="nc" id="L24">		BeanUtils.copyProperties(object, targeto, fieldsToIgnore);</span>
+		
+<span class="nc" id="L26">		return targeto;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

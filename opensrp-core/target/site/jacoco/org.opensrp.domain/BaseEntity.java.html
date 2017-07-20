@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>BaseEntity.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">BaseEntity.java</span></div><h1>BaseEntity.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@TypeDiscriminator(&quot;doc.baseEntityId &amp;&amp; doc.identifiers&quot;)
+public class BaseEntity extends BaseDataObject {
+	@JsonProperty
+	private String baseEntityId;
+	@JsonProperty
+	private Map&lt;String, String&gt; identifiers;
+	@JsonProperty
+	private List&lt;Address&gt; addresses;
+	@JsonProperty
+	private Map&lt;String, Object&gt; attributes;
+	@JsonProperty
+	private List&lt;ContactPoint&gt; contactPoints;
+	@JsonProperty
+	private List&lt;Photo&gt; photos;
+
+<span class="fc" id="L32">	protected BaseEntity() {}</span>
+	
+	public String type() {
+<span class="fc" id="L35">		return type;</span>
+	}
+	
+<span class="fc" id="L38">	public BaseEntity(String baseEntityId){</span>
+<span class="fc" id="L39">		this.baseEntityId = baseEntityId;</span>
+<span class="fc" id="L40">	}</span>
+
+<span class="nc" id="L42">	public BaseEntity(String baseEntityId, Map&lt;String, String&gt; identifiers) {</span>
+<span class="nc" id="L43">		this.baseEntityId = baseEntityId;</span>
+<span class="nc" id="L44">		this.identifiers = identifiers;</span>
+<span class="nc" id="L45">	}</span>
+
+<span class="nc" id="L47">	public BaseEntity(String baseEntityId, Map&lt;String, String&gt; identifiers, Map&lt;String, Object&gt; attributes) {</span>
+<span class="nc" id="L48">		this.baseEntityId = baseEntityId;</span>
+<span class="nc" id="L49">		this.identifiers = identifiers;</span>
+<span class="nc" id="L50">		this.attributes = attributes;</span>
+<span class="nc" id="L51">	}</span>
+
+<span class="nc" id="L53">	public BaseEntity(String baseEntityId, Map&lt;String, String&gt; identifiers, Map&lt;String, Object&gt; attributes, List&lt;Address&gt; addresses) {</span>
+<span class="nc" id="L54">		this.baseEntityId = baseEntityId;</span>
+<span class="nc" id="L55">		this.identifiers = identifiers;</span>
+<span class="nc" id="L56">		this.attributes = attributes;</span>
+<span class="nc" id="L57">		this.addresses = addresses;</span>
+<span class="nc" id="L58">	}</span>
+	
+	public String getBaseEntityId() {
+<span class="fc" id="L61">		return baseEntityId;</span>
+	}
+
+	public void setBaseEntityId(String baseEntityId) {
+<span class="fc" id="L65">		this.baseEntityId = baseEntityId;</span>
+<span class="fc" id="L66">	}</span>
+
+	public List&lt;Address&gt; getAddresses() {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">		if (addresses == null) {</span>
+<span class="fc" id="L70">			addresses = new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L72">		return addresses;</span>
+	}
+	
+	public Address getAddress(String addressType) {
+<span class="fc bfc" id="L76" title="All 2 branches covered.">		for (Address address : getAddresses()) {</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">			if(address.getAddressType().equalsIgnoreCase(addressType)){</span>
+<span class="fc" id="L78">				return address;</span>
+			}
+<span class="fc" id="L80">		}</span>
+<span class="fc" id="L81">		return null;</span>
+	}
+	
+	public void removeAddress(String addressType) {
+<span class="nc" id="L85">		Address ar = null;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">		for (Address address : getAddresses()) {</span>
+<span class="nc bnc" id="L87" title="All 2 branches missed.">			if(address.getAddressType().equalsIgnoreCase(addressType)){</span>
+<span class="nc" id="L88">				ar = address;</span>
+			}
+<span class="nc" id="L90">		}</span>
+<span class="nc bnc" id="L91" title="All 2 branches missed.">		if(ar != null) getAddresses().remove(ar);</span>
+<span class="nc" id="L92">	}</span>
+
+	/**
+	 * WARNING: Overrides all existing addresses
+	 * 
+	 * @param addresses
+	 * @return
+	 */
+	public void setAddresses(List&lt;Address&gt; addresses) {
+<span class="fc" id="L101">		this.addresses = addresses;</span>
+<span class="fc" id="L102">	}</span>
+
+	public void addAddress(Address address) {
+<span class="fc bfc" id="L105" title="All 2 branches covered.">		if (addresses == null) {</span>
+<span class="fc" id="L106">			addresses = new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L108">		addresses.add(address);</span>
+<span class="fc" id="L109">	}</span>
+
+	public Map&lt;String, Object&gt; getAttributes() {
+<span class="fc bfc" id="L112" title="All 2 branches covered.">		if (attributes == null) {</span>
+<span class="fc" id="L113">			attributes = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L115">		return attributes;</span>
+	}
+
+	public Object getAttribute(String name) {
+<span class="pc bpc" id="L119" title="1 of 2 branches missed.">		if(attributes == null){</span>
+<span class="nc" id="L120">			return null;</span>
+		}
+<span class="pc bpc" id="L122" title="1 of 2 branches missed.">		for (String k : attributes.keySet()) {</span>
+<span class="pc bpc" id="L123" title="1 of 2 branches missed.">			if(k.equalsIgnoreCase(name)){</span>
+<span class="fc" id="L124">				return attributes.get(k);</span>
+			}
+<span class="nc" id="L126">		}</span>
+<span class="nc" id="L127">		return null;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing attributes
+	 * 
+	 * @param attributes
+	 * @return
+	 */
+	public void setAttributes(Map&lt;String, Object&gt; attributes) {
+<span class="fc" id="L137">		this.attributes = attributes;</span>
+<span class="fc" id="L138">	}</span>
+
+	public void addAttribute(String name, Object value) {
+<span class="fc bfc" id="L141" title="All 2 branches covered.">		if (attributes == null) {</span>
+<span class="fc" id="L142">			attributes = new HashMap&lt;&gt;();</span>
+		}
+
+<span class="fc" id="L145">		attributes.put(name, value);</span>
+<span class="fc" id="L146">	}</span>
+
+	public void removeAttribute(String name) {
+<span class="nc" id="L149">		attributes.remove(name);</span>
+<span class="nc" id="L150">	}</span>
+	
+	public Map&lt;String, String&gt; getIdentifiers() {
+<span class="fc bfc" id="L153" title="All 2 branches covered.">		if(identifiers == null){</span>
+<span class="fc" id="L154">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L156">		return identifiers;</span>
+	}
+
+	public String getIdentifier(String identifierType) {
+<span class="fc bfc" id="L160" title="All 2 branches covered.">		if(identifiers == null){</span>
+<span class="fc" id="L161">			return null;</span>
+		}
+<span class="pc bpc" id="L163" title="1 of 2 branches missed.">		for (String k : identifiers.keySet()) {</span>
+<span class="fc bfc" id="L164" title="All 2 branches covered.">			if(k.equalsIgnoreCase(identifierType)){</span>
+<span class="fc" id="L165">				return identifiers.get(k);</span>
+			}
+<span class="fc" id="L167">		}</span>
+<span class="nc" id="L168">		return null;</span>
+	}
+	
+	/**
+	 * Returns field matching the regex. Note that incase of multiple fields matching criteria 
+	 * function would return first match. The must be well formed to find out a single value
+	 * @param regex
+	 * @return
+	 */
+	public String getIdentifierMatchingRegex(String regex) {
+<span class="nc bnc" id="L178" title="All 2 branches missed.">		for (Entry&lt;String, String&gt; a : getIdentifiers().entrySet()) {</span>
+<span class="nc bnc" id="L179" title="All 2 branches missed.">			if(a.getKey().matches(regex)){</span>
+<span class="nc" id="L180">				return a.getValue();</span>
+			}
+<span class="nc" id="L182">		}</span>
+<span class="nc" id="L183">		return null;</span>
+	}
+	
+	public void setIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="fc" id="L187">		this.identifiers = identifiers;</span>
+<span class="fc" id="L188">	}</span>
+
+	public void addIdentifier(String identifierType, String identifier) {
+<span class="fc bfc" id="L191" title="All 2 branches covered.">		if(identifiers == null){</span>
+<span class="fc" id="L192">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="fc" id="L195">		identifiers.put(identifierType, identifier);</span>
+<span class="fc" id="L196">	}</span>
+
+	public void removeIdentifier(String identifierType) {
+<span class="nc" id="L199">		identifiers.remove(identifierType);</span>
+<span class="nc" id="L200">	}</span>
+	
+	public BaseEntity withBaseEntityId(String baseEntityId) {
+<span class="nc" id="L203">		this.baseEntityId = baseEntityId;</span>
+<span class="nc" id="L204">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing identifiers
+	 * @param identifiers
+	 * @return
+	 */
+	public BaseEntity withIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="fc" id="L213">		this.identifiers = identifiers;</span>
+<span class="fc" id="L214">		return this;</span>
+	}
+	
+	public BaseEntity withIdentifier(String identifierType, String identifier) {
+<span class="pc bpc" id="L218" title="1 of 2 branches missed.">		if(identifiers == null){</span>
+<span class="fc" id="L219">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L221">		identifiers.put(identifierType, identifier);</span>
+<span class="fc" id="L222">		return this;</span>
+	}	
+
+	/**
+	 * WARNING: Overrides all existing addresses
+	 * 
+	 * @param addresses
+	 * @return
+	 */
+	public BaseEntity withAddresses(List&lt;Address&gt; addresses) {
+<span class="fc" id="L232">		this.addresses = addresses;</span>
+<span class="fc" id="L233">		return this;</span>
+	}
+
+	public BaseEntity withAddress(Address address) {
+<span class="pc bpc" id="L237" title="1 of 2 branches missed.">		if (addresses == null) {</span>
+<span class="fc" id="L238">			addresses = new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L240">		addresses.add(address);</span>
+<span class="fc" id="L241">		return this;</span>
+	}
+
+	/**
+	 * WARNING: Overrides all existing attributes
+	 * 
+	 * @param attributes
+	 * @return
+	 */
+	public BaseEntity withAttributes(Map&lt;String, Object&gt; attributes) {
+<span class="fc" id="L251">		this.attributes = attributes;</span>
+<span class="fc" id="L252">		return this;</span>
+	}
+
+	public BaseEntity withAttribute(String name, Object value) {
+<span class="pc bpc" id="L256" title="1 of 2 branches missed.">		if (attributes == null) {</span>
+<span class="fc" id="L257">			attributes = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L259">		attributes.put(name, value);</span>
+<span class="fc" id="L260">		return this;</span>
+	}
+
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L265">		return EqualsBuilder.reflectionEquals(this, o, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public int hashCode() {
+<span class="nc" id="L270">		return HashCodeBuilder.reflectionHashCode(this, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+
+	@Override
+	public String toString() {
+<span class="nc" id="L275">		return ToStringBuilder.reflectionToString(this);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

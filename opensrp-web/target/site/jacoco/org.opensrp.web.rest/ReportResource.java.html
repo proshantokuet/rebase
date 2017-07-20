@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ReportResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">ReportResource.java</span></div><h1>ReportResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import static java.text.MessageFormat.format;
+import static org.springframework.http.HttpStatus.BAD_REQUEST;
+import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.HttpStatus.INTERNAL_SERVER_ERROR;
+import static org.springframework.web.bind.annotation.RequestMethod.POST;
+
+import java.util.ArrayList;
+
+import org.joda.time.DateTime;
+import org.json.JSONObject;
+import org.opensrp.domain.Report;
+import org.opensrp.service.ReportService;
+import org.opensrp.util.DateTimeTypeConverter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
+@Controller
+@RequestMapping(value = &quot;/rest/report/&quot;)
+public class ReportResource {
+	
+<span class="fc" id="L33">	private static Logger logger = LoggerFactory.getLogger(ReportResource.class.toString());</span>
+	
+	private ReportService reportService;
+	
+<span class="fc" id="L37">	Gson gson = new GsonBuilder().setDateFormat(&quot;yyyy-MM-dd'T'HH:mm:ss.SSSZ&quot;)</span>
+<span class="fc" id="L38">	        .registerTypeAdapter(DateTime.class, new DateTimeTypeConverter()).create();</span>
+	
+	@Autowired
+<span class="fc" id="L41">	public ReportResource(ReportService reportService) {</span>
+<span class="fc" id="L42">		this.reportService = reportService;</span>
+<span class="fc" id="L43">	}</span>
+	
+	/**
+	 * adding dhis2 reports to opensrp
+	 * 
+	 * @param report model payload
+	 * @return report object
+	 */
+	@SuppressWarnings(&quot;unchecked&quot;)
+	@RequestMapping(headers = { &quot;Accept=application/json&quot; }, method = POST, value = &quot;/add&quot;)
+	public ResponseEntity&lt;HttpStatus&gt; save(@RequestBody String data) {
+		try {
+<span class="nc" id="L55">			JSONObject syncData = new JSONObject(data);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">			if (!syncData.has(&quot;reports&quot;)) {</span>
+<span class="nc" id="L57">				return new ResponseEntity&lt;&gt;(BAD_REQUEST);</span>
+			}
+<span class="nc" id="L59">			ArrayList&lt;Report&gt; reports = (ArrayList&lt;Report&gt;) gson.fromJson(syncData.getString(&quot;reports&quot;),</span>
+<span class="nc" id="L60">			    new TypeToken&lt;ArrayList&lt;Report&gt;&gt;() {}.getType());</span>
+<span class="nc bnc" id="L61" title="All 2 branches missed.">			for (Report report : reports) {</span>
+				try {
+<span class="nc" id="L63">					reportService.addorUpdateReport(report);</span>
+				}
+<span class="nc" id="L65">				catch (Exception e) {</span>
+<span class="nc" id="L66">					logger.error(&quot;Report&quot; + report.getId() + &quot; failed to sync&quot;, e);</span>
+<span class="nc" id="L67">				}</span>
+<span class="nc" id="L68">			}</span>
+		}
+<span class="nc" id="L70">		catch (Exception e) {</span>
+<span class="nc" id="L71">			logger.error(format(&quot;Sync data processing failed with exception {0}.- &quot;, e));</span>
+<span class="nc" id="L72">			return new ResponseEntity&lt;&gt;(INTERNAL_SERVER_ERROR);</span>
+<span class="nc" id="L73">		}</span>
+<span class="nc" id="L74">		return new ResponseEntity&lt;&gt;(CREATED);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

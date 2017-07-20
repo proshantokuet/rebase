@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>NetClientGet.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.util</a> &gt; <span class="el_source">NetClientGet.java</span></div><h1>NetClientGet.java</h1><pre class="source lang-java linenums">/**
+  * Contributors: muhammad.ahmed@ihsinformatics.com
+ */
+package org.opensrp.util;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
+
+import org.apache.commons.codec.binary.Base64;
+
+ 
+<span class="fc" id="L21">public class NetClientGet {</span>
+ 
+	// http://localhost:8080/RESTfulExample/json/product/get
+	public String  convertToString(String dataurl ,String username , String formId ) {
+ 
+	  try {
+
+<span class="nc" id="L28">		URL url = new URL(&quot;https://enketo.formhub.org/transform/get_html_form&quot;);</span>
+<span class="nc" id="L29">		HttpURLConnection conn = (HttpURLConnection) url.openConnection();</span>
+<span class="nc" id="L30">		conn.setRequestMethod(&quot;POST&quot;);</span>
+<span class="nc" id="L31">		conn.setDoInput(true);</span>
+<span class="nc" id="L32">		conn.setDoOutput(true);</span>
+<span class="nc" id="L33">                String url1=&quot;server_url=https://ona.io/&quot;+username+&quot;&amp;form_id=&quot;+formId;  //+dataurl;</span>
+  //String url2=&quot;server_url=https://ona.io/&quot;+username+&quot;/forms/&quot;+formId+&quot;/form.json&amp;callback=CALLBACKFN&quot;;            
+                
+          //    System.out.println(url2);
+//&quot;server_url=https://ona.io/ahmedihs&amp;form_id=crvs_birth_notification&quot;
+<span class="nc" id="L38">        conn.getOutputStream().write(url1.getBytes());</span>
+<span class="nc bnc" id="L39" title="All 2 branches missed.">		if (conn.getResponseCode() != 200) {</span>
+<span class="nc" id="L40">			throw new RuntimeException(&quot;Failed : HTTP error code : &quot;</span>
+<span class="nc" id="L41">					+ conn.getResponseCode());</span>
+		}
+              //      System.out.println(conn.getResponseCode());
+<span class="nc" id="L44">		BufferedReader br = new BufferedReader(new InputStreamReader(</span>
+<span class="nc" id="L45">			(conn.getInputStream())));</span>
+ 
+<span class="nc" id="L47">		StringBuilder sb = new StringBuilder();</span>
+<span class="nc" id="L48">		String output = null;</span>
+	//	System.out.println(&quot;Output from Server .... \n&quot;);
+                
+<span class="nc bnc" id="L51" title="All 2 branches missed.">		while ((output = br.readLine()) != null) {</span>
+		//	System.out.println(output);
+<span class="nc" id="L53">			sb.append(output);</span>
+		}
+ 
+		/*FileOutputStream fop = new FileOutputStream(&quot;d:\\tlocal201312161608.xml&quot;);
+		fop.write(sb.toString().getBytes());
+		conn.disconnect();*/
+<span class="nc" id="L59">                return sb.toString();</span>
+ 
+<span class="nc" id="L61">	  } catch (MalformedURLException e) {</span>
+ 
+<span class="nc" id="L63">		e.printStackTrace();</span>
+ 
+<span class="nc" id="L65">	  } catch (IOException e) {</span>
+ 
+<span class="nc" id="L67">		e.printStackTrace();</span>
+ 
+<span class="nc" id="L69">	  }</span>
+<span class="nc" id="L70">          return null;</span>
+	}
+        
+        public byte[] downloadJson(String username,String password, String formPk) throws IOException {
+		 
+        	try{
+<span class="nc" id="L76">			String authString = username + &quot;:&quot; + password;</span>
+<span class="nc" id="L77">			System.out.println(&quot;auth string: &quot; + authString);</span>
+<span class="nc" id="L78">			byte[] authEncBytes = Base64.encodeBase64(authString.getBytes());</span>
+<span class="nc" id="L79">			String authStringEnc = new String(authEncBytes);</span>
+<span class="nc" id="L80">			System.out.println(&quot;Base64 encoded auth string: &quot; + authStringEnc);</span>
+		  //The file that you want to download
+<span class="nc" id="L82">		 String url2=&quot;https://api.ona.io/api/v1/forms/&quot;+formPk+&quot;/form.json&quot;;            </span>
+<span class="nc" id="L83">           URL link = new URL(url2);</span>
+<span class="nc" id="L84">           URLConnection urlConnection = link.openConnection();</span>
+<span class="nc" id="L85">			urlConnection.setRequestProperty(&quot;Authorization&quot;, &quot;Basic &quot; + authStringEnc);</span>
+<span class="nc" id="L86">			InputStream is = urlConnection.getInputStream();</span>
+<span class="nc" id="L87">			InputStreamReader isr = new InputStreamReader(is);</span>
+
+			int numCharsRead;
+<span class="nc" id="L90">			char[] charArray = new char[1024];</span>
+<span class="nc" id="L91">			StringBuffer sb = new StringBuffer();</span>
+<span class="nc bnc" id="L92" title="All 2 branches missed.">			while ((numCharsRead = isr.read(charArray)) &gt; 0) {</span>
+<span class="nc" id="L93">				sb.append(charArray, 0, numCharsRead);</span>
+			}
+<span class="nc" id="L95">			String result = sb.toString();</span>
+
+<span class="nc" id="L97">			System.out.println(&quot;*** BEGIN ***&quot;);</span>
+<span class="nc" id="L98">			System.out.println(result);</span>
+<span class="nc" id="L99">			System.out.println(&quot;*** END ***&quot;);</span>
+			
+<span class="nc" id="L101">			return result.getBytes();</span>
+<span class="nc" id="L102">		} catch (MalformedURLException e) {</span>
+<span class="nc" id="L103">			e.printStackTrace();</span>
+<span class="nc" id="L104">		} catch (IOException e) {</span>
+<span class="nc" id="L105">			e.printStackTrace();</span>
+<span class="nc" id="L106">		}</span>
+        
+<span class="nc" id="L108">                    return null;</span>
+	}
+
+        public String getModel(String data){
+                     
+<span class="nc" id="L113">            return data.substring(data.indexOf(&quot;&lt;model&gt;&quot;) , data.indexOf(&quot;&lt;/model&gt;&quot;)+8);</span>
+            
+        }
+        
+        public String getForm(String data){
+       
+<span class="nc" id="L119">        return data.substring(data.indexOf(&quot;&lt;form &quot;) , data.indexOf(&quot;&lt;/form&gt;&quot;)+7);</span>
+        }
+        
+ 
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

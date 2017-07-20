@@ -1,0 +1,200 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormSubmissionDataMigrationService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">FormSubmissionDataMigrationService.java</span></div><h1>FormSubmissionDataMigrationService.java</h1><pre class="source lang-java linenums"><span class="nc" id="L1">package org.opensrp.service;</span>
+
+import java.util.List;
+
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.ektorp.CouchDbConnector;
+import org.json.JSONException;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.AppStateToken;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormSubmissionService;
+import org.opensrp.service.formSubmission.FormSubmissionProcessor;
+import org.opensrp.util.Utils;
+import org.opensrp.util.Utils.DatabaseConnectionParams;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+/**
+ * 
+ * @author onamacuser This service fetches existing form submissions data from
+ *         couchdb and converts them to events and clients
+ *
+ */
+@Service
+<span class="fc" id="L27">public class FormSubmissionDataMigrationService {</span>
+<span class="fc" id="L28">	protected final Log logger = LogFactory.getLog(getClass());</span>
+
+	@Autowired
+	FormSubmissionService formSubmissionService;
+	@Autowired
+	FormSubmissionProcessor processor;
+	@Autowired
+	private ConfigService configService;
+<span class="fc" id="L36">	private volatile int BATCH_SIZE = 100;</span>
+
+	//private static final int THREADS_COUNT = 5;
+
+<span class="nc" id="L40">	private enum MigrationType {</span>
+<span class="nc" id="L41">		TO_LOCAL_DB, TO_REMOTE_DB</span>
+	}
+
+	/**
+	 * Based on the last processed form submission version process any newly
+	 * added or updated formsubmissions. This method assumes the data is in the
+	 * db the app is currently running on
+	 * 
+	 * @return
+	 */
+	public void migrateFormSubmissions() {
+		//ExecutorService executor = Executors.newFixedThreadPool(THREADS_COUNT);
+
+		try {
+<span class="nc" id="L55">			configService.registerAppStateToken(AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION, 0,</span>
+<span class="nc" id="L56">					&quot;Token to keep track of forms processed for client n event parsing and schedule handling&quot;, true);</span>
+
+<span class="nc" id="L58">			boolean processSubmissions = true;</span>
+
+<span class="nc bnc" id="L60" title="All 2 branches missed.">			while (processSubmissions) {</span>
+<span class="nc" id="L61">				long lastMigratedFsVersion = getVersion();</span>
+<span class="nc" id="L62">				List&lt;FormSubmission&gt; formSubmissions = formSubmissionService.getAllSubmissions(lastMigratedFsVersion, BATCH_SIZE);</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">				processSubmissions = formSubmissions != null &amp;&amp; !formSubmissions.isEmpty();</span>
+
+<span class="nc bnc" id="L65" title="All 2 branches missed.">				if (processSubmissions) {</span>
+
+<span class="nc" id="L67">					Runnable migrateFormSubmissionsTask = new MigrateFormSubmissionsTask(MigrationType.TO_LOCAL_DB, formSubmissions);</span>
+					//executor.execute(migrateFormSubmissionsTask);
+<span class="nc" id="L69">					migrateFormSubmissionsTask.run();</span>
+				}
+			}
+			// This will make the executor accept no new threads
+			// and finish all existing threads in the queue
+			//executor.shutdown();
+<span class="nc" id="L75">		} catch (Exception e) {</span>
+<span class="nc" id="L76">			logger.error(&quot;&quot;, e);</span>
+			//executor.shutdown();
+		}
+<span class="nc" id="L79">	}</span>
+
+	/**
+	 * This method pulls form submissions from the source db and saves the
+	 * broken down submissions (to EC model) to the target db
+	 * 
+	 * @param sourceDbParams
+	 * @param targetDbParams
+	 */
+	public void migrateFormSubmissions(DatabaseConnectionParams sourceDbParams, DatabaseConnectionParams targetDbParams) {
+		//ExecutorService executor = Executors.newFixedThreadPool(THREADS_COUNT);
+
+		try {
+			
+			
+<span class="nc" id="L94">			CouchDbConnector sourceDb = Utils.connectToDB(sourceDbParams);</span>
+<span class="nc" id="L95">			CouchDbConnector targetDb = Utils.connectToDB(targetDbParams);</span>
+			
+<span class="nc" id="L97">			configService.registerAppStateToken(sourceDb,AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION, 0,</span>
+<span class="nc" id="L98">					&quot;Token to keep track of forms processed for client n event parsing and schedule handling&quot;, true);</span>
+
+<span class="nc" id="L100">			boolean processSubmissions = true;</span>
+
+<span class="nc bnc" id="L102" title="All 2 branches missed.">			while (processSubmissions) {</span>
+<span class="nc" id="L103">				long lastMigratedFsVersion = getVersion(sourceDb);</span>
+<span class="nc" id="L104">				List&lt;FormSubmission&gt; formSubmissions = formSubmissionService.getAllSubmissions(sourceDb, lastMigratedFsVersion, BATCH_SIZE);</span>
+<span class="nc bnc" id="L105" title="All 4 branches missed.">				processSubmissions = formSubmissions != null &amp;&amp; !formSubmissions.isEmpty();</span>
+
+<span class="nc bnc" id="L107" title="All 2 branches missed.">				if (processSubmissions) {</span>
+
+<span class="nc" id="L109">					Runnable migrateFormSubmissionsTask = new MigrateFormSubmissionsTask(sourceDb, targetDb, MigrationType.TO_REMOTE_DB, formSubmissions);</span>
+					//executor.execute(migrateFormSubmissionsTask);
+<span class="nc" id="L111">					migrateFormSubmissionsTask.run();</span>
+				}
+			}
+			// This will make the executor accept no new threads
+			// and finish all existing threads in the queue
+			//executor.shutdown();
+
+<span class="nc" id="L118">		} catch (Exception e) {</span>
+<span class="nc" id="L119">			logger.error(&quot;&quot;, e);</span>
+			//executor.shutdown();
+		}
+
+<span class="nc" id="L123">	}</span>
+
+	private long getVersion() {
+<span class="nc" id="L126">		AppStateToken token = configService.getAppStateTokenByName(AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION);</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		return token == null ? 0L : token.longValue();</span>
+	}
+	private long getVersion(CouchDbConnector db) {
+<span class="nc" id="L130">		AppStateToken token = configService.getAppStateTokenByName(db,AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION);</span>
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		return token == null ? 0L : token.longValue();</span>
+	}
+
+	/**
+	 * Worker thread to break down formsubmissions to ec data.
+	 * 
+	 * @author onamacuser
+	 *
+	 */
+	class MigrateFormSubmissionsTask implements Runnable {
+
+		MigrationType type;
+		List&lt;FormSubmission&gt; formSubmissions;
+		CouchDbConnector sourceDb;
+		CouchDbConnector targetDb;
+
+<span class="nc" id="L147">		MigrateFormSubmissionsTask(MigrationType _type, List&lt;FormSubmission&gt; _formSubmissions) {</span>
+<span class="nc" id="L148">			type = _type;</span>
+<span class="nc" id="L149">			formSubmissions = _formSubmissions;</span>
+<span class="nc" id="L150">		}</span>
+
+<span class="nc" id="L152">		MigrateFormSubmissionsTask(CouchDbConnector _sourceDb, CouchDbConnector _targetDb, MigrationType _type, List&lt;FormSubmission&gt; _formSubmissions) {</span>
+<span class="nc" id="L153">			type = _type;</span>
+<span class="nc" id="L154">			formSubmissions = _formSubmissions;</span>
+<span class="nc" id="L155">			sourceDb = _sourceDb;</span>
+<span class="nc" id="L156">			targetDb = _targetDb;</span>
+<span class="nc" id="L157">		}</span>
+
+		@Override
+		public void run() {
+<span class="nc bnc" id="L161" title="All 3 branches missed.">			switch (type) {</span>
+			case TO_LOCAL_DB:
+
+				try {
+					// break down the submissions to ec model
+<span class="nc bnc" id="L166" title="All 2 branches missed.">					for (FormSubmission submission : formSubmissions) {</span>
+
+<span class="nc" id="L168">						configService.updateAppStateToken(AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION, submission.serverVersion());</span>
+<span class="nc" id="L169">						processor.makeModelEntities(submission);</span>
+					}
+<span class="nc" id="L171">				} catch (Exception e) {</span>
+<span class="nc" id="L172">					logger.error(&quot;&quot;, e);</span>
+
+				}
+<span class="nc" id="L175">				break;</span>
+
+			case TO_REMOTE_DB:
+
+				try {
+					// break down the submissions to ec model
+<span class="nc bnc" id="L181" title="All 2 branches missed.">					for (FormSubmission submission : formSubmissions) {</span>
+<span class="nc" id="L182">						configService.updateAppStateToken(sourceDb,AllConstants.Config.FORM_ENTITY_PARSER_LAST_MIGRATED_FORM_SUBMISSION, submission.serverVersion());</span>
+<span class="nc" id="L183">						processor.makeModelEntities(targetDb, submission);</span>
+						
+					}
+<span class="nc" id="L186">				} catch (JSONException e) {</span>
+<span class="nc" id="L187">					logger.error(&quot;&quot;, e);</span>
+
+				}
+<span class="nc" id="L190">				break;</span>
+			default:
+<span class="nc" id="L192">				logger.debug(&quot;Unknown migration type&quot;);</span>
+				break;
+
+			}
+<span class="nc" id="L196">		}</span>
+
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

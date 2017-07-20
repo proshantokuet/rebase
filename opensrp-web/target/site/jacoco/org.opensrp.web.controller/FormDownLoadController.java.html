@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormDownLoadController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">FormDownLoadController.java</span></div><h1>FormDownLoadController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.http.HttpServletResponse;
+import javax.xml.ws.WebServiceException;
+
+import org.codehaus.jackson.JsonFactory;
+import org.codehaus.jackson.JsonParseException;
+import org.codehaus.jackson.JsonParser;
+import org.codehaus.jackson.JsonToken;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+@Controller
+@RequestMapping(&quot;form/&quot;)
+public class FormDownLoadController {
+
+	private String FORMS_DIR;
+<span class="fc" id="L33">	private String FORMS_DEFINITION_FILE_NAME = &quot;form_definition.json&quot;;</span>
+	private static final String DS = &quot;/&quot;; 
+	private String FILES_TO_DOWNLOAD;
+	
+	@Autowired
+	public FormDownLoadController(@Value(&quot;#{opensrp['form.directory.name']}&quot;) String FORMS_DIR, 
+			@Value(&quot;#{opensrp['form.download.files']}&quot;) String FILES_TO_DOWNLOAD) throws IOException 
+<span class="fc" id="L40">	{</span>
+<span class="fc" id="L41">		ResourceLoader loader=new DefaultResourceLoader();</span>
+<span class="fc" id="L42">		this.FORMS_DIR = loader.getResource(FORMS_DIR).getURI().getPath();</span>
+<span class="fc" id="L43">		this.FILES_TO_DOWNLOAD = FILES_TO_DOWNLOAD.replace(&quot; &quot;, &quot;&quot;);</span>
+<span class="fc" id="L44">		System.out.println(FORMS_DIR);</span>
+<span class="fc" id="L45">	}</span>
+
+	@RequestMapping(&quot;latest-form-versions&quot;)
+	public @ResponseBody String getAllAvailableVersion() {
+<span class="fc" id="L49">		return readFormDefinitionFromDirectories();</span>
+	}
+
+	/*
+	 * Service method transfer file as a byte stream
+	 * */
+	@RequestMapping(&quot;form-files&quot;)
+	public @ResponseBody byte[] getForm(@RequestParam(value=&quot;formDirName&quot;) String formDirName, HttpServletResponse resp) {
+<span class="nc" id="L57">		resp.setContentType(&quot;application/zip&quot;);</span>
+<span class="nc" id="L58">		resp.setHeader(&quot;Content-Disposition&quot;, String.format(&quot;attachment; filename=\&quot;%s\&quot;&quot;,formDirName+&quot;.zip&quot;));</span>
+<span class="nc bnc" id="L59" title="All 4 branches missed.">	    String filePath =  ((FORMS_DIR.endsWith(&quot;/&quot;)||FORMS_DIR.endsWith(&quot;\\&quot;))?FORMS_DIR:(FORMS_DIR+&quot;/&quot;)) + formDirName;   </span>
+	    try {
+<span class="nc" id="L61">	        File file = new File(filePath);</span>
+<span class="nc" id="L62">	        return zipFiles(file);</span>
+<span class="nc" id="L63">	    } catch (IOException ex) {</span>
+<span class="nc" id="L64">	        System.err.println(ex);</span>
+<span class="nc" id="L65">	        throw new WebServiceException(ex);</span>
+	    }      
+	}
+    /**
+     * Compress the given directory with all its files.
+     */
+    private byte[] zipFiles(File directory) throws IOException {
+<span class="nc" id="L72">        ByteArrayOutputStream baos = new ByteArrayOutputStream();</span>
+<span class="nc" id="L73">        ZipOutputStream zos = new ZipOutputStream(baos);</span>
+<span class="nc" id="L74">        byte bytes[] = new byte[2048];</span>
+ 
+<span class="nc" id="L76">        String[] fl = directory.list();</span>
+<span class="nc bnc" id="L77" title="All 2 branches missed.">        for (String fileName : fl) {</span>
+<span class="nc bnc" id="L78" title="All 2 branches missed.">        	if(FILES_TO_DOWNLOAD.matches(&quot;(.+,)?&quot;+fileName+&quot;(,.+)?$&quot;)){</span>
+<span class="nc" id="L79">	            FileInputStream fis = new FileInputStream(directory.getPath() + DS + fileName);</span>
+<span class="nc" id="L80">	            BufferedInputStream bis = new BufferedInputStream(fis);</span>
+	 
+<span class="nc" id="L82">	            zos.putNextEntry(new ZipEntry(fileName));</span>
+	 
+	            int bytesRead;
+<span class="nc bnc" id="L85" title="All 2 branches missed.">	            while ((bytesRead = bis.read(bytes)) != -1) {</span>
+<span class="nc" id="L86">	                zos.write(bytes, 0, bytesRead);</span>
+	            }
+<span class="nc" id="L88">	            zos.closeEntry();</span>
+<span class="nc" id="L89">	            bis.close();</span>
+<span class="nc" id="L90">	            fis.close();</span>
+        	}
+        }
+<span class="nc" id="L93">        zos.flush();</span>
+<span class="nc" id="L94">        baos.flush();</span>
+<span class="nc" id="L95">        zos.close();</span>
+<span class="nc" id="L96">        baos.close();</span>
+ 
+<span class="nc" id="L98">        return baos.toByteArray();</span>
+    }	
+    
+	/*
+	 * Utility method read Forms directories 
+	 * recursively find name of available forms 
+	 * and their respective versions and then 
+	 * return as a json string
+	 * */
+	private String  readFormDefinitionFromDirectories(){
+<span class="fc" id="L108">	    String formName_Version_DefinitionJson = &quot;{\&quot;formVersions\&quot; : [&quot;;</span>
+<span class="fc" id="L109">	    String formVersionDefinition = &quot;&quot;;</span>
+<span class="fc" id="L110">	    File file = new File(FORMS_DIR);</span>
+<span class="fc" id="L111">	    File[] files = file.listFiles();</span>
+<span class="fc bfc" id="L112" title="All 2 branches covered.">	    for (int i = 0; i &lt; files.length; i++) {</span>
+<span class="fc bfc" id="L113" title="All 2 branches covered.">	    	if(new File(files[i].getPath()).isDirectory()){</span>
+<span class="fc" id="L114">		        formVersionDefinition = getFormName_Definition(files[i].getPath()+&quot;/&quot;+FORMS_DEFINITION_FILE_NAME, files[i].getName());        </span>
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">		        if (files.length &gt; 0 &amp;&amp; i&lt; files.length-1){</span>
+<span class="fc" id="L116">		            formName_Version_DefinitionJson +=  formVersionDefinition + &quot;,&quot;;</span>
+		        }else{
+<span class="fc" id="L118">		            formName_Version_DefinitionJson +=  formVersionDefinition;</span>
+		        }
+	    	}
+	    }
+<span class="fc" id="L122">	    formName_Version_DefinitionJson += &quot;]}&quot;;</span>
+<span class="fc" id="L123">	    return formName_Version_DefinitionJson;</span>
+	}
+	/*
+	 * Utility method read form definition json
+	 * find its name and version 
+	 * and return it as a json string
+	 * */
+	private String getFormName_Definition(String filePath, String formDirName) {
+<span class="fc" id="L131">	    String formName = &quot;&quot;;</span>
+<span class="fc" id="L132">	    String versionNo = &quot;-1&quot;;</span>
+<span class="fc" id="L133">	    String fieldname = &quot;&quot;;</span>
+<span class="fc" id="L134">	    JsonFactory jfactory = new JsonFactory();       </span>
+	    JsonParser jParser;
+	    try {
+<span class="fc" id="L137">	        jParser = jfactory.createJsonParser(new File(filePath));</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">	        while (jParser.nextToken() != JsonToken.END_OBJECT) {</span>
+	
+<span class="fc" id="L140">	            fieldname = jParser.getCurrentName();</span>
+<span class="fc bfc" id="L141" title="All 2 branches covered.">	            if (&quot;form_data_definition_version&quot;.equals(fieldname)) {</span>
+<span class="fc" id="L142">	                jParser.nextToken();</span>
+<span class="fc" id="L143">	                versionNo = jParser.getText();</span>
+	            }
+<span class="fc bfc" id="L145" title="All 2 branches covered.">	            if (&quot;form&quot;.equals(fieldname)) {</span>
+<span class="fc bfc" id="L146" title="All 2 branches covered.">	                while (jParser.nextToken() != JsonToken.FIELD_NAME) {</span>
+<span class="fc" id="L147">	                    jParser.nextToken();</span>
+<span class="fc" id="L148">	                    fieldname = jParser.getCurrentName();</span>
+<span class="fc bfc" id="L149" title="All 2 branches covered.">	                    if (&quot;default_bind_path&quot;.equals(fieldname)) {</span>
+<span class="fc" id="L150">	                        jParser.nextToken();</span>
+<span class="fc" id="L151">	                        formName = jParser.getText().substring(16,</span>
+<span class="fc" id="L152">	                                jParser.getText().length() - 1);</span>
+	                    }
+	                }
+	
+	            }
+	        }
+<span class="fc" id="L158">	        jParser.close();</span>
+<span class="nc" id="L159">	    } catch (JsonParseException e) {</span>
+<span class="nc" id="L160">	        e.printStackTrace();</span>
+<span class="nc" id="L161">	    } catch (IOException e) {</span>
+<span class="nc" id="L162">	        e.printStackTrace();</span>
+<span class="pc" id="L163">	    }</span>
+<span class="fc" id="L164">	    return &quot;{\&quot;formName\&quot;: \&quot;&quot; + formName + &quot;\&quot;, \&quot;formDirName\&quot;: \&quot;&quot; + formDirName + &quot;\&quot;, \&quot;formDataDefinitionVersion\&quot;: \&quot;&quot;</span>
+	            + versionNo + &quot;\&quot;}&quot;;
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllEvents.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllEvents.java</span></div><h1>AllEvents.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.Calendar;
+import java.util.List;
+
+import org.ektorp.ComplexKey;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.UpdateConflictException;
+import org.ektorp.support.GenerateView;
+import org.ektorp.support.View;
+import org.ektorp.util.Assert;
+import org.ektorp.util.Documents;
+import org.joda.time.DateTime;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.Event;
+import org.opensrp.repository.lucene.LuceneEventRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllEvents extends MotechBaseRepository&lt;Event&gt; {
+	
+	private LuceneEventRepository ler;
+	
+	@Autowired
+	protected AllEvents(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, LuceneEventRepository ler) {
+<span class="fc" id="L29">		super(Event.class, db);</span>
+<span class="fc" id="L30">		this.ler = ler;</span>
+<span class="fc" id="L31">	}</span>
+	
+	@View(name = &quot;all_events_by_identifier&quot;, map = &quot;function(doc) {if (doc.type === 'Event') {for(var key in doc.identifiers) {emit(doc.identifiers[key]);}}}&quot;)
+	public List&lt;Event&gt; findAllByIdentifier(String identifier) {
+<span class="nc" id="L35">		return db.queryView(createQuery(&quot;all_events_by_identifier&quot;).key(identifier).includeDocs(true), Event.class);</span>
+	}
+	
+	@View(name = &quot;all_events_by_identifier_of_type&quot;, map = &quot;function(doc) {if (doc.type === 'Event') {for(var key in doc.identifiers) {emit([key, doc.identifiers[key]]);}}}&quot;)
+	public List&lt;Event&gt; findAllByIdentifier(String identifierType, String identifier) {
+<span class="nc" id="L40">		ComplexKey ckey = ComplexKey.of(identifierType, identifier);</span>
+<span class="nc" id="L41">		return db.queryView(createQuery(&quot;all_events_by_identifier_of_type&quot;).key(ckey).includeDocs(true), Event.class);</span>
+	}
+	
+	public Event findById(String id) {
+<span class="nc" id="L45">		Event event = db.get(Event.class, id);</span>
+<span class="nc" id="L46">		return event;</span>
+	}
+	
+	@GenerateView
+	public List&lt;Event&gt; findByFormSubmissionId(String formSubmissionId) {
+<span class="nc" id="L51">		List&lt;Event&gt; events = queryView(&quot;by_formSubmissionId&quot;, formSubmissionId);</span>
+<span class="nc" id="L52">		return events;</span>
+	}
+	
+	@GenerateView
+	public List&lt;Event&gt; findByBaseEntityId(String baseEntityId) {
+<span class="nc" id="L57">		return queryView(&quot;by_baseEntityId&quot;, baseEntityId);</span>
+	}
+	
+	@View(name = &quot;all_events_by_base_entity_and_form_submission&quot;, map = &quot;function(doc) { if (doc.type === 'Event'){  emit([doc.baseEntityId, doc.formSubmissionId], doc); } }&quot;)
+	public List&lt;Event&gt; findByBaseEntityAndFormSubmissionId(String baseEntityId, String formSubmissionId) {
+<span class="fc" id="L62">		return db.queryView(createQuery(&quot;all_events_by_base_entity_and_form_submission&quot;)</span>
+<span class="fc" id="L63">		        .key(ComplexKey.of(baseEntityId, formSubmissionId)).includeDocs(true),</span>
+<span class="fc" id="L64">		    Event.class);</span>
+	}
+	
+	@View(name = &quot;all_events_by_base_entity_and_type&quot;, map = &quot;function(doc) { if (doc.type === 'Event'){  emit([doc.baseEntityId, doc.eventType], doc); } }&quot;)
+	public List&lt;Event&gt; findByBaseEntityAndType(String baseEntityId, String eventType) {
+<span class="nc" id="L69">		return db.queryView(</span>
+<span class="nc" id="L70">		    createQuery(&quot;all_events_by_base_entity_and_type&quot;).key(ComplexKey.of(baseEntityId, eventType)).includeDocs(true),</span>
+<span class="nc" id="L71">		    Event.class);</span>
+	}
+	
+	@View(name = &quot;all_events_by_base_entity_and_form_submission&quot;, map = &quot;function(doc) { if (doc.type === 'Event'){  emit([doc.baseEntityId, doc.formSubmissionId], doc); } }&quot;)
+	public List&lt;Event&gt; findByBaseEntityAndFormSubmissionId(CouchDbConnector targetDb, String baseEntityId,
+	                                                       String formSubmissionId) {
+<span class="nc" id="L77">		return targetDb.queryView(createQuery(&quot;all_events_by_base_entity_and_form_submission&quot;)</span>
+<span class="nc" id="L78">		        .key(ComplexKey.of(baseEntityId, formSubmissionId)).includeDocs(true),</span>
+<span class="nc" id="L79">		    Event.class);</span>
+	}
+	
+	public List&lt;Event&gt; findEvents(String baseEntityId, DateTime from, DateTime to, String eventType, String entityType,
+	                              String providerId, String locationId, DateTime lastEditFrom, DateTime lastEditTo) {
+<span class="nc" id="L84">		return ler.getByCriteria(baseEntityId, from, to, eventType, entityType, providerId, locationId, lastEditFrom,</span>
+<span class="nc" id="L85">		    lastEditTo);</span>
+	}
+	
+	public List&lt;Event&gt; findEventsByDynamicQuery(String query) {
+<span class="nc" id="L89">		return ler.getByCriteria(query);</span>
+	}
+	
+	/**
+	 * Save event to the specified db
+	 * 
+	 * @throws UpdateConflictException if there was an update conflict.
+	 */
+	public void add(CouchDbConnector targetDb, Event event) {
+<span class="nc" id="L98">		Assert.isTrue(Documents.isNew(event), &quot;entity must be new&quot;);</span>
+<span class="nc" id="L99">		targetDb.create(event);</span>
+<span class="nc" id="L100">	}</span>
+	
+	@View(name = &quot;events_by_version&quot;, map = &quot;function(doc) { if (doc.type === 'Event') { emit([doc.serverVersion], null); } }&quot;)
+	public List&lt;Event&gt; findByServerVersion(long serverVersion) {
+<span class="nc" id="L104">		ComplexKey startKey = ComplexKey.of(serverVersion + 1);</span>
+<span class="nc" id="L105">		ComplexKey endKey = ComplexKey.of(Long.MAX_VALUE);</span>
+<span class="nc" id="L106">		return db.queryView(createQuery(&quot;events_by_version&quot;).startKey(startKey).endKey(endKey).includeDocs(true),</span>
+<span class="nc" id="L107">		    Event.class);</span>
+	}
+	
+	/**
+	 * Find an event based on a concept and between a range of date created dates
+	 * 
+	 * @param concept
+	 * @param conceptValue
+	 * @param dateFrom
+	 * @param dateTo
+	 * @return
+	 */
+	@View(name = &quot;event_by_concept_and_date_created&quot;, map = &quot;function(doc) {if (doc.type === 'Event' &amp;&amp; doc.obs) {for (var obs in doc.obs) {var fieldCode = doc.obs[obs].fieldCode;var value = doc.obs[obs].values[0];emit([doc.baseEntityId,fieldCode,value,doc.dateCreated.substring(0, 10)],null);}}}&quot;)
+	public List&lt;Event&gt; findByClientAndConceptAndDate(String baseEntityId, String concept, String conceptValue,
+	                                                 String dateFrom, String dateTo) {
+<span class="nc" id="L122">		ComplexKey startKey = ComplexKey.of(baseEntityId, concept, conceptValue, dateFrom);</span>
+<span class="nc" id="L123">		ComplexKey endKey = ComplexKey.of(baseEntityId, concept, conceptValue, dateTo);</span>
+<span class="nc" id="L124">		List&lt;Event&gt; events = db.queryView(</span>
+<span class="nc" id="L125">		    createQuery(&quot;event_by_concept_and_date_created&quot;).startKey(startKey).endKey(endKey).includeDocs(true),</span>
+<span class="nc" id="L126">		    Event.class);</span>
+<span class="nc" id="L127">		return events;</span>
+	}
+
+	@View(name = &quot;event_by_concept_parent_code_and_base_entity_id&quot;, map = &quot;function(doc) {if (doc.type === 'Event' &amp;&amp; doc.obs) {for (var obs in doc.obs) {var fieldCode = doc.obs[obs].fieldCode;var parentCode = doc.obs[obs].parentCode;emit([doc.baseEntityId, fieldCode, parentCode], null);}}}&quot;)
+	public List&lt;Event&gt; findByBaseEntityIdAndConceptParentCode(String baseEntityId, String concept, String parentCode) {
+<span class="nc" id="L132">		ComplexKey startKey = ComplexKey.of(baseEntityId, concept, parentCode);</span>
+<span class="nc" id="L133">		ComplexKey endKey = ComplexKey.of(baseEntityId, concept, parentCode);</span>
+<span class="nc" id="L134">		List&lt;Event&gt; events = db.queryView(</span>
+<span class="nc" id="L135">		    createQuery(&quot;event_by_concept_parent_code_and_base_entity_id&quot;).startKey(startKey).endKey(endKey).includeDocs(true),</span>
+<span class="nc" id="L136">		    Event.class);</span>
+<span class="nc" id="L137">		return events;</span>
+	}
+
+	
+	@View(name = &quot;event_by_concept_and_value&quot;, map = &quot;function(doc) {if (doc.type === 'Event' &amp;&amp; doc.obs) {for (var obs in doc.obs) {var fieldCode = doc.obs[obs].fieldCode;var value = doc.obs[obs].values[0];emit([fieldCode,value],null);}}}&quot;)
+	public List&lt;Event&gt; findByConceptAndValue(String concept, String conceptValue) {
+<span class="nc" id="L143">		List&lt;Event&gt; events = db.queryView(</span>
+<span class="nc" id="L144">		    createQuery(&quot;event_by_concept_and_value&quot;).key(ComplexKey.of(concept, conceptValue)).includeDocs(true),</span>
+<span class="nc" id="L145">		    Event.class);</span>
+<span class="nc" id="L146">		return events;</span>
+	}
+	
+
+	@View(name = &quot;events_by_empty_server_version&quot;, map = &quot;function(doc) { if (doc.type == 'Event' &amp;&amp; !doc.serverVersion) { emit(doc._id, doc); } }&quot;)
+	public List&lt;Event&gt; findByEmptyServerVersion() {
+<span class="nc" id="L152">		return db.queryView(createQuery(&quot;events_by_empty_server_version&quot;).limit(200).includeDocs(true), Event.class);</span>
+	}
+	
+	@GenerateView
+    public List&lt;Event&gt; getAll() {
+<span class="fc" id="L157">        return super.getAll();</span>
+    }
+	
+	public List&lt;Event&gt; findEvents(String team,String providerId, String locationId, String baseEntityId, Long serverVersion,String sortBy,String sortOrder, int limit) {
+<span class="nc" id="L161">		return ler.getByCriteria(team,providerId, locationId, baseEntityId, serverVersion, sortBy, sortOrder,limit);</span>
+	}
+	
+	
+	@View(name = &quot;all_events_by_event_type_and_version&quot;, map = &quot;function(doc) { if (doc.type === 'Event'){  emit([doc.eventType, doc.version], null); } }&quot;)
+	public List&lt;Event&gt; findEventByEventTypeBetweenTwoDates(String eventType) {
+<span class="nc" id="L167">		Calendar calendar = Calendar.getInstance();</span>
+<span class="nc" id="L168">        calendar.set(Calendar.DATE, 1);</span>
+<span class="nc" id="L169">        System.err.println(&quot;calendar.getTime():&quot;+calendar.getTime().getTime());</span>
+<span class="nc" id="L170">		ComplexKey start = ComplexKey.of(eventType,calendar.getTime().getTime());</span>
+<span class="nc" id="L171">        ComplexKey end = ComplexKey.of(eventType,System.currentTimeMillis());</span>
+<span class="nc" id="L172">        List&lt;Event&gt; events = db.queryView(</span>
+<span class="nc" id="L173">				createQuery(&quot;all_events_by_event_type_and_version&quot;)</span>
+<span class="nc" id="L174">						.startKey(start)</span>
+<span class="nc" id="L175">						.endKey(end)						</span>
+<span class="nc" id="L176">						.includeDocs(true), Event.class);</span>
+        
+<span class="nc" id="L178">		return events;</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

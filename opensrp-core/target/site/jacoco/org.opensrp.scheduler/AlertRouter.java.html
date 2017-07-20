@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AlertRouter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler</a> &gt; <span class="el_source">AlertRouter.java</span></div><h1>AlertRouter.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.motechproject.scheduler.domain.MotechEvent;
+import org.motechproject.scheduletracking.api.domain.Enrollment;
+import org.motechproject.scheduletracking.api.domain.WindowName;
+import org.motechproject.scheduletracking.api.events.DefaultmentCaptureEvent;
+import org.motechproject.scheduletracking.api.events.constants.EventSubjects;
+import org.motechproject.scheduletracking.api.service.ScheduleTrackingService;
+import org.motechproject.server.event.annotations.MotechListener;
+import org.opensrp.domain.Event;
+import org.opensrp.dto.ActionData;
+import org.opensrp.dto.AlertStatus;
+import org.opensrp.scheduler.HealthSchedulerService.MetadataField;
+import org.opensrp.scheduler.service.ActionService;
+import org.opensrp.scheduler.service.ScheduleService;
+import org.opensrp.service.EventService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+/**
+ * The class that maintains the actions against alerts by {@link ScheduleTrackingService}
+ */
+@Component
+public class AlertRouter {
+	@Autowired
+	ScheduleService scheduleService;
+
+	
+	@Autowired
+	ActionService actionService;
+	
+	@Autowired
+	EventService eventService;
+    private List&lt;Route&gt; routes;
+<span class="fc" id="L40">    private static Logger logger = LoggerFactory.getLogger(AlertRouter.class.toString());</span>
+
+
+<span class="fc" id="L43">    public AlertRouter() {</span>
+<span class="fc" id="L44">        routes = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L45">    }</span>
+
+    public Route addRoute(Matcher scheduleMatcher, Matcher milestoneMatcher, Matcher windowMatcher, HookedEvent action) {
+<span class="fc" id="L48">        Route route = new Route(scheduleMatcher, milestoneMatcher, windowMatcher, action);</span>
+<span class="fc" id="L49">        routes.add(route);</span>
+<span class="fc" id="L50">        return route;</span>
+    }
+
+    public Route addRoute(Route route) {
+<span class="fc" id="L54">    	logger.info(&quot;ADDED ROUTE:&quot;+route);</span>
+<span class="fc" id="L55">        routes.add(route);</span>
+<span class="fc" id="L56">        return route;</span>
+    }
+    
+    @MotechListener(subjects = {EventSubjects.MILESTONE_ALERT, EventSubjects.DEFAULTMENT_CAPTURE})
+    public void handleAlerts(MotechEvent realEvent) {
+<span class="fc" id="L61">		logger.debug(&quot;Handling motech milestone alerts: &quot; + realEvent);</span>
+<span class="fc" id="L62">		MilestoneEvent milestoneEvent = new MilestoneEvent(realEvent);</span>
+		
+		try {
+<span class="fc bfc" id="L65" title="All 2 branches covered.">				for (Route route : routes) {</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">					if (route.isSatisfiedBy(milestoneEvent.scheduleName(), milestoneEvent.milestoneName(),</span>
+<span class="fc" id="L67">					    milestoneEvent.windowName())) {</span>
+<span class="fc" id="L68">						route.invokeAction(milestoneEvent);</span>
+<span class="fc" id="L69">						return;</span>
+					}
+<span class="fc" id="L71">				}</span>
+
+<span class="fc" id="L73">            throw new NoRoutesMatchException(milestoneEvent);</span>
+<span class="fc" id="L74">		} catch (Exception e) {</span>
+
+<span class="fc" id="L76">            logger.error(&quot;&quot;, e.getMessage());</span>
+
+<span class="pc bpc" id="L78" title="1 of 2 branches missed.">		    if(e.getClass() == NoRoutesMatchException.class) {</span>
+<span class="fc" id="L79">                throw new NoRoutesMatchException(milestoneEvent);</span>
+            }
+
+<span class="nc" id="L82">			String externalId = milestoneEvent.externalId();</span>
+<span class="nc" id="L83">			DefaultmentCaptureEvent defaultmentEvent = new DefaultmentCaptureEvent(realEvent);</span>
+<span class="nc" id="L84">			String enrollmentId = defaultmentEvent.getEnrollmentId();//9be0cca1be4969d7d104e14706ef81de</span>
+<span class="nc" id="L85">			Enrollment enrollment = scheduleService.getEnrollment(enrollmentId);</span>
+			
+<span class="nc" id="L87">			String eventId = enrollment.getMetadata().get(MetadataField.enrollmentEvent.name());</span>
+<span class="nc" id="L88">			Event event = eventService.getById(eventId);</span>
+<span class="nc" id="L89">			String entityType = event.getEntityType();</span>
+<span class="nc" id="L90">			ActionData actionData = ActionData.createAlert(entityType, enrollment.getScheduleName(),</span>
+<span class="nc" id="L91">			    enrollment.getCurrentMilestoneName(), AlertStatus.defaulted, enrollment.getCurrentMilestoneStartDate(),</span>
+<span class="nc" id="L92">			    enrollment.getStartOfWindowForCurrentMilestone(WindowName.max));</span>
+<span class="nc" id="L93">			Action action = new Action(externalId, event.getProviderId(), actionData);</span>
+<span class="nc" id="L94">			actionService.alertForBeneficiary(action);</span>
+			
+
+		}
+<span class="nc" id="L98">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

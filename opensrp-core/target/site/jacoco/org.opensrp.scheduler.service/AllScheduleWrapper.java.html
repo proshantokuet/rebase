@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllScheduleWrapper.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.scheduler.service</a> &gt; <span class="el_source">AllScheduleWrapper.java</span></div><h1>AllScheduleWrapper.java</h1><pre class="source lang-java linenums">package org.opensrp.scheduler.service;
+
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.View;
+import org.motechproject.scheduletracking.api.domain.ScheduleFactory;
+import org.motechproject.scheduletracking.api.domain.json.ScheduleRecord;
+import org.motechproject.scheduletracking.api.repository.AllSchedules;
+import org.motechproject.scheduletracking.api.repository.TrackedSchedulesJsonReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllScheduleWrapper extends AllSchedules{
+	@Autowired
+	public AllScheduleWrapper(@Qualifier(&quot;scheduleTrackingDbConnector&quot;) CouchDbConnector db, TrackedSchedulesJsonReader trackedSchedulesJsonReader, ScheduleFactory scheduleFactory) {
+<span class="fc" id="L19">		super(db, trackedSchedulesJsonReader, scheduleFactory);</span>
+<span class="fc" id="L20">	}</span>
+
+    @View(name = &quot;by_schedule_name&quot;, map = &quot;function(doc) { if(doc.type === 'ScheduleRecord') emit(doc.name); }&quot;)
+	public ScheduleRecord getRecordByName(String name) {
+<span class="nc" id="L24">		List&lt;ScheduleRecord&gt; records = queryView(&quot;by_schedule_name&quot;, name);</span>
+<span class="nc bnc" id="L25" title="All 2 branches missed.">        if (records.isEmpty())</span>
+<span class="nc" id="L26">            return null;</span>
+<span class="nc" id="L27">        return records.get(0);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

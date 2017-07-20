@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllStocks.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllStocks.java</span></div><h1>AllStocks.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+
+import java.util.List;
+
+import org.ektorp.ComplexKey;
+import org.ektorp.CouchDbConnector;
+import org.ektorp.UpdateConflictException;
+import org.ektorp.support.View;
+import org.ektorp.util.Assert;
+import org.ektorp.util.Documents;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.domain.Stock;
+import org.opensrp.repository.lucene.LuceneStockRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllStocks extends MotechBaseRepository&lt;Stock&gt; {
+	
+	private LuceneStockRepository lsr;
+	
+	@Autowired
+	protected AllStocks(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db, LuceneStockRepository ler) {
+<span class="fc" id="L27">		super(Stock.class, db);</span>
+<span class="fc" id="L28">		this.lsr = ler;</span>
+<span class="fc" id="L29">	}</span>
+	
+	@View(name = &quot;all_stock_by_providerid&quot;, map = &quot;function(doc) {if (doc.type === 'Stock') {for(var key in doc.providerid) {emit(doc.providerid[key]);}}}&quot;)
+	public List&lt;Stock&gt; findAllByProviderid(String providerid) {
+<span class="nc" id="L33">		return db.queryView(createQuery(&quot;all_stock_by_providerid&quot;).key(providerid).includeDocs(true), Stock.class);</span>
+	}
+	
+	@View(name = &quot;all_stock_by_vaccine_type_id&quot;, map = &quot;function(doc) {if (doc.type === 'Stock') {for(var key in doc.vaccine_type_id) {emit([key, doc.vaccine_type_id[key]]);}}}&quot;)
+	public List&lt;Stock&gt; findAllByIdentifier(String vaccine_type, String vaccine_type_id) {
+<span class="nc" id="L38">		ComplexKey ckey = ComplexKey.of(vaccine_type, vaccine_type_id);</span>
+<span class="nc" id="L39">		return db.queryView(createQuery(&quot;all_stock_by_vaccine_type_id&quot;).key(ckey).includeDocs(true), Stock.class);</span>
+	}
+	
+	public Stock findById(String id) {
+<span class="nc" id="L43">		Stock stock = db.get(Stock.class, id);</span>
+<span class="nc" id="L44">		return stock;</span>
+	}
+	public List&lt;Stock&gt; findStocks(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String date_updated,String timeStamp, String sortBy,
+            String sortOrder, int limit) {
+<span class="nc" id="L49">		return lsr.getByCriteria(identifier, vaccine_type_id, transaction_type, providerid, value,</span>
+<span class="nc" id="L50">				date_created, to_from, date_updated, timeStamp, sortBy,</span>
+<span class="nc" id="L51">	            sortOrder, limit);</span>
+	}
+	public List&lt;Stock&gt; findStocks(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String date_updated,String serverVersion) {
+<span class="nc" id="L55">		return lsr.getByCriteria(identifier, vaccine_type_id, transaction_type, providerid, value,</span>
+<span class="nc" id="L56">				date_created, to_from, date_updated, serverVersion);</span>
+	}
+	
+	@View(name = &quot;all_stocks&quot;, map = &quot;function(doc) { if (doc.type === 'Stock') { emit(doc.dateCreated); } }&quot;)
+	public List&lt;Stock&gt; findAllStocks() {
+<span class="nc" id="L61">		return db.queryView(createQuery(&quot;all_stocks&quot;).includeDocs(true), Stock.class);</span>
+	}
+	
+	/**
+	 * Save stock to the specified db
+	 * 
+	 * @throws UpdateConflictException if there was an update conflict.
+	 */
+	public void add(CouchDbConnector targetDb, Stock stock) {
+<span class="nc" id="L70">		Assert.isTrue(Documents.isNew(stock), &quot;entity must be new&quot;);</span>
+<span class="nc" id="L71">		targetDb.create(stock);</span>
+<span class="nc" id="L72">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

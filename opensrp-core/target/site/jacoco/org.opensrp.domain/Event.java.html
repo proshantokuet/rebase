@@ -1,0 +1,356 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>Event.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">Event.java</span></div><h1>Event.java</h1><pre class="source lang-java linenums">package org.opensrp.domain;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.ektorp.support.TypeDiscriminator;
+import org.joda.time.DateTime;
+
+@JsonIgnoreProperties(ignoreUnknown = true)
+@TypeDiscriminator(&quot;doc.type == 'Event'&quot;)
+public class Event extends BaseDataObject {
+	
+	@JsonProperty
+	private Map&lt;String, String&gt; identifiers;
+	
+	@JsonProperty
+	private String baseEntityId;
+	
+	@JsonProperty
+	private String locationId;
+	
+	@JsonProperty
+	private DateTime eventDate;
+	
+	@JsonProperty
+	private String eventType;
+	
+	@JsonProperty
+	private String formSubmissionId;
+	
+	@JsonProperty
+	private String providerId;
+	
+	@JsonProperty
+	private String status;
+	
+	@JsonProperty
+	private Map&lt;String, DateTime&gt; statusHistory;
+	
+	@JsonProperty
+	private String priority;
+	
+	@JsonProperty
+	private List&lt;String&gt; episodeOfCare;
+	
+	@JsonProperty
+	private List&lt;String&gt; referrals;
+	
+	@JsonProperty
+	private String category;
+	
+	@JsonProperty
+	private int duration;
+	
+	@JsonProperty
+	private String reason;
+	
+	@JsonProperty
+	private List&lt;Obs&gt; obs;
+	
+	@JsonProperty
+	private String entityType;
+	
+	@JsonProperty
+	private Map&lt;String, String&gt; details;
+	
+	@JsonProperty
+	private long version;
+	
+	@JsonProperty
+	private List&lt;Photo&gt; photos;
+	
+<span class="fc" id="L82">	public Event() {</span>
+<span class="fc" id="L83">		this.version = System.currentTimeMillis();</span>
+<span class="fc" id="L84">	}</span>
+	
+	public Event(String baseEntityId, String eventType, DateTime eventDate, String entityType, String providerId,
+<span class="fc" id="L87">	    String locationId, String formSubmissionId) {</span>
+<span class="fc" id="L88">		this.baseEntityId = baseEntityId;</span>
+<span class="fc" id="L89">		this.eventType = eventType;</span>
+<span class="fc" id="L90">		this.eventDate = eventDate;</span>
+<span class="fc" id="L91">		this.entityType = entityType;</span>
+<span class="fc" id="L92">		this.providerId = providerId;</span>
+<span class="fc" id="L93">		this.locationId = locationId;</span>
+<span class="fc" id="L94">		this.formSubmissionId = formSubmissionId;</span>
+<span class="fc" id="L95">		this.version = System.currentTimeMillis();</span>
+<span class="fc" id="L96">	}</span>
+	
+	public List&lt;Obs&gt; getObs() {
+<span class="pc bpc" id="L99" title="1 of 2 branches missed.">		if (obs == null) {</span>
+<span class="nc" id="L100">			obs = new ArrayList&lt;&gt;();</span>
+		}
+<span class="fc" id="L102">		return obs;</span>
+	}
+	
+	public Obs getObs(String parent, String concept) {
+<span class="nc bnc" id="L106" title="All 2 branches missed.">		if (obs == null) {</span>
+<span class="nc" id="L107">			obs = new ArrayList&lt;&gt;();</span>
+		}
+<span class="nc bnc" id="L109" title="All 2 branches missed.">		for (Obs o : obs) {</span>
+			// parent is blank OR matches with obs parent
+<span class="nc bnc" id="L111" title="All 2 branches missed.">			if ((StringUtils.isBlank(parent)</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">			        || (StringUtils.isNotBlank(o.getParentCode()) &amp;&amp; parent.equalsIgnoreCase(o.getParentCode())))</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">			        &amp;&amp; o.getFieldCode().equalsIgnoreCase(concept)) {</span>
+<span class="nc" id="L114">				return o; //TODO handle duplicates</span>
+			}
+<span class="nc" id="L116">		}</span>
+<span class="nc" id="L117">		return null;</span>
+	}
+	
+	/**
+	 * WARNING: Overrides all existing obs
+	 * 
+	 * @param obs
+	 * @return
+	 */
+	public void setObs(List&lt;Obs&gt; obs) {
+<span class="fc" id="L127">		this.obs = obs;</span>
+<span class="fc" id="L128">	}</span>
+	
+	public void addObs(Obs observation) {
+<span class="fc bfc" id="L131" title="All 2 branches covered.">		if (obs == null) {</span>
+<span class="fc" id="L132">			obs = new ArrayList&lt;&gt;();</span>
+		}
+		
+<span class="fc" id="L135">		obs.add(observation);</span>
+<span class="fc" id="L136">	}</span>
+	
+	public String getBaseEntityId() {
+<span class="fc" id="L139">		return baseEntityId;</span>
+	}
+	
+	public void setBaseEntityId(String baseEntityId) {
+<span class="fc" id="L143">		this.baseEntityId = baseEntityId;</span>
+<span class="fc" id="L144">	}</span>
+	
+	public Map&lt;String, String&gt; getIdentifiers() {
+<span class="fc bfc" id="L147" title="All 2 branches covered.">		if (identifiers == null) {</span>
+<span class="fc" id="L148">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+<span class="fc" id="L150">		return identifiers;</span>
+	}
+	
+	public String getIdentifier(String identifierType) {
+<span class="nc bnc" id="L154" title="All 2 branches missed.">		if (identifiers == null) {</span>
+<span class="nc" id="L155">			return null;</span>
+		}
+<span class="nc bnc" id="L157" title="All 2 branches missed.">		for (String k : identifiers.keySet()) {</span>
+<span class="nc bnc" id="L158" title="All 2 branches missed.">			if (k.equalsIgnoreCase(identifierType)) {</span>
+<span class="nc" id="L159">				return identifiers.get(k);</span>
+			}
+<span class="nc" id="L161">		}</span>
+<span class="nc" id="L162">		return null;</span>
+	}
+	
+	/**
+	 * Returns field matching the regex. Note that incase of multiple fields matching criteria
+	 * function would return first match. The must be well formed to find out a single value
+	 * 
+	 * @param regex
+	 * @return
+	 */
+	public String getIdentifierMatchingRegex(String regex) {
+<span class="nc bnc" id="L173" title="All 2 branches missed.">		for (Entry&lt;String, String&gt; a : getIdentifiers().entrySet()) {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">			if (a.getKey().matches(regex)) {</span>
+<span class="nc" id="L175">				return a.getValue();</span>
+			}
+<span class="nc" id="L177">		}</span>
+<span class="nc" id="L178">		return null;</span>
+	}
+	
+	public void setIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="fc" id="L182">		this.identifiers = identifiers;</span>
+<span class="fc" id="L183">	}</span>
+	
+	public void addIdentifier(String identifierType, String identifier) {
+<span class="nc bnc" id="L186" title="All 2 branches missed.">		if (identifiers == null) {</span>
+<span class="nc" id="L187">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+		
+<span class="nc" id="L190">		identifiers.put(identifierType, identifier);</span>
+<span class="nc" id="L191">	}</span>
+	
+	public void removeIdentifier(String identifierType) {
+<span class="nc" id="L194">		identifiers.remove(identifierType);</span>
+<span class="nc" id="L195">	}</span>
+	
+	public String getLocationId() {
+<span class="fc" id="L198">		return locationId;</span>
+	}
+	
+	public void setLocationId(String locationId) {
+<span class="fc" id="L202">		this.locationId = locationId;</span>
+<span class="fc" id="L203">	}</span>
+	
+	public DateTime getEventDate() {
+<span class="fc" id="L206">		return eventDate;</span>
+	}
+	
+	public void setEventDate(DateTime eventDate) {
+<span class="fc" id="L210">		this.eventDate = eventDate;</span>
+<span class="fc" id="L211">	}</span>
+	
+	public String getEventType() {
+<span class="fc" id="L214">		return eventType;</span>
+	}
+	
+	public void setEventType(String eventType) {
+<span class="fc" id="L218">		this.eventType = eventType;</span>
+<span class="fc" id="L219">	}</span>
+	
+	public String getFormSubmissionId() {
+<span class="fc" id="L222">		return formSubmissionId;</span>
+	}
+	
+	public void setFormSubmissionId(String formSubmissionId) {
+<span class="fc" id="L226">		this.formSubmissionId = formSubmissionId;</span>
+<span class="fc" id="L227">	}</span>
+	
+	public String getProviderId() {
+<span class="fc" id="L230">		return providerId;</span>
+	}
+	
+	public void setProviderId(String providerId) {
+<span class="fc" id="L234">		this.providerId = providerId;</span>
+<span class="fc" id="L235">	}</span>
+	
+	public String getEntityType() {
+<span class="fc" id="L238">		return entityType;</span>
+	}
+	
+	public void setEntityType(String entityType) {
+<span class="fc" id="L242">		this.entityType = entityType;</span>
+<span class="fc" id="L243">	}</span>
+	
+	public Map&lt;String, String&gt; getDetails() {
+<span class="fc" id="L246">		return details;</span>
+	}
+	
+	public void setDetails(Map&lt;String, String&gt; details) {
+<span class="nc" id="L250">		this.details = details;</span>
+<span class="nc" id="L251">	}</span>
+	
+	public void addDetails(String key, String val) {
+<span class="nc bnc" id="L254" title="All 2 branches missed.">		if (details == null) {</span>
+<span class="nc" id="L255">			details = new HashMap&lt;&gt;();</span>
+		}
+<span class="nc" id="L257">		details.put(key, val);</span>
+<span class="nc" id="L258">	}</span>
+	
+	public long getVersion() {
+<span class="fc" id="L261">		return version;</span>
+	}
+	
+	public void setVersion(long version) {
+<span class="fc" id="L265">		this.version = version;</span>
+<span class="fc" id="L266">	}</span>
+	
+	public Event withBaseEntityId(String baseEntityId) {
+<span class="fc" id="L269">		this.baseEntityId = baseEntityId;</span>
+<span class="fc" id="L270">		return this;</span>
+	}
+	
+	/**
+	 * WARNING: Overrides all existing identifiers
+	 * 
+	 * @param identifiers
+	 * @return
+	 */
+	public Event withIdentifiers(Map&lt;String, String&gt; identifiers) {
+<span class="nc" id="L280">		this.identifiers = identifiers;</span>
+<span class="nc" id="L281">		return this;</span>
+	}
+	
+	public Event withIdentifier(String identifierType, String identifier) {
+<span class="nc bnc" id="L285" title="All 2 branches missed.">		if (identifiers == null) {</span>
+<span class="nc" id="L286">			identifiers = new HashMap&lt;&gt;();</span>
+		}
+<span class="nc" id="L288">		identifiers.put(identifierType, identifier);</span>
+<span class="nc" id="L289">		return this;</span>
+	}
+	
+	public Event withLocationId(String locationId) {
+<span class="fc" id="L293">		this.locationId = locationId;</span>
+<span class="fc" id="L294">		return this;</span>
+	}
+	
+	public Event withEventDate(DateTime eventDate) {
+<span class="fc" id="L298">		this.eventDate = eventDate;</span>
+<span class="fc" id="L299">		return this;</span>
+	}
+	
+	public Event withEventType(String eventType) {
+<span class="fc" id="L303">		this.eventType = eventType;</span>
+<span class="fc" id="L304">		return this;</span>
+	}
+	
+	public Event withFormSubmissionId(String formSubmissionId) {
+<span class="fc" id="L308">		this.formSubmissionId = formSubmissionId;</span>
+<span class="fc" id="L309">		return this;</span>
+	}
+	
+	public Event withProviderId(String providerId) {
+<span class="fc" id="L313">		this.providerId = providerId;</span>
+<span class="fc" id="L314">		return this;</span>
+	}
+	
+	public Event withEntityType(String entityType) {
+<span class="fc" id="L318">		this.entityType = entityType;</span>
+<span class="fc" id="L319">		return this;</span>
+	}
+	
+	/**
+	 * WARNING: Overrides all existing obs
+	 * 
+	 * @param obs
+	 * @return
+	 */
+	public Event withObs(List&lt;Obs&gt; obs) {
+<span class="nc" id="L329">		this.obs = obs;</span>
+<span class="nc" id="L330">		return this;</span>
+	}
+	
+	public Event withObs(Obs observation) {
+<span class="nc bnc" id="L334" title="All 2 branches missed.">		if (obs == null) {</span>
+<span class="nc" id="L335">			obs = new ArrayList&lt;&gt;();</span>
+		}
+<span class="nc" id="L337">		obs.add(observation);</span>
+<span class="nc" id="L338">		return this;</span>
+	}
+	
+	@Override
+	public boolean equals(Object o) {
+<span class="nc" id="L343">		return EqualsBuilder.reflectionEquals(this, o, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+	
+	@Override
+	public int hashCode() {
+<span class="nc" id="L348">		return HashCodeBuilder.reflectionHashCode(this, &quot;id&quot;, &quot;revision&quot;);</span>
+	}
+	
+	@Override
+	public String toString() {
+<span class="nc" id="L353">		return ToStringBuilder.reflectionToString(this);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormSubmissionResource.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.rest</a> &gt; <span class="el_source">FormSubmissionResource.java</span></div><h1>FormSubmissionResource.java</h1><pre class="source lang-java linenums">package org.opensrp.web.rest;
+
+import static org.opensrp.common.AllConstants.BaseEntity.BASE_ENTITY_ID;
+import static org.opensrp.common.AllConstants.Event.EVENT_TYPE;
+import static org.opensrp.common.AllConstants.Event.PROVIDER_ID;
+import static org.opensrp.web.rest.RestUtils.getStringFilter;
+
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormSubmissionService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+
+@Controller
+@RequestMapping(value = &quot;/rest/formSubmission&quot;)
+public class FormSubmissionResource extends RestResource&lt;FormSubmission&gt;{
+	private FormSubmissionService fsService;
+	
+	@Autowired
+<span class="fc" id="L26">	public FormSubmissionResource(FormSubmissionService fsService) {</span>
+<span class="fc" id="L27">		this.fsService = fsService;</span>
+<span class="fc" id="L28">	}</span>
+
+	@Override
+	public FormSubmission getByUniqueId(String uniqueId) {
+<span class="nc" id="L32">		return fsService.findByInstanceId(uniqueId);</span>
+	}
+	
+/*	@RequestMapping(method=RequestMethod.GET)
+	@ResponseBody
+	public Event getByBaseEntityAndFormSubmissionId(@RequestParam String baseEntityId, @RequestParam String formSubmissionId) {
+		return eventService.getByBaseEntityAndFormSubmissionId(baseEntityId, formSubmissionId);
+	}*/
+	
+	@Override
+    public FormSubmission create(FormSubmission o) {
+<span class="nc" id="L43">		throw new UnsupportedOperationException();</span>
+	}
+
+	@Override
+	public List&lt;String&gt; requiredProperties() {
+<span class="nc" id="L48">		List&lt;String&gt; p = new ArrayList&lt;&gt;();</span>
+<span class="nc" id="L49">		p.add(BASE_ENTITY_ID);</span>
+		//p.add(FORM_SUBMISSION_ID);
+<span class="nc" id="L51">		p.add(EVENT_TYPE);</span>
+		//p.add(LOCATION_ID);
+		//p.add(EVENT_DATE);
+<span class="nc" id="L54">		p.add(PROVIDER_ID);</span>
+		//p.add(ENTITY_TYPE);
+<span class="nc" id="L56">		return p;</span>
+	}
+	
+	@Override
+	public FormSubmission update(FormSubmission entity) {
+<span class="nc" id="L61">		throw new UnsupportedOperationException();</span>
+	}
+	
+	@Override
+	public List&lt;FormSubmission&gt; search(HttpServletRequest request) throws ParseException {
+<span class="nc" id="L66">		String formName = getStringFilter(&quot;formName&quot;, request);</span>
+<span class="nc" id="L67">		String entityId = getStringFilter(&quot;entityId&quot;, request);</span>
+<span class="nc" id="L68">		String version = getStringFilter(&quot;version&quot;, request);//TODO</span>
+<span class="nc bnc" id="L69" title="All 2 branches missed.">		long v = version==null?0L:Long.parseLong(version);</span>
+		
+<span class="nc" id="L71">		return fsService.findByFormName(formName, v);</span>
+	}
+	
+	@Override
+	public List&lt;FormSubmission&gt; filter(String query) {
+<span class="nc" id="L76">		throw new UnsupportedOperationException();</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

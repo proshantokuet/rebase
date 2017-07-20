@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>EventsRouter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission.handler</a> &gt; <span class="el_source">EventsRouter.java</span></div><h1>EventsRouter.java</h1><pre class="source lang-java linenums">package org.opensrp.service.formSubmission.handler;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.apache.commons.io.FileUtils;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.domain.Event;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.stereotype.Component;
+
+@Component
+<span class="nc" id="L22">public class EventsRouter {</span>
+	
+<span class="nc" id="L24">	private static Logger logger = LoggerFactory.getLogger(EventsRouter.class.toString());</span>
+	
+	@Autowired
+	private IHandlerMapper handlerMapper;
+	
+	// @Value(&quot;#{opensrp['schedule.config.json.path']}&quot;)
+	// String scheduleConfigPath;
+	@Value(&quot;#{opensrp['schedules.config.files.dir']}&quot;)
+	String scheduleConfigFilesPath;
+	
+	// private static final String JSON_KEY_SCHEDULES = &quot;schedules&quot;;
+	private static final String JSON_KEY_HANDLER = &quot;handler&quot;;
+	
+	private static final String JSON_KEY_TYPES = &quot;types&quot;;
+	
+	private static final String JSON_KEY_SCHEDULE_NAME = &quot;name&quot;;
+	
+	private static final String JSON_KEY_EVENTS = &quot;events&quot;;
+	
+<span class="nc" id="L43">	ResourceLoader loader = new DefaultResourceLoader();</span>
+	
+<span class="nc" id="L45">	File scheduleConfigsFolder = null;</span>
+	
+	Event event;
+	
+	/**
+	 * @param event
+	 */
+	public void route(Event _event) {
+		try {
+<span class="nc" id="L54">			event = _event;</span>
+<span class="nc bnc" id="L55" title="All 4 branches missed.">			if (scheduleConfigFilesPath != null &amp;&amp; !scheduleConfigFilesPath.isEmpty()) {</span>
+				
+<span class="nc" id="L57">				String schedulesStr = getScheduleConfigs();</span>
+				
+<span class="nc" id="L59">				JSONArray schedulesJsonObject = new JSONArray(&quot;[&quot; + schedulesStr + &quot;]&quot;);</span>
+				//iterate through concatenated schedule-configs files to retrieve the events and compare with the current event from the db
+<span class="nc bnc" id="L61" title="All 2 branches missed.">				for (int i = 0; i &lt; schedulesJsonObject.length(); i++) {</span>
+<span class="nc" id="L62">					JSONObject scheduleJsonObject = schedulesJsonObject.getJSONObject(i);</span>
+<span class="nc bnc" id="L63" title="All 2 branches missed.">					String handler = scheduleJsonObject.has(JSON_KEY_HANDLER)?scheduleJsonObject.getString(JSON_KEY_HANDLER):&quot;VaccinesScheduleHandler&quot;;</span>
+<span class="nc" id="L64">					JSONArray eventsJsonArray = scheduleJsonObject.getJSONArray(JSON_KEY_EVENTS);</span>
+<span class="nc" id="L65">					String scheduleName = scheduleJsonObject.getString(JSON_KEY_SCHEDULE_NAME);</span>
+<span class="nc" id="L66">					processScheduleConfigEvents(eventsJsonArray, handler,scheduleName);</span>
+					
+				}
+				
+			}
+		}
+<span class="nc" id="L72">		catch (IOException | JSONException e) {</span>
+<span class="nc" id="L73">			logger.error(&quot;&quot;, e);</span>
+<span class="nc" id="L74">		}</span>
+		
+<span class="nc" id="L76">	}</span>
+	
+	/**
+	 * This method iterates through 'events' defined in the schedule-configs to see if they match
+	 * the current event, if so get the handler and process the event
+	 * 
+	 * @param eventsJsonArray
+	 * @param handler
+	 * @throws JSONException
+	 */
+	private void processScheduleConfigEvents(JSONArray eventsJsonArray, String handler,String scheduleName) throws JSONException {
+		//iterate through the events in the scheduleconfigs to see if the current event (the one passed to this route method) has a schedule handler
+<span class="nc bnc" id="L88" title="All 2 branches missed.">		for (int j = 0; j &lt; eventsJsonArray.length(); j++) {</span>
+<span class="nc" id="L89">			JSONObject scheduleConfigEvent = eventsJsonArray.getJSONObject(j);</span>
+<span class="nc" id="L90">			JSONArray eventTypesJsonArray = scheduleConfigEvent.getJSONArray(JSON_KEY_TYPES);</span>
+<span class="nc" id="L91">			List&lt;String&gt; eventsList = jsonArrayToList(eventTypesJsonArray);</span>
+			
+<span class="nc bnc" id="L93" title="All 2 branches missed.">			if (eventsList.contains(event.getEventType())) {</span>
+<span class="nc bnc" id="L94" title="All 2 branches missed.">				if (handlerMapper.handlerMap().get(handler) != null) {</span>
+<span class="nc" id="L95">					handlerMapper.handlerMap().get(handler).handle(event, scheduleConfigEvent,scheduleName);</span>
+				}
+				
+			}
+			
+		}
+<span class="nc" id="L101">	}</span>
+	
+	/**
+	 * This method merges all the files in the schedule-configs folder to create one
+	 * jsonobject/array
+	 * 
+	 * @return
+	 * @throws IOException
+	 */
+	private String getScheduleConfigs() throws IOException {
+<span class="nc bnc" id="L111" title="All 4 branches missed.">		if (scheduleConfigsFolder == null &amp;&amp; loader.getResource(scheduleConfigFilesPath).exists())</span>
+<span class="nc" id="L112">			scheduleConfigFilesPath = loader.getResource(scheduleConfigFilesPath).getURI().getPath();</span>
+<span class="nc" id="L113">		scheduleConfigsFolder = new File(scheduleConfigFilesPath);</span>
+<span class="nc" id="L114">		String scheduleConfigMapping = &quot;&quot;;</span>
+<span class="nc" id="L115">		File[] scheduleFiles = scheduleConfigsFolder.listFiles();</span>
+<span class="nc bnc" id="L116" title="All 2 branches missed.">		for (int i = 0; i &lt; scheduleFiles.length; i++) {</span>
+<span class="nc" id="L117">			final File fileEntry = scheduleFiles[i];</span>
+<span class="nc" id="L118">			String scheduleConfig = FileUtils.readFileToString(new File(fileEntry.getAbsolutePath()), &quot;UTF-8&quot;);</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">			scheduleConfigMapping += (i + 1 == scheduleFiles.length) ? scheduleConfig : scheduleConfig.concat(&quot;,&quot;);</span>
+			
+		}
+<span class="nc" id="L122">		return scheduleConfigMapping;</span>
+	}
+	
+	private List&lt;String&gt; jsonArrayToList(JSONArray jsonArray) throws JSONException {
+<span class="nc" id="L126">		List&lt;String&gt; values = new ArrayList&lt;String&gt;();</span>
+<span class="nc bnc" id="L127" title="All 2 branches missed.">		if (jsonArray == null) {</span>
+<span class="nc" id="L128">			return values;</span>
+		}
+		
+<span class="nc bnc" id="L131" title="All 2 branches missed.">		for (int i = 0; i &lt; jsonArray.length(); i++) {</span>
+<span class="nc" id="L132">			values.add((String) jsonArray.get(i));</span>
+		}
+<span class="nc" id="L134">		return values;</span>
+	}
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

@@ -1,0 +1,4 @@
+[REPORT] 20072017 18:05:23,945 INFO  [main] [TestContextManager] @TestExecutionListeners is not present for class [class org.opensrp.web.rest.it.ProviderResourceTest]: using defaults.
+http://192.168.22.152:8080/openmrs/ws/rest/v1/session
+{"ERROR":"Authentication failed with given credentials"}
+

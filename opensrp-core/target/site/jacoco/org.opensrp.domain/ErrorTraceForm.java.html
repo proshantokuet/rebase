@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>ErrorTraceForm.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.domain</a> &gt; <span class="el_source">ErrorTraceForm.java</span></div><h1>ErrorTraceForm.java</h1><pre class="source lang-java linenums">
+package org.opensrp.domain;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * 
+ * @author muhammad.ahmed@ihsinformatics.com
+ * this is wrapper class .this class is mainly used for 
+ * adding status Options to the code. developer can add other possible status for 
+ * errorlog. 
+ */
+public class ErrorTraceForm {
+	
+	private ErrorTrace errorTrace;
+
+<span class="nc" id="L18">	private List&lt;String&gt; statusOptions=new ArrayList&lt;String&gt;();</span>
+	
+<span class="nc" id="L20">	public ErrorTraceForm() {</span>
+<span class="nc bnc" id="L21" title="All 2 branches missed.">		if(null==statusOptions){</span>
+			
+<span class="nc" id="L23">			statusOptions=new ArrayList&lt;String&gt;();</span>
+		}
+<span class="nc" id="L25">		statusOptions.add(&quot;solved&quot;);</span>
+<span class="nc" id="L26">		statusOptions.add(&quot;unsolved&quot;);</span>
+<span class="nc" id="L27">		statusOptions.add(&quot;failed&quot;);</span>
+<span class="nc" id="L28">		statusOptions.add(&quot;closed&quot;);</span>
+<span class="nc" id="L29">		statusOptions.add(&quot;acknowledged&quot;);</span>
+<span class="nc" id="L30">	}</span>
+	
+	public ErrorTrace getErrorTrace() {
+<span class="nc" id="L33">		return errorTrace;</span>
+	}
+
+	public void setErrorTrace(ErrorTrace errorTrace) {
+<span class="nc" id="L37">		this.errorTrace = errorTrace;</span>
+<span class="nc" id="L38">	}</span>
+
+	public List&lt;String&gt; getStatusOptions() {
+<span class="nc" id="L41">		return statusOptions;</span>
+	}
+
+	public void setStatusOptions(List&lt;String&gt; statusOptions) {
+<span class="nc" id="L45">		this.statusOptions = statusOptions;</span>
+<span class="nc" id="L46">	}</span>
+
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

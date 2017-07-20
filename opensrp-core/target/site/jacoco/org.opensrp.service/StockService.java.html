@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>StockService.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service</a> &gt; <span class="el_source">StockService.java</span></div><h1>StockService.java</h1><pre class="source lang-java linenums">package org.opensrp.service;
+
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.joda.time.DateTime;
+import org.opensrp.domain.Stock;
+import org.opensrp.repository.AllStocks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+@Service
+public class StockService {
+	
+	private final AllStocks allStocks;
+	
+	@Autowired
+<span class="fc" id="L18">	public StockService(AllStocks allStocks) {</span>
+<span class="fc" id="L19">		this.allStocks = allStocks;</span>
+<span class="fc" id="L20">	}</span>
+
+	public List&lt;Stock&gt; findAllByProviderid(String providerid) {
+<span class="fc" id="L23">		return allStocks.findAllByProviderid(providerid);</span>
+	}
+	
+	
+	public Stock getById(String id) {
+<span class="nc" id="L28">		return allStocks.findById(id);</span>
+	}
+	
+	public List&lt;Stock&gt; getAll() {
+<span class="fc" id="L32">		return allStocks.getAll();</span>
+	}
+	public List&lt;Stock&gt; findStocks(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from,String date_updated, String timeStamp, String sortBy, String sortOrder, int limit) {
+<span class="nc" id="L36">		return allStocks.findStocks(identifier, vaccine_type_id, transaction_type, providerid, value, date_created, to_from, date_updated, timeStamp, sortBy, sortOrder, limit);</span>
+	}
+	public List&lt;Stock&gt; findStocks(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String date_updated, String serverVersion) {
+<span class="nc" id="L40">		return allStocks.findStocks(identifier, vaccine_type_id, transaction_type, providerid, value, date_created, to_from, date_updated, serverVersion);</span>
+	}
+	public List&lt;Stock&gt; findAllStocks() {
+<span class="nc" id="L43">		return allStocks.findAllStocks();</span>
+	}
+	public synchronized Stock addStock(CouchDbConnector targetDb, Stock stock) {
+		
+<span class="nc" id="L47">		stock.setDateCreated(new DateTime());</span>
+<span class="nc" id="L48">		allStocks.add(targetDb, stock);</span>
+<span class="nc" id="L49">		return stock;</span>
+	}
+	
+	public Stock find(Stock stock) {
+<span class="nc" id="L53">		Stock st = allStocks.findById(stock.getId());</span>
+<span class="nc bnc" id="L54" title="All 2 branches missed.">		if(st != null){</span>
+<span class="nc" id="L55">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L56">			        &quot;Stock with same id exist &quot; + st.getId() +&quot; exist.&quot;);</span>
+		}else{
+<span class="nc" id="L58">			return stock;</span>
+		}
+	}
+	
+	public synchronized Stock addStock(Stock stock) {
+<span class="nc" id="L63">		Stock st = find(stock);</span>
+<span class="nc bnc" id="L64" title="All 2 branches missed.">		if (st != null) {</span>
+<span class="nc" id="L65">			throw new IllegalArgumentException(</span>
+<span class="nc" id="L66">			        &quot;A stock already exists with given id. Consider updating data.[&quot; + st.getId() + &quot;]&quot;);</span>
+		}
+		
+<span class="nc" id="L69">		return stock;</span>
+	}
+	
+	public synchronized Stock addorUpdateStock(Stock stock) {
+<span class="pc bpc" id="L73" title="3 of 4 branches missed.">		if(stock.getId() != null &amp;&amp; getById(stock.getId()) != null){</span>
+<span class="nc" id="L74">				stock.setDateEdited(DateTime.now());</span>
+<span class="nc" id="L75">				stock.setServerVersion(null);</span>
+<span class="nc" id="L76">				stock.setRevision(getById(stock.getId()).getRevision());</span>
+<span class="nc" id="L77">				allStocks.update(stock);</span>
+		}else{
+<span class="fc" id="L79">			stock.setDateCreated(DateTime.now());</span>
+<span class="fc" id="L80">			allStocks.add(stock);</span>
+		}
+<span class="fc" id="L82">		return stock;</span>
+	}
+	
+	public void updateStock(Stock updatedStock) {
+		// If update is on original entity
+<span class="nc bnc" id="L87" title="All 2 branches missed.">		if (updatedStock.isNew()) {</span>
+<span class="nc" id="L88">			throw new IllegalArgumentException(</span>
+			        &quot;Stock to be updated is not an existing and persisting domain object. Update database object instead of new pojo&quot;);
+		}
+		
+<span class="nc" id="L92">		updatedStock.setDateEdited(DateTime.now());</span>
+		
+<span class="nc" id="L94">		allStocks.update(updatedStock);</span>
+<span class="nc" id="L95">	}</span>
+	
+	public Stock find(String uniqueId) {
+<span class="nc" id="L98">		List&lt;Stock&gt; sList = allStocks.findAllByProviderid(uniqueId);</span>
+<span class="nc bnc" id="L99" title="All 2 branches missed.">		if (sList.size() &gt; 1) {</span>
+<span class="nc" id="L100">			throw new IllegalArgumentException(&quot;Multiple events with identifier &quot; + uniqueId + &quot; exist.&quot;);</span>
+<span class="nc bnc" id="L101" title="All 2 branches missed.">		} else if (sList.size() != 0) {</span>
+<span class="nc" id="L102">			return sList.get(0);</span>
+		}
+<span class="nc" id="L104">		return null;</span>
+	}
+	
+	
+	public Stock mergeStock(Stock updatedStock) {
+<span class="nc" id="L109">		Stock original = find(updatedStock);</span>
+<span class="nc bnc" id="L110" title="All 2 branches missed.">		if (original == null) {</span>
+<span class="nc" id="L111">			throw new IllegalArgumentException(&quot;No stock found with given id. Consider adding new!&quot;);</span>
+		}
+<span class="nc" id="L113">		original.setDateEdited(DateTime.now());</span>
+<span class="nc" id="L114">		allStocks.update(original);</span>
+<span class="nc" id="L115">		return original;</span>
+	}
+	
+	public List&lt;Stock&gt; findStocksBy(String identifier, String vaccine_type_id, String transaction_type, String providerid, String value,
+			String date_created, String to_from, String sync_status, String date_updated,String serverVersion) {
+<span class="nc" id="L120">		return allStocks.findStocks(identifier, vaccine_type_id, transaction_type, providerid, value,</span>
+				date_created, to_from, date_updated, serverVersion);
+	}
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

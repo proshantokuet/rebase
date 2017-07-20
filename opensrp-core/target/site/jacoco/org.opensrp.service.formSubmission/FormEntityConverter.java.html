@@ -1,0 +1,494 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>FormEntityConverter.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.service.formSubmission</a> &gt; <span class="el_source">FormEntityConverter.java</span></div><h1>FormEntityConverter.java</h1><pre class="source lang-java linenums">
+package org.opensrp.service.formSubmission;
+
+import java.io.IOException;
+import java.text.ParseException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathExpressionException;
+
+import org.apache.commons.lang3.math.NumberUtils;
+import org.joda.time.DateTime;
+import org.opensrp.common.FormEntityConstants;
+import org.opensrp.common.FormEntityConstants.Encounter;
+import org.opensrp.common.FormEntityConstants.FormEntity;
+import org.opensrp.common.FormEntityConstants.Person;
+import org.opensrp.common.util.DateUtil;
+import org.opensrp.domain.Address;
+import org.opensrp.domain.Client;
+import org.opensrp.domain.Event;
+import org.opensrp.domain.Obs;
+import org.opensrp.form.domain.FormSubmission;
+import org.opensrp.form.service.FormAttributeParser;
+import org.opensrp.form.service.FormFieldMap;
+import org.opensrp.form.service.FormSubmissionMap;
+import org.opensrp.form.service.SubformMap;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.xml.sax.SAXException;
+
+import com.google.gson.JsonIOException;
+import com.google.gson.JsonSyntaxException;
+import com.mysql.jdbc.StringUtils;
+
+@Service
+public class FormEntityConverter {
+
+	private FormAttributeParser formAttributeParser;
+		
+	@Autowired
+<span class="fc" id="L45">	public FormEntityConverter(FormAttributeParser formAttributeParser) {</span>
+<span class="fc" id="L46">		this.formAttributeParser = formAttributeParser;</span>
+<span class="fc" id="L47">	}</span>
+	
+	/**
+	 * Whether form submission is an openmrs form. The xlsform made openmrs form by mapping to an encounter_type in settings in xlsform.
+	 * @param fs
+	 * @return
+	 */
+	public boolean isOpenmrsForm(FormSubmissionMap fs) {
+<span class="nc" id="L55">		String eventType = fs.formAttributes().get(&quot;encounter_type&quot;);</span>
+<span class="nc bnc" id="L56" title="All 2 branches missed.">		return !StringUtils.isEmptyOrWhitespaceOnly(eventType);</span>
+	}
+	
+	/** 
+	 * Extract Event from given form submission
+	 * @param fs
+	 * @return
+	 * @throws ParseException
+	 */
+	public Event getEventFromFormSubmission(FormSubmissionMap fs) throws ParseException {
+<span class="fc" id="L66">		return createEvent(fs.entityId(), fs.formAttributes().get(&quot;encounter_type&quot;), fs.fields(), fs);</span>
+	}
+	
+	private Event createEvent(String entityId, String eventType, List&lt;FormFieldMap&gt; fields, FormSubmissionMap fs) throws ParseException {
+<span class="fc" id="L70">		String encounterDateField = getFieldName(Encounter.encounter_date, fs);</span>
+<span class="fc" id="L71">		String encounterLocation = getFieldName(Encounter.location_id, fs);</span>
+		
+		//TODO
+<span class="fc" id="L74">		String encounterStart = getFieldName(Encounter.encounter_start, fs);</span>
+<span class="fc" id="L75">		String encounterEnd = getFieldName(Encounter.encounter_end, fs);</span>
+		
+<span class="fc" id="L77">		Event e = new Event()</span>
+<span class="fc" id="L78">			.withBaseEntityId(entityId)//should be different for main and subform</span>
+<span class="fc" id="L79">			.withEventDate(new DateTime(FormEntityConstants.FORM_DATE.parse(fs.getFieldValue(encounterDateField))))</span>
+<span class="fc" id="L80">			.withEventType(eventType)</span>
+<span class="fc" id="L81">			.withLocationId(fs.getFieldValue(encounterLocation))</span>
+<span class="fc" id="L82">			.withProviderId(fs.providerId())</span>
+<span class="fc" id="L83">			.withEntityType(fs.bindType())</span>
+<span class="fc" id="L84">			.withFormSubmissionId(fs.instanceId());</span>
+		
+<span class="fc bfc" id="L86" title="All 2 branches covered.">		for (FormFieldMap fl : fields) {</span>
+<span class="fc" id="L87">			Map&lt;String, String&gt; fat = fl.fieldAttributes();</span>
+<span class="pc bpc" id="L88" title="1 of 4 branches missed.">			if(!fl.values().isEmpty() &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(fl.values().get(0))</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">					&amp;&amp; fat.containsKey(&quot;openmrs_entity&quot;) </span>
+<span class="fc bfc" id="L90" title="All 2 branches covered.">					&amp;&amp; fat.get(&quot;openmrs_entity&quot;).equalsIgnoreCase(&quot;concept&quot;)){</span>
+<span class="fc" id="L91">				List&lt;Object&gt; vall = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L92">				List&lt;Object&gt; humanReadableValues = new ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L93" title="All 2 branches covered.">				for (String vl : fl.values()) {</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">					String val = fl.valueCodes(vl)==null?null:fl.valueCodes(vl).get(&quot;openmrs_code&quot;);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">					val = StringUtils.isEmptyOrWhitespaceOnly(val)?vl:val;</span>
+<span class="fc" id="L96">					vall.add(val);</span>
+<span class="pc bpc" id="L97" title="3 of 4 branches missed.">					if (fl.valueCodes(vl) != null &amp;&amp; fl.valueCodes(vl).get(&quot;openmrs_code&quot;) != null) {// this value is in concept id form</span>
+<span class="nc bnc" id="L98" title="All 2 branches missed.">                        String hval = fl.getValues() == null ? null : fl.getValues().get(0);</span>
+<span class="nc" id="L99">                        humanReadableValues.add(hval);</span>
+                    }
+<span class="fc" id="L101">				}</span>
+<span class="fc" id="L102">				Obs o = new Obs(&quot;concept&quot;, fl.type(), fat.get(&quot;openmrs_entity_id&quot;), </span>
+<span class="fc" id="L103">						fat.get(&quot;openmrs_entity_parent&quot;), vall,humanReadableValues, null, fl.name());</span>
+<span class="fc" id="L104">				o.setEffectiveDatetime(e.getEventDate());</span>
+<span class="fc" id="L105">				e.addObs(o);</span>
+			}
+<span class="fc" id="L107">		}</span>
+<span class="fc" id="L108">		return e;</span>
+	}
+	
+	public Event getEventFromFormSubmission(FormSubmission fs) throws IllegalStateException{
+		try {
+<span class="fc" id="L113">			return getEventFromFormSubmission(formAttributeParser.createFormSubmissionMap(fs));</span>
+<span class="nc" id="L114">		} catch (JsonIOException | JsonSyntaxException</span>
+				| XPathExpressionException | ParseException
+				| ParserConfigurationException | SAXException | IOException e) {
+<span class="nc" id="L117">			throw new IllegalStateException(e);</span>
+		}
+	}
+	
+	/**
+	 * Extract Event for given subform with given data mapped to specified Encounter Type.
+	 * @param fs
+	 * @param subform
+	 * @param eventType
+	 * @param subformInstance
+	 * @return
+	 * @throws ParseException
+	 */
+	private Event getEventForSubform(FormSubmissionMap fs, String eventType, SubformMap subformInstance) throws ParseException {
+<span class="fc" id="L131">		return createEvent(subformInstance.entityId(), subformInstance.formAttributes().get(&quot;openmrs_entity_id&quot;), subformInstance.fields(), fs);</span>
+	}
+	
+	/**
+	 * Get field name for specified openmrs entity in given form submission
+	 * @param en
+	 * @param fs
+	 * @return
+	 */
+	String getFieldName(FormEntity en, FormSubmissionMap fs) {
+<span class="fc" id="L141">		return getFieldName(en, fs.fields());</span>
+	}
+	
+	/**
+	 * Get field name for specified openmrs entity in given form submission for given subform
+	 * @param en
+	 * @param subform
+	 * @param fs
+	 * @return
+	 */
+	String getFieldName(FormEntity en, SubformMap subf) {
+<span class="fc" id="L152">		return getFieldName(en, subf.fields());</span>
+	}
+	
+	String getFieldName(FormEntity en, List&lt;FormFieldMap&gt; fields) {
+<span class="fc bfc" id="L156" title="All 2 branches covered.">		for (FormFieldMap f : fields) {</span>
+<span class="fc bfc" id="L157" title="All 2 branches covered.">			if(f.fieldAttributes().containsKey(&quot;openmrs_entity&quot;) &amp;&amp; </span>
+<span class="fc bfc" id="L158" title="All 2 branches covered.">					f.fieldAttributes().get(&quot;openmrs_entity&quot;).equalsIgnoreCase(en.entity())</span>
+<span class="fc bfc" id="L159" title="All 2 branches covered.">					&amp;&amp; f.fieldAttributes().get(&quot;openmrs_entity_id&quot;).equalsIgnoreCase(en.entityId())){</span>
+<span class="fc" id="L160">				return f.name();</span>
+			}
+<span class="fc" id="L162">		}</span>
+<span class="fc" id="L163">		return null;</span>
+	}
+	
+	/**
+	 * Get field name for specified openmrs attribute mappings in given form submission
+	 * @param entity
+	 * @param entityId
+	 * @param entityParentId
+	 * @param fs
+	 * @return
+	 */
+	String getFieldName(String entity, String entityId, String entityParentId, FormSubmissionMap fs) {
+<span class="nc" id="L175">		return getFieldName(entity, entityId, entityParentId, fs.fields());</span>
+	}
+	
+	String getFieldName(String entity, String entityId, String entityParentId, SubformMap subf) {
+<span class="nc" id="L179">		return getFieldName(entity, entityId, entityParentId, subf.fields());</span>
+	}
+	String getFieldName(String entity, String entityId, String entityParentId, List&lt;FormFieldMap&gt; fields) {
+<span class="nc bnc" id="L182" title="All 2 branches missed.">		for (FormFieldMap f : fields) {</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">			if(f.fieldAttributes().containsKey(&quot;openmrs_entity&quot;) &amp;&amp; </span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">					f.fieldAttributes().get(&quot;openmrs_entity&quot;).equalsIgnoreCase(entity)</span>
+<span class="nc bnc" id="L185" title="All 2 branches missed.">					&amp;&amp; f.fieldAttributes().get(&quot;openmrs_entity_id&quot;).equalsIgnoreCase(entityId)</span>
+<span class="nc bnc" id="L186" title="All 2 branches missed.">					&amp;&amp; f.fieldAttributes().get(&quot;openmrs_entity_parent&quot;).equalsIgnoreCase(entityParentId)){</span>
+<span class="nc" id="L187">				return f.name();</span>
+			}
+<span class="nc" id="L189">		}</span>
+<span class="nc" id="L190">		return null;</span>
+	}
+	
+	Map&lt;String, Address&gt; extractAddresses(FormSubmissionMap fs) throws ParseException {
+<span class="fc" id="L194">		Map&lt;String, Address&gt; paddr = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L195" title="All 2 branches covered.">		for (FormFieldMap fl : fs.fields()) {</span>
+<span class="fc" id="L196">			fillAddressFields(fl, paddr);</span>
+<span class="fc" id="L197">		}</span>
+<span class="fc" id="L198">		return paddr;</span>
+	}
+	
+	Map&lt;String, Address&gt; extractAddressesForSubform(SubformMap subf) throws ParseException {
+<span class="fc" id="L202">		Map&lt;String, Address&gt; paddr = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">		for (FormFieldMap fl : subf.fields()) {</span>
+<span class="fc" id="L204">			fillAddressFields(fl, paddr);</span>
+<span class="fc" id="L205">		}</span>
+<span class="fc" id="L206">		return paddr;</span>
+	}
+	
+	void fillAddressFields(FormFieldMap fl, Map&lt;String, Address&gt; addresses) throws ParseException {
+<span class="fc" id="L210">		Map&lt;String, String&gt; att = fl.fieldAttributes();</span>
+<span class="fc bfc" id="L211" title="All 4 branches covered.">		if(att.containsKey(&quot;openmrs_entity&quot;) &amp;&amp; att.get(&quot;openmrs_entity&quot;).equalsIgnoreCase(&quot;person_address&quot;)){</span>
+<span class="fc" id="L212">			String addressType = att.get(&quot;openmrs_entity_parent&quot;);</span>
+<span class="fc" id="L213">			String addressField = att.get(&quot;openmrs_entity_id&quot;);</span>
+<span class="fc" id="L214">			Address ad = addresses.get(addressType);</span>
+<span class="fc bfc" id="L215" title="All 2 branches covered.">			if(ad == null){</span>
+<span class="fc" id="L216">				ad = new Address(addressType, null, null, null, null, null, null, null, null);</span>
+			}
+
+<span class="pc bpc" id="L219" title="2 of 4 branches missed.">			if(addressField.equalsIgnoreCase(&quot;startDate&quot;)||addressField.equalsIgnoreCase(&quot;start_date&quot;)){</span>
+<span class="nc" id="L220">				ad.setStartDate(DateUtil.parseDate(fl.value()));</span>
+			}
+<span class="pc bpc" id="L222" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;endDate&quot;)||addressField.equalsIgnoreCase(&quot;end_date&quot;)){</span>
+<span class="nc" id="L223">				ad.setEndDate(DateUtil.parseDate(fl.value()));</span>
+			}
+<span class="pc bpc" id="L225" title="1 of 2 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;latitude&quot;)){</span>
+<span class="nc" id="L226">				ad.setLatitude(fl.value());</span>
+			}
+<span class="pc bpc" id="L228" title="1 of 2 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;longitute&quot;)){</span>
+<span class="nc" id="L229">				ad.setLongitude(fl.value());</span>
+			}
+<span class="fc bfc" id="L231" title="All 2 branches covered.">			else if(addressField.equalsIgnoreCase(&quot;geopoint&quot;)){</span>
+				// example geopoint 34.044494 -84.695704 4 76 = lat lon alt prec
+<span class="fc" id="L233">				String geopoint = fl.value();</span>
+<span class="pc bpc" id="L234" title="1 of 2 branches missed.">				if(!StringUtils.isEmptyOrWhitespaceOnly(geopoint)){</span>
+<span class="fc" id="L235">					String[] g = geopoint.split(&quot; &quot;);</span>
+<span class="fc" id="L236">					ad.setLatitude(g[0]);</span>
+<span class="fc" id="L237">					ad.setLongitude(g[1]);</span>
+<span class="fc" id="L238">					ad.setGeopoint(geopoint);</span>
+				}
+<span class="fc" id="L240">			}</span>
+<span class="pc bpc" id="L241" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;postal_code&quot;)||addressField.equalsIgnoreCase(&quot;postalCode&quot;)){</span>
+<span class="nc" id="L242">				ad.setPostalCode(fl.value());</span>
+			}
+<span class="pc bpc" id="L244" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;sub_town&quot;) || addressField.equalsIgnoreCase(&quot;subTown&quot;)){</span>
+<span class="nc" id="L245">				ad.setSubTown(fl.value());</span>
+			}
+<span class="pc bpc" id="L247" title="1 of 2 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;town&quot;)){</span>
+<span class="nc" id="L248">				ad.setTown(fl.value());</span>
+			}
+<span class="pc bpc" id="L250" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;sub_district&quot;) || addressField.equalsIgnoreCase(&quot;subDistrict&quot;)){</span>
+<span class="nc" id="L251">				ad.setSubDistrict(fl.value());</span>
+			}
+<span class="pc bpc" id="L253" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;district&quot;) || addressField.equalsIgnoreCase(&quot;county&quot;)</span>
+<span class="pc bpc" id="L254" title="2 of 4 branches missed.">					|| addressField.equalsIgnoreCase(&quot;county_district&quot;) || addressField.equalsIgnoreCase(&quot;countyDistrict&quot;)){</span>
+<span class="nc" id="L255">				ad.setCountyDistrict(fl.value());</span>
+			}
+<span class="pc bpc" id="L257" title="2 of 4 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;city&quot;) || addressField.equalsIgnoreCase(&quot;village&quot;)</span>
+<span class="pc bpc" id="L258" title="2 of 4 branches missed.">					|| addressField.equalsIgnoreCase(&quot;cityVillage&quot;) || addressField.equalsIgnoreCase(&quot;city_village&quot;)){</span>
+<span class="nc" id="L259">				ad.setCityVillage(fl.value());</span>
+			}
+<span class="pc bpc" id="L261" title="3 of 6 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;state&quot;)||addressField.equalsIgnoreCase(&quot;state_province&quot;)||addressField.equalsIgnoreCase(&quot;stateProvince&quot;)){</span>
+<span class="nc" id="L262">				ad.setStateProvince(fl.value());</span>
+			}
+<span class="pc bpc" id="L264" title="1 of 2 branches missed.">			else if(addressField.equalsIgnoreCase(&quot;country&quot;)){</span>
+<span class="nc" id="L265">				ad.setCountry(fl.value());</span>
+			}
+			else {
+<span class="fc" id="L268">				ad.addAddressField(addressField, fl.value());</span>
+			}
+<span class="fc" id="L270">			addresses.put(addressType, ad);</span>
+		}
+<span class="fc" id="L272">	}</span>
+	
+	
+	Map&lt;String, String&gt; extractIdentifiers(FormSubmissionMap fs) {
+<span class="fc" id="L276">		Map&lt;String, String&gt; pids = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L277">		fillIdentifiers(pids, fs.fields());</span>
+<span class="fc" id="L278">		return pids;</span>
+	}
+	
+	Map&lt;String, String&gt; extractIdentifiers(SubformMap subf) {
+<span class="fc" id="L282">		Map&lt;String, String&gt; pids = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L283">		fillIdentifiers(pids, subf.fields());</span>
+<span class="fc" id="L284">		return pids;</span>
+	}
+	
+	void fillIdentifiers(Map&lt;String, String&gt; pids, List&lt;FormFieldMap&gt; fields) {
+<span class="fc bfc" id="L288" title="All 2 branches covered.">		for (FormFieldMap fl : fields) {</span>
+<span class="pc bpc" id="L289" title="1 of 4 branches missed.">			if(fl.values().size() &lt; 2 &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(fl.value())){</span>
+<span class="fc" id="L290">				Map&lt;String, String&gt; att = fl.fieldAttributes();</span>
+				
+<span class="fc bfc" id="L292" title="All 4 branches covered.">				if(att.containsKey(&quot;openmrs_entity&quot;) &amp;&amp; att.get(&quot;openmrs_entity&quot;).equalsIgnoreCase(&quot;person_identifier&quot;)){</span>
+<span class="fc" id="L293">					pids.put(att.get(&quot;openmrs_entity_id&quot;), fl.value());</span>
+				}
+			}
+<span class="fc" id="L296">		}</span>
+<span class="fc" id="L297">	}</span>
+	
+	Map&lt;String, Object&gt; extractAttributes(FormSubmissionMap fs) {
+<span class="fc" id="L300">		Map&lt;String, Object&gt; pattributes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L301">		fillAttributes(pattributes, fs.fields());</span>
+<span class="fc" id="L302">		return pattributes;</span>
+	}
+	
+	Map&lt;String, Object&gt; extractAttributes(SubformMap subf) {
+<span class="fc" id="L306">		Map&lt;String, Object&gt; pattributes = new HashMap&lt;&gt;();</span>
+<span class="fc" id="L307">		fillAttributes(pattributes, subf.fields());</span>
+<span class="fc" id="L308">		return pattributes;</span>
+	}
+	
+	Map&lt;String, Object&gt; fillAttributes(Map&lt;String, Object&gt; pattributes, List&lt;FormFieldMap&gt; fields) {
+<span class="fc bfc" id="L312" title="All 2 branches covered.">		for (FormFieldMap fl : fields) {</span>
+<span class="pc bpc" id="L313" title="1 of 4 branches missed.">			if(fl.values().size() &lt; 2 &amp;&amp; !StringUtils.isEmptyOrWhitespaceOnly(fl.value())){</span>
+<span class="fc" id="L314">				Map&lt;String, String&gt; att = fl.fieldAttributes();</span>
+<span class="pc bpc" id="L315" title="1 of 4 branches missed.">				if(att.containsKey(&quot;openmrs_entity&quot;) &amp;&amp; att.get(&quot;openmrs_entity&quot;).equalsIgnoreCase(&quot;person_attribute&quot;)){</span>
+<span class="nc" id="L316">					pattributes.put(att.get(&quot;openmrs_entity_id&quot;), fl.value());</span>
+				}
+			}
+<span class="fc" id="L319">		}</span>
+<span class="fc" id="L320">		return pattributes;</span>
+	}
+	
+	/**
+	 * Extract Client from given form submission
+	 * @param fs
+	 * @return
+	 * @throws ParseException
+	 */
+	public Client getClientFromFormSubmission(FormSubmission fsubmission) throws IllegalStateException {
+		FormSubmissionMap fs;
+		try {
+<span class="fc" id="L332">			fs = formAttributeParser.createFormSubmissionMap(fsubmission);</span>
+<span class="fc" id="L333">			return createBaseClient(fs);</span>
+<span class="nc" id="L334">		} catch (Exception e) {</span>
+<span class="nc" id="L335">			throw new IllegalStateException(e);</span>
+		}
+	}
+	
+	public Client getClientFromFormSubmission(FormSubmissionMap fsubmission) throws Exception {
+<span class="nc" id="L340">		return createBaseClient(fsubmission);</span>
+
+	}
+	
+	public Client createBaseClient(FormSubmissionMap fs) throws ParseException {
+<span class="fc" id="L345">		String firstName = fs.getFieldValue(getFieldName(Person.first_name, fs));</span>
+<span class="fc" id="L346">		String middleName = fs.getFieldValue(getFieldName(Person.middle_name, fs));</span>
+<span class="fc" id="L347">		String lastName = fs.getFieldValue(getFieldName(Person.last_name, fs));</span>
+<span class="fc" id="L348">		String bd = fs.getFieldValue(getFieldName(Person.birthdate, fs));</span>
+<span class="pc bpc" id="L349" title="1 of 2 branches missed.">		DateTime birthdate = bd==null?null:new DateTime(bd).withTimeAtStartOfDay();</span>
+<span class="fc" id="L350">		String dd = fs.getFieldValue(getFieldName(Person.deathdate, fs));</span>
+<span class="pc bpc" id="L351" title="1 of 2 branches missed.">		DateTime deathdate = dd==null?null:new DateTime(dd).withTimeAtStartOfDay();</span>
+<span class="fc" id="L352">		String aproxbd = fs.getFieldValue(getFieldName(Person.birthdate_estimated, fs));</span>
+<span class="fc" id="L353">		Boolean birthdateApprox = false;</span>
+<span class="pc bpc" id="L354" title="3 of 4 branches missed.">		if(!StringUtils.isEmptyOrWhitespaceOnly(aproxbd) &amp;&amp; NumberUtils.isNumber(aproxbd)){</span>
+<span class="nc" id="L355">			int bde = 0;</span>
+			try {
+<span class="nc" id="L357">				bde = Integer.parseInt(aproxbd);</span>
+<span class="nc" id="L358">			} catch (Exception e) {</span>
+<span class="nc" id="L359">				e.printStackTrace();</span>
+<span class="nc" id="L360">			}</span>
+<span class="nc bnc" id="L361" title="All 2 branches missed.">			birthdateApprox = bde &gt; 0 ? true:false;</span>
+		}
+<span class="fc" id="L363">		String aproxdd = fs.getFieldValue(getFieldName(Person.deathdate_estimated, fs));</span>
+<span class="fc" id="L364">		Boolean deathdateApprox = false;</span>
+<span class="pc bpc" id="L365" title="3 of 4 branches missed.">		if(!StringUtils.isEmptyOrWhitespaceOnly(aproxdd) &amp;&amp; NumberUtils.isNumber(aproxdd)){</span>
+<span class="nc" id="L366">			int dde = 0;</span>
+			try {
+<span class="nc" id="L368">				dde = Integer.parseInt(aproxdd);</span>
+<span class="nc" id="L369">			} catch (Exception e) {</span>
+<span class="nc" id="L370">				e.printStackTrace();</span>
+<span class="nc" id="L371">			}</span>
+<span class="nc bnc" id="L372" title="All 2 branches missed.">			deathdateApprox = dde &gt; 0 ? true:false;</span>
+		}
+<span class="fc" id="L374">		String gender = fs.getFieldValue(getFieldName(Person.gender, fs));</span>
+		
+<span class="fc" id="L376">		List&lt;Address&gt; addresses = new ArrayList&lt;&gt;(extractAddresses(fs).values());</span>
+		
+<span class="fc" id="L378">		Client c = new Client(fs.entityId())</span>
+<span class="fc" id="L379">				.withFirstName(firstName)</span>
+<span class="fc" id="L380">				.withMiddleName(middleName)</span>
+<span class="fc" id="L381">				.withLastName(lastName)</span>
+<span class="fc" id="L382">				.withBirthdate(birthdate, birthdateApprox)</span>
+<span class="fc" id="L383">				.withDeathdate(deathdate, deathdateApprox)</span>
+<span class="fc" id="L384">				.withGender(gender);</span>
+		
+<span class="fc" id="L386">		c.withAddresses(addresses)</span>
+<span class="fc" id="L387">				.withAttributes(extractAttributes(fs))</span>
+<span class="fc" id="L388">				.withIdentifiers(extractIdentifiers(fs));</span>
+<span class="fc" id="L389">		return c;</span>
+	}
+	
+	
+	public Client createSubformClient(SubformMap subf) throws ParseException {
+<span class="fc" id="L394">		String firstName = subf.getFieldValue(getFieldName(Person.first_name, subf));</span>
+<span class="fc" id="L395">		String gender = subf.getFieldValue(getFieldName(Person.gender, subf));</span>
+<span class="fc" id="L396">		String bb = subf.getFieldValue(getFieldName(Person.birthdate, subf));</span>
+
+<span class="fc" id="L398">		Map&lt;String, String&gt; idents = extractIdentifiers(subf);</span>
+<span class="pc bpc" id="L399" title="1 of 2 branches missed.">		if(StringUtils.isEmptyOrWhitespaceOnly(firstName)</span>
+<span class="nc bnc" id="L400" title="All 2 branches missed.">				&amp;&amp; StringUtils.isEmptyOrWhitespaceOnly(bb)</span>
+<span class="nc bnc" id="L401" title="All 4 branches missed.">				&amp;&amp; idents.size() &lt; 1 &amp;&amp; StringUtils.isEmptyOrWhitespaceOnly(gender)){//we need to ignore uuid of entity</span>
+			// if empty repeat group leave this entry and move to next
+<span class="nc" id="L403">			return null;</span>
+		}
+
+<span class="fc" id="L406">		String middleName = subf.getFieldValue(getFieldName(Person.middle_name, subf));</span>
+<span class="fc" id="L407">		String lastName = subf.getFieldValue(getFieldName(Person.last_name, subf));</span>
+<span class="pc bpc" id="L408" title="2 of 4 branches missed.">		DateTime birthdate =(bb!=null&amp;&amp; bb.isEmpty())?null:new DateTime(bb).withTimeAtStartOfDay();</span>
+<span class="fc" id="L409">		String dd = subf.getFieldValue(getFieldName(Person.deathdate, subf));</span>
+<span class="pc bpc" id="L410" title="1 of 2 branches missed.">		DateTime deathdate = dd==null?null:new DateTime(dd).withTimeAtStartOfDay();</span>
+<span class="fc" id="L411">		String aproxbd = subf.getFieldValue(getFieldName(Person.birthdate_estimated, subf));</span>
+<span class="fc" id="L412">		Boolean birthdateApprox = false;</span>
+<span class="pc bpc" id="L413" title="3 of 4 branches missed.">		if(!StringUtils.isEmptyOrWhitespaceOnly(aproxbd) &amp;&amp; NumberUtils.isNumber(aproxbd)){</span>
+<span class="nc" id="L414">			int bde = 0;</span>
+			try {
+<span class="nc" id="L416">				bde = Integer.parseInt(aproxbd);</span>
+<span class="nc" id="L417">			} catch (Exception e) {</span>
+<span class="nc" id="L418">				e.printStackTrace();</span>
+<span class="nc" id="L419">			}</span>
+<span class="nc bnc" id="L420" title="All 2 branches missed.">			birthdateApprox = bde &gt; 0 ? true:false;</span>
+		}
+<span class="fc" id="L422">		String aproxdd = subf.getFieldValue(getFieldName(Person.deathdate_estimated, subf));</span>
+<span class="fc" id="L423">		Boolean deathdateApprox = false;</span>
+<span class="pc bpc" id="L424" title="3 of 4 branches missed.">		if(!StringUtils.isEmptyOrWhitespaceOnly(aproxdd) &amp;&amp; NumberUtils.isNumber(aproxdd)){</span>
+<span class="nc" id="L425">			int dde = 0;</span>
+			try {
+<span class="nc" id="L427">				dde = Integer.parseInt(aproxdd);</span>
+<span class="nc" id="L428">			} catch (Exception e) {</span>
+<span class="nc" id="L429">				e.printStackTrace();</span>
+<span class="nc" id="L430">			}</span>
+<span class="nc bnc" id="L431" title="All 2 branches missed.">			deathdateApprox = dde &gt; 0 ? true:false;</span>
+		}
+
+<span class="fc" id="L434">		List&lt;Address&gt; addresses = new ArrayList&lt;&gt;(extractAddressesForSubform(subf).values());</span>
+		
+<span class="fc" id="L436">		Client c = new Client(subf.getFieldValue(&quot;id&quot;))</span>
+<span class="fc" id="L437">			.withFirstName(firstName)</span>
+<span class="fc" id="L438">			.withMiddleName(middleName)</span>
+<span class="fc" id="L439">			.withLastName(lastName)</span>
+<span class="fc" id="L440">			.withBirthdate(new DateTime(birthdate), birthdateApprox)</span>
+<span class="fc" id="L441">			.withDeathdate(new DateTime(deathdate), deathdateApprox)</span>
+<span class="fc" id="L442">			.withGender(gender);</span>
+		
+<span class="fc" id="L444">		c.withAddresses(addresses)</span>
+<span class="fc" id="L445">			.withAttributes(extractAttributes(subf))</span>
+<span class="fc" id="L446">			.withIdentifiers(idents);</span>
+
+<span class="fc" id="L448">		return c;</span>
+	}
+	/**
+	 * Extract Client and Event from given form submission for entities dependent on main beneficiary (excluding main beneficiary). 
+	 * The dependent entities are specified via subforms (repeat groups) in xls forms.
+	 * @param fs
+	 * @return The clients and events Map with id of dependent entity as key. Each entry in Map contains an 
+	 * internal map that holds Client and Event info as &quot;client&quot; and &quot;event&quot; respectively for that 
+	 * dependent entity (whose id is the key of main Map).
+	 * Ex: 
+	 * {222222-55d555-ffffff-232323-ffffff: {client: ClientObjForGivenID, event: EventObjForGivenIDAndForm}},
+	 * {339393-545445-ffdddd-333333-ffffff: {client: ClientObjForGivenID, event: EventObjForGivenIDAndForm}},
+	 * {278383-765766-dddddd-767666-ffffff: {client: ClientObjForGivenID, event: EventObjForGivenIDAndForm}}
+	 * @throws ParseException
+	 */
+	public Map&lt;String, Map&lt;String, Object&gt;&gt; getDependentClientsFromFormSubmission(FormSubmission fsubmission) throws IllegalStateException {
+		FormSubmissionMap fs;
+		try {
+<span class="fc" id="L466">			fs = formAttributeParser.createFormSubmissionMap(fsubmission);</span>
+<span class="fc" id="L467">			Map&lt;String, Map&lt;String, Object&gt;&gt; map = new HashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L468" title="All 2 branches covered.">			for (SubformMap sbf : fs.subforms()) {</span>
+<span class="fc" id="L469">				Map&lt;String, String&gt; att = sbf.formAttributes();</span>
+<span class="pc bpc" id="L470" title="1 of 2 branches missed.">				if(att.containsKey(&quot;openmrs_entity&quot;) </span>
+<span class="pc bpc" id="L471" title="1 of 2 branches missed.">						&amp;&amp; att.get(&quot;openmrs_entity&quot;).equalsIgnoreCase(&quot;person&quot;)</span>
+						){
+<span class="fc" id="L473">					Map&lt;String, Object&gt; cne = new HashMap&lt;&gt;();</span>
+
+<span class="fc" id="L475">					Client subformClient = createSubformClient(sbf);</span>
+					
+<span class="pc bpc" id="L477" title="1 of 2 branches missed.">					if(subformClient != null){</span>
+<span class="fc" id="L478">						cne.put(&quot;client&quot;, subformClient);</span>
+<span class="fc" id="L479">						cne.put(&quot;event&quot;, getEventForSubform(fs, att.get(&quot;openmrs_entity_id&quot;), sbf));</span>
+						
+<span class="fc" id="L481">						map.put(sbf.entityId(), cne);</span>
+					}
+				}
+<span class="fc" id="L484">			}</span>
+<span class="fc" id="L485">			return map;</span>
+<span class="nc" id="L486">		} catch (JsonIOException | JsonSyntaxException</span>
+				| XPathExpressionException | ParserConfigurationException
+				| SAXException | IOException | ParseException e) {
+<span class="nc" id="L489">			e.printStackTrace();</span>
+<span class="nc" id="L490">			throw new IllegalStateException(e);</span>
+		}
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

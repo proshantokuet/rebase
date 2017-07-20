@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>UserController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">UserController.java</span></div><h1>UserController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import static org.opensrp.web.HttpHeaderFactory.allowOrigin;
+import static org.springframework.http.HttpStatus.OK;
+
+import java.nio.charset.Charset;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TimeZone;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.joda.time.DateTime;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.opensrp.api.domain.Time;
+import org.opensrp.api.domain.User;
+import org.opensrp.api.util.LocationTree;
+import org.opensrp.common.domain.UserDetail;
+import org.opensrp.connector.openmrs.service.OpenmrsLocationService;
+import org.opensrp.connector.openmrs.service.OpenmrsUserService;
+import org.opensrp.web.security.DrishtiAuthenticationProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.codec.Base64;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import com.mysql.jdbc.StringUtils;
+
+@Controller
+public class UserController {
+    private String opensrpSiteUrl;
+    private DrishtiAuthenticationProvider opensrpAuthenticationProvider;
+	private OpenmrsLocationService openmrsLocationService;
+	private OpenmrsUserService openmrsUserService;
+	
+    @Autowired
+    public UserController(OpenmrsLocationService openmrsLocationService, OpenmrsUserService openmrsUserService, 
+<span class="fc" id="L51">            DrishtiAuthenticationProvider opensrpAuthenticationProvider) {</span>
+<span class="fc" id="L52">		this.openmrsLocationService = openmrsLocationService;</span>
+<span class="fc" id="L53">		this.openmrsUserService = openmrsUserService;</span>
+<span class="fc" id="L54">        this.opensrpAuthenticationProvider = opensrpAuthenticationProvider;</span>
+<span class="fc" id="L55">    }</span>
+
+    @RequestMapping(method = RequestMethod.GET, value = &quot;/authenticate-user&quot;)
+    public ResponseEntity&lt;HttpStatus&gt; authenticateUser() {
+<span class="nc" id="L59">        return new ResponseEntity&lt;&gt;(null, allowOrigin(opensrpSiteUrl), OK);</span>
+    }
+
+    public Authentication getAuthenticationAdvisor(HttpServletRequest request) {
+<span class="nc" id="L63">    	final String authorization = request.getHeader(&quot;Authorization&quot;);</span>
+<span class="nc bnc" id="L64" title="All 4 branches missed.">        if (authorization != null &amp;&amp; authorization.startsWith(&quot;Basic&quot;)) {</span>
+            // Authorization: Basic base64credentials
+<span class="nc" id="L66">            String base64Credentials = authorization.substring(&quot;Basic&quot;.length()).trim();</span>
+<span class="nc" id="L67">            String credentials = new String(Base64.decode(base64Credentials.getBytes()), Charset.forName(&quot;UTF-8&quot;));</span>
+            // credentials = username:password
+<span class="nc" id="L69">            final String[] values = credentials.split(&quot;:&quot;,2);</span>
+    		
+<span class="nc" id="L71">            return new UsernamePasswordAuthenticationToken(values[0], values[1]);</span>
+        }
+<span class="nc" id="L73">		return null;	</span>
+	}
+    
+    public DrishtiAuthenticationProvider getAuthenticationProvider() {
+<span class="nc" id="L77">		return opensrpAuthenticationProvider;</span>
+	}
+    
+    public User currentUser(HttpServletRequest request) {
+<span class="nc" id="L81">    	Authentication a = getAuthenticationAdvisor(request);</span>
+<span class="nc" id="L82">    	return getAuthenticationProvider().getDrishtiUser(a, a.getName());</span>
+    }
+
+    public Time getServerTime() {
+<span class="nc" id="L86">    	return new Time(Calendar.getInstance().getTime(), TimeZone.getDefault());</span>
+	}
+
+    @RequestMapping(method = RequestMethod.GET, value = &quot;/user-details&quot;)
+    public ResponseEntity&lt;UserDetail&gt; userDetail(@RequestParam(&quot;anm-id&quot;) String anmIdentifier, HttpServletRequest request) {
+<span class="nc" id="L91">    	Authentication a = getAuthenticationAdvisor(request);</span>
+<span class="nc" id="L92">        User user = opensrpAuthenticationProvider.getDrishtiUser(a, anmIdentifier);</span>
+<span class="nc" id="L93">        return new ResponseEntity&lt;&gt;(new UserDetail(user.getUsername(), user.getRoles()), allowOrigin(opensrpSiteUrl), OK);</span>
+    }
+
+	@RequestMapping(&quot;/security/authenticate&quot;)
+	@ResponseBody
+	public ResponseEntity&lt;String&gt; authenticate(HttpServletRequest request) throws JSONException {
+<span class="nc" id="L99">        User u = currentUser(request);</span>
+<span class="nc" id="L100">        String lid = &quot;&quot;;</span>
+<span class="nc" id="L101">        JSONObject tm = null;</span>
+        try{
+<span class="nc" id="L103">        	tm = openmrsUserService.getTeamMember(u.getAttribute(&quot;_PERSON_UUID&quot;).toString());</span>
+<span class="nc" id="L104">        	JSONArray locs = tm.getJSONArray(&quot;location&quot;);</span>
+<span class="nc bnc" id="L105" title="All 2 branches missed.">        	for (int i = 0; i &lt; locs.length(); i++) {</span>
+<span class="nc" id="L106">				lid += locs.getJSONObject(i).getString(&quot;uuid&quot;)+&quot;;;&quot;;</span>
+			}
+        }
+<span class="nc" id="L109">        catch(Exception e){</span>
+<span class="nc" id="L110">        	System.out.println(&quot;USER Location info not mapped in team management module. Now trying Person Attribute&quot;);;</span>
+<span class="nc" id="L111">        }</span>
+<span class="nc bnc" id="L112" title="All 2 branches missed.">        if(StringUtils.isEmptyOrWhitespaceOnly(lid)){</span>
+<span class="nc" id="L113">	        lid = (String) u.getAttribute(&quot;Location&quot;);</span>
+<span class="nc bnc" id="L114" title="All 2 branches missed.">	        if(StringUtils.isEmptyOrWhitespaceOnly(lid)){</span>
+<span class="nc" id="L115">	            String lids = (String) u.getAttribute(&quot;Locations&quot;);</span>
+	            
+<span class="nc bnc" id="L117" title="All 2 branches missed.">	            if(lids == null){</span>
+<span class="nc" id="L118">	            	throw new RuntimeException(&quot;User not mapped on any location. Make sure that user have a person attribute Location or Locations with uuid(s) of valid OpenMRS Location(s) separated by ;;&quot;);</span>
+	            }
+	            
+<span class="nc" id="L121">	            lid = lids;</span>
+	        }
+        }
+<span class="nc" id="L124">		LocationTree l = openmrsLocationService.getLocationTreeOf(lid.split(&quot;;;&quot;));</span>
+<span class="nc" id="L125">		Map&lt;String, Object&gt; map = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L126">		map.put(&quot;user&quot;, u);</span>
+		try{
+<span class="nc" id="L128">			Map&lt;String, Object&gt; tmap = new Gson().fromJson(tm.toString(), new TypeToken&lt;HashMap&lt;String, Object&gt;&gt;() {}.getType());</span>
+<span class="nc" id="L129">			map.put(&quot;team&quot;, tmap);</span>
+		}
+<span class="nc" id="L131">		catch(Exception e){</span>
+<span class="nc" id="L132">			e.printStackTrace();</span>
+<span class="nc" id="L133">		}</span>
+<span class="nc" id="L134">		map.put(&quot;locations&quot;, l);</span>
+<span class="nc" id="L135">		Time t = getServerTime();</span>
+<span class="nc" id="L136">		map.put(&quot;time&quot;, t);</span>
+<span class="nc" id="L137">        return new ResponseEntity&lt;&gt;(new Gson().toJson(map), allowOrigin(opensrpSiteUrl), OK);</span>
+	}
+	
+	@RequestMapping(&quot;/security/configuration&quot;)
+	@ResponseBody
+	public ResponseEntity&lt;String&gt; configuration() throws JSONException {
+<span class="nc" id="L143">		Map&lt;String, Object&gt; map = new HashMap&lt;&gt;();</span>
+<span class="nc" id="L144">		map.put(&quot;serverDatetime&quot;, DateTime.now().toString(&quot;yyyy-MM-dd HH:mm:ss&quot;));</span>
+<span class="nc" id="L145">        return new ResponseEntity&lt;&gt;(new Gson().toJson(map), allowOrigin(opensrpSiteUrl), OK);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

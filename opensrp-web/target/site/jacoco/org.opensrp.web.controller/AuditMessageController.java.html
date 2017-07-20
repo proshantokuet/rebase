@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AuditMessageController.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-web</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.web.controller</a> &gt; <span class="el_source">AuditMessageController.java</span></div><h1>AuditMessageController.java</h1><pre class="source lang-java linenums">package org.opensrp.web.controller;
+
+import ch.lambdaj.function.convert.Converter;
+import org.codehaus.jackson.annotate.JsonProperty;
+import org.opensrp.common.audit.AuditMessage;
+import org.opensrp.common.audit.AuditMessageType;
+import org.opensrp.common.audit.Auditor;
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.io.IOException;
+import java.util.List;
+import java.util.Map;
+
+import static ch.lambdaj.collection.LambdaCollections.with;
+
+@Controller
+public class AuditMessageController {
+    private final Auditor auditor;
+
+    @Autowired
+<span class="fc" id="L27">    public AuditMessageController(Auditor auditor) {</span>
+<span class="fc" id="L28">        this.auditor = auditor;</span>
+<span class="fc" id="L29">    }</span>
+
+    @RequestMapping(method = RequestMethod.GET, value = &quot;/audit/messages&quot;)
+    @ResponseBody
+    public List&lt;AuditMessageItem&gt; getAuditMessages(@RequestParam(value = &quot;previousAuditMessageIndex&quot;, defaultValue = &quot;0&quot;) long previousIndex) throws IOException {
+<span class="fc" id="L34">        List&lt;AuditMessage&gt; messages = auditor.messagesSince(previousIndex);</span>
+
+<span class="fc" id="L36">        return with(messages).convert(new Converter&lt;AuditMessage, AuditMessageItem&gt;() {</span>
+            @Override
+            public AuditMessageItem convert(AuditMessage auditMessage) {
+<span class="fc" id="L39">                return AuditMessageItem.from(auditMessage);</span>
+            }
+        });
+    }
+
+    protected static class AuditMessageItem {
+        @JsonProperty
+        private final DateTime time;
+        @JsonProperty
+        private final long index;
+        @JsonProperty
+        private final AuditMessageType type;
+        @JsonProperty
+        private final Map&lt;String, String&gt; data;
+
+<span class="fc" id="L54">        public AuditMessageItem(DateTime time, long index, AuditMessageType type, Map&lt;String, String&gt; data) {</span>
+<span class="fc" id="L55">            this.time = time;</span>
+<span class="fc" id="L56">            this.index = index;</span>
+<span class="fc" id="L57">            this.type = type;</span>
+<span class="fc" id="L58">            this.data = data;</span>
+<span class="fc" id="L59">        }</span>
+
+        public static AuditMessageItem from(AuditMessage auditMessage) {
+<span class="fc" id="L62">            return new AuditMessageItem(auditMessage.time(), auditMessage.index(), auditMessage.type(), auditMessage.data());</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>

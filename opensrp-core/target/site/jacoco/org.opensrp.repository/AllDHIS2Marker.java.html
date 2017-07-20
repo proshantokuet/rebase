@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../.resources/report.css" type="text/css"/><link rel="shortcut icon" href="../.resources/report.gif" type="image/gif"/><title>AllDHIS2Marker.java</title><link rel="stylesheet" href="../.resources/prettify.css" type="text/css"/><script type="text/javascript" src="../.resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../.sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">opensrp-core</a> &gt; <a href="index.source.html" class="el_package">org.opensrp.repository</a> &gt; <span class="el_source">AllDHIS2Marker.java</span></div><h1>AllDHIS2Marker.java</h1><pre class="source lang-java linenums">package org.opensrp.repository;
+
+import java.util.List;
+
+import org.ektorp.CouchDbConnector;
+import org.ektorp.support.GenerateView;
+import org.motechproject.dao.MotechBaseRepository;
+import org.opensrp.common.AllConstants;
+import org.opensrp.common.AllConstants.DHIS2Constants;
+import org.opensrp.domain.DHIS2Marker;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Repository;
+
+@Repository
+public class AllDHIS2Marker extends MotechBaseRepository&lt;DHIS2Marker&gt; {
+	
+	@Autowired
+	protected AllDHIS2Marker(@Qualifier(AllConstants.OPENSRP_DATABASE_CONNECTOR) CouchDbConnector db) {
+<span class="fc" id="L20">		super(DHIS2Marker.class, db);</span>
+<span class="fc" id="L21">	}</span>
+	
+	@GenerateView
+	public List&lt;DHIS2Marker&gt; findByName(String name) {
+<span class="nc" id="L25">		return queryView(&quot;by_name&quot;, name);</span>
+	}
+	
+	public void add() {
+<span class="nc" id="L29">		DHIS2Marker dHIS2MarkerEntry = new DHIS2Marker();</span>
+<span class="nc" id="L30">		dHIS2MarkerEntry.setName(DHIS2Constants.DHIS2_TRACK_DATA_SYNCER_VERSION_MARKER);</span>
+<span class="nc" id="L31">		dHIS2MarkerEntry.setValue(0l);</span>
+<span class="nc" id="L32">		this.add(dHIS2MarkerEntry);</span>
+<span class="nc" id="L33">	}</span>
+	
+	public void update() {
+<span class="nc" id="L36">		DHIS2Marker lastsync = this.findByName(DHIS2Constants.DHIS2_TRACK_DATA_SYNCER_VERSION_MARKER).get(0);</span>
+<span class="nc" id="L37">		lastsync.setValue(System.currentTimeMillis());</span>
+<span class="nc" id="L38">		this.update(lastsync);</span>
+<span class="nc" id="L39">	}</span>
+	
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.eclemma.org/jacoco">JaCoCo</a> 0.7.5.201505241946</span></div></body></html>
