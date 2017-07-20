@@ -1,20 +1,4 @@
-some text
-test text
+git rebase example in remote branch:
 
-
-sfsf
-sdsd
-
-edrfgg
-
-fff
-
-lasst
-
-ftt
-
-ddd
-
-gtt
-
-dfdgd
+git rebase --interactive origin/master~8 master
+git push origin --force master
